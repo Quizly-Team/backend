@@ -1,9 +1,11 @@
 package org.quizly.quizly.core.presentation;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import lombok.Builder;
 import lombok.Getter;
+import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.core.util.TimeUtil;
 
@@ -16,7 +18,7 @@ public class ErrorResponse {
 
   private final String timeStamp;
 
-  private final boolean ok = false;
+  private final boolean ok;
 
   private final Error error;
 
@@ -45,6 +47,15 @@ public class ErrorResponse {
         .timeStamp(TimeUtil.toString(ZonedDateTime.now()))
         .code(baseErrorCode.name())
         .error(Error.builder().message(baseErrorCode.getMessage()).build())
+        .build();
+  }
+
+  public static ErrorResponse of(DomainException exception) {
+    return ErrorResponse.builder()
+        .statusCode(exception.getHttpStatus().value())
+        .timeStamp(TimeUtil.toString(ZonedDateTime.now(ZoneOffset.UTC)))
+        .code(exception.getCode())
+        .error(Error.builder().message(exception.getMessage()).build())
         .build();
   }
 }
