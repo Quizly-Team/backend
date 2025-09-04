@@ -27,8 +27,8 @@ public class SolveHistory extends BaseEntity {
   private User user;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "question_id", nullable = false)
-  private Question question;
+  @JoinColumn(name = "quiz_id", nullable = false)
+  private Quiz quiz;
 
   @Column(nullable = false)
   private Boolean isCorrect;

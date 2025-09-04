@@ -35,6 +35,10 @@ dependencies {
 
 	//swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+
+	// external API + json
+	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+	
 }
 
 tasks.named('test') {
