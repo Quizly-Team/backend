@@ -40,7 +40,7 @@ public class User extends BaseEntity {
   private String nickname;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<Question> questions = new ArrayList<>();
+  private List<Quiz> quizList = new ArrayList<>();
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<SolveHistory> solveHistories = new ArrayList<>();

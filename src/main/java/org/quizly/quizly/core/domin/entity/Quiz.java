@@ -1,15 +1,14 @@
 package org.quizly.quizly.core.domin.entity;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-
-import java.util.ArrayList;
-import java.util.List;
 import org.quizly.quizly.core.domin.shared.BaseEntity;
 
 @Getter
@@ -18,17 +17,23 @@ import org.quizly.quizly.core.domin.shared.BaseEntity;
 @AllArgsConstructor
 @SuperBuilder
 @Entity
-@Table(name = "question")
-public class Question extends BaseEntity {
+@Table(name = "quiz")
+public class Quiz extends BaseEntity {
+
+  public enum QuizType {
+    MULTIPLE_CHOICE,
+    TRUE_FALSE
+  }
 
   @Column(nullable = false)
-  private String questionText;
+  private String quizText;
 
   @Column(nullable = false)
   private String answer;
 
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private String questionType;
+  private QuizType quizType;
 
   @Column(nullable = false)
   private String explanation;
@@ -38,7 +43,7 @@ public class Question extends BaseEntity {
 
   @Builder.Default
   @ElementCollection(fetch = FetchType.LAZY)
-  @CollectionTable(name = "question_options", joinColumns = @JoinColumn(name = "question_id"))
+  @CollectionTable(name = "quiz_options", joinColumns = @JoinColumn(name = "quiz_id"))
   @Column(name = "option_text")
   private List<String> options = new ArrayList<>();
 
@@ -49,6 +54,6 @@ public class Question extends BaseEntity {
   @Column(nullable = false)
   private Boolean guest = false;
 
-  @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<SolveHistory> solveHistories = new ArrayList<>();
 }

@@ -1,0 +1,163 @@
+package org.quizly.quizly.external.clova.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.log4j.Log4j2;
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import org.quizly.quizly.core.application.BaseRequest;
+import org.quizly.quizly.core.application.BaseResponse;
+import org.quizly.quizly.core.application.BaseService;
+import org.quizly.quizly.core.domin.entity.Quiz;
+import org.quizly.quizly.external.clova.error.ClovaErrorCode;
+import org.quizly.quizly.core.util.TextResourceReaderUtil;
+import org.quizly.quizly.core.util.okhttp.OkHttpJsonRequest;
+import org.quizly.quizly.external.clova.dto.Request.Content;
+import org.quizly.quizly.external.clova.dto.Request.Hcx007Request;
+import org.quizly.quizly.external.clova.dto.Request.Message;
+import org.quizly.quizly.external.clova.dto.Response.Hcx007Response;
+import org.quizly.quizly.external.clova.property.Hcx007Property;
+import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService.CreateQuizClovaStudioRequest;
+import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService.CreateQuizClovaStudioResponse;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.List;
+
+import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
+
+@Log4j2
+@Service
+@RequiredArgsConstructor
+public class CreateQuizClovaStudioService implements BaseService<CreateQuizClovaStudioRequest, CreateQuizClovaStudioResponse> {
+
+    private static final String NON_MEMBER_SYSTEM_PROMPT_PATH = "prompts/basic_quiz_non_member.txt";
+
+    private final Hcx007Property hcx007Property;
+    private final ObjectMapper objectMapper;
+    private final TextResourceReaderUtil textResourceReaderUtil;
+
+    @Override
+    public CreateQuizClovaStudioResponse execute(CreateQuizClovaStudioRequest request) {
+        String systemContent = getNonMemberSystemContent();
+        String requestBody = createClovaRequestBody(request.getPlainText(), request.getType(), systemContent);
+
+        Request httpRequest = new Request.Builder()
+            .url(hcx007Property.getUrl())
+            .header("Authorization", "Bearer " + hcx007Property.getKey())
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .post(RequestBody.create(requestBody, MediaType.parse("application/json")))
+            .build();
+
+        try (Response response = createRequest(httpRequest)) {
+            if (response.body() == null) {
+                log.error("[CreateQuizClovaStudio] response body is null. response code: {}", response.code());
+                return CreateQuizClovaStudioResponse.builder()
+                    .success(false)
+                    .errorCode(ClovaErrorCode.EMPTY_CLOVA_RESPONSE_BODY)
+                    .build();
+            }
+
+            String responseBody = response.body().string();
+
+            if (!response.isSuccessful()) {
+                log.error("[CreateQuizClovaStudio] Clova API returned non-successful code: {}, body: {}", response.code(), responseBody);
+                return CreateQuizClovaStudioResponse.builder()
+                    .success(false)
+                    .errorCode(ClovaErrorCode.FAILED_CREATE_CLOVA_REQUEST)
+                    .build();
+            }
+
+            try {
+                com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(responseBody);
+                String content = rootNode.path("result").path("message").path("content").asText();
+
+                int startIndex = content.indexOf("[");
+                int endIndex = content.lastIndexOf("]");
+                if (startIndex == -1 || endIndex == -1 || startIndex > endIndex) {
+                    log.error("[CreateQuizClovaStudio] Failed to find JSON array in content. Original content: {}", content);
+                    return CreateQuizClovaStudioResponse.builder()
+                        .success(false)
+                        .errorCode(ClovaErrorCode.FAILED_PARSE_CLOVA_RESPONSE)
+                        .build();
+                }
+
+                String jsonContent = content.substring(startIndex, endIndex + 1);
+
+                List<Hcx007Response> hcx007Responses = objectMapper.readValue(jsonContent, new com.fasterxml.jackson.core.type.TypeReference<List<Hcx007Response>>() {});
+
+                return CreateQuizClovaStudioResponse.builder()
+                    .hcx007Responses(hcx007Responses)
+                    .build();
+
+            } catch (IOException e) {
+                log.error("[CreateQuizClovaStudio] Failed to parse Clova API response. Body: {}", responseBody, e);
+                return CreateQuizClovaStudioResponse.builder()
+                    .success(false)
+                    .errorCode(ClovaErrorCode.FAILED_READ_CLOVA_RESPONSE)
+                    .build();
+            }
+
+        } catch (IOException e) {
+            log.error("[CreateQuizClovaStudio] Clova API request failed due to network I/O error.", e);
+            return CreateQuizClovaStudioResponse.builder()
+                .success(false)
+                .errorCode(ClovaErrorCode.CLOVA_NETWORK_ERROR)
+                .build();
+        }
+    }
+
+    private String createClovaRequestBody(String plainText, Quiz.QuizType type, String systemContent) {
+        Message systemMessage = new Message("system", List.of(new Content("text", systemContent)));
+        Message userMessage = new Message("user", List.of(new Content("text", "<입력으로 들어온 정리> " + plainText + " 문제 유형: <" + type.name() + ">")));
+        Hcx007Request hcx007Request = new Hcx007Request(List.of(systemMessage, userMessage));
+
+        String jsonBody = new OkHttpJsonRequest(hcx007Request).convertRequestToString();
+        log.debug("Request JSON Body: {}", jsonBody);
+        return jsonBody;
+    }
+
+    public String getNonMemberSystemContent() {
+        String content = textResourceReaderUtil.load(NON_MEMBER_SYSTEM_PROMPT_PATH);
+        if (content == null || content.isBlank()) {
+            throw ClovaErrorCode.PROMPT_FILE_NOT_FOUND.toException();
+        }
+        return content;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class CreateQuizClovaStudioRequest implements BaseRequest {
+        private String plainText;
+        private Quiz.QuizType type;
+
+        @Override
+        public boolean isValid() {
+            return plainText != null && !plainText.isEmpty() && type != null;
+        }
+    }
+
+    @Getter
+    @Setter
+    @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class CreateQuizClovaStudioResponse extends BaseResponse<ClovaErrorCode> {
+        private List<Hcx007Response> hcx007Responses;
+    }
+}
