@@ -10,3 +10,22 @@ spring:
     properties:
       hibernate:
         format_sql:
+
+swagger:
+  enabled:
+
+springdoc:
+  api-docs:
+    path:
+  default-consumes-media-type:
+  default-produces-media-type:
+  version:
+  swagger-ui:
+    path:
+    defaultModelsExpandDepth:
+    default-model-expand-depth:
+
+clova:
+  hcx007:
+    url:
+    key:
