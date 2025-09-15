@@ -1,3 +1,6 @@
+serve:
+  name:
+
 spring:
   datasource:
     url:
@@ -10,6 +13,23 @@ spring:
     properties:
       hibernate:
         format_sql:
+  security:
+    oauth2:
+      client:
+        registration:
+          naver:
+            client-name:
+            client-id:
+            client-secret:
+            redirect-uri:
+            authorization-grant-type:
+            scope:
+        provider:
+          naver:
+            authorization-uri:
+            token-uri:
+            user-info-uri:
+            user-name-attribute:
 
 swagger:
   enabled:
@@ -29,3 +49,8 @@ clova:
   hcx007:
     url:
     key:
+
+jwt:
+  secret:
+  access-token-expiration:
+  refresh-token-expiration:
