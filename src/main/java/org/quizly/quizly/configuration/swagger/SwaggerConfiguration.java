@@ -9,6 +9,7 @@ import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import java.util.Arrays;
 import java.util.List;
@@ -26,13 +27,21 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(name = "swagger.enabled")
 public class SwaggerConfiguration {
 
-  public static final String SECURITY_SCHEME_NAME = "BearerToken";
-
   @Bean
   public OpenAPI customOpenAPI(@Value("${springdoc.version}") String appVersion, @Value("${server.name}") String serverName) {
+    SecurityScheme securityScheme = new SecurityScheme()
+        .type(SecurityScheme.Type.HTTP)
+        .scheme("bearer")
+        .bearerFormat("JWT")
+        .in(SecurityScheme.In.HEADER)
+        .name("Authorization");
+
+    SecurityRequirement securityRequirement = new SecurityRequirement().addList("BearerToken");
+
     return new OpenAPI()
-        .components(new Components().addSecuritySchemes(SECURITY_SCHEME_NAME, securityScheme()))
-        .info(new Info().title(serverName).version(appVersion));
+        .info(new Info().title(serverName).version(appVersion))
+        .addSecurityItem(securityRequirement)
+        .components(new Components().addSecuritySchemes("BearerToken", securityScheme));
   }
 
   @Bean
@@ -73,13 +82,5 @@ public class SwaggerConfiguration {
 
     Content content = new Content().addMediaType("application/json", mediaType);
     return new ApiResponse().description("Error Response").content(content);
-  }
-
-  private SecurityScheme securityScheme() {
-    return new SecurityScheme()
-        .type(SecurityScheme.Type.HTTP)
-        .scheme("bearer")
-        .bearerFormat("KMS")
-        .name(SECURITY_SCHEME_NAME);
   }
 }
