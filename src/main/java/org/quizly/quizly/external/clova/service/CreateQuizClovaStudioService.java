@@ -40,15 +40,19 @@ import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
 @RequiredArgsConstructor
 public class CreateQuizClovaStudioService implements BaseService<CreateQuizClovaStudioRequest, CreateQuizClovaStudioResponse> {
 
-    private static final String NON_MEMBER_SYSTEM_PROMPT_PATH = "prompts/basic_quiz_non_member.txt";
-
     private final Hcx007Property hcx007Property;
     private final ObjectMapper objectMapper;
     private final TextResourceReaderUtil textResourceReaderUtil;
 
     @Override
     public CreateQuizClovaStudioResponse execute(CreateQuizClovaStudioRequest request) {
-        String systemContent = getNonMemberSystemContent();
+        if (request == null || !request.isValid()) {
+            return CreateQuizClovaStudioResponse.builder()
+                .success(false)
+                .errorCode(ClovaErrorCode.EMPTY_CLOVA_RESPONSE_BODY)
+                .build();
+        }
+        String systemContent = getPrompt(request.getPromptPath());
         String requestBody = createClovaRequestBody(request.getPlainText(), request.getType(), systemContent);
 
         Request httpRequest = new Request.Builder()
@@ -127,12 +131,12 @@ public class CreateQuizClovaStudioService implements BaseService<CreateQuizClova
         return jsonBody;
     }
 
-    public String getNonMemberSystemContent() {
-        String content = textResourceReaderUtil.load(NON_MEMBER_SYSTEM_PROMPT_PATH);
-        if (content == null || content.isBlank()) {
+    public String getPrompt(String promptPath) {
+        String prompt = textResourceReaderUtil.load(promptPath);
+        if (prompt == null || prompt.isBlank()) {
             throw ClovaErrorCode.PROMPT_FILE_NOT_FOUND.toException();
         }
-        return content;
+        return prompt;
     }
 
     @Getter
@@ -144,10 +148,11 @@ public class CreateQuizClovaStudioService implements BaseService<CreateQuizClova
     public static class CreateQuizClovaStudioRequest implements BaseRequest {
         private String plainText;
         private Quiz.QuizType type;
+        private String promptPath;
 
         @Override
         public boolean isValid() {
-            return plainText != null && !plainText.isEmpty() && type != null;
+            return plainText != null && !plainText.isEmpty() && type != null && promptPath != null && !promptPath.isEmpty();
         }
     }
 

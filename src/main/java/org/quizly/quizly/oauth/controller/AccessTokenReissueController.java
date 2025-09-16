@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "auth", description = "인증")
+@Tag(name = "Auth", description = "인증")
 public class AccessTokenReissueController {
 
   private final AccessTokenReissueService accessTokenReissueService;
