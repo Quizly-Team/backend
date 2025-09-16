@@ -18,7 +18,7 @@ import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 @AllArgsConstructor
 @ToString
 @Schema(description = "문제 생성 응답")
-public class CreateQuizResponse extends BaseResponse<GlobalErrorCode> {
+public class CreateQuizzesResponse extends BaseResponse<GlobalErrorCode> {
 
   @Schema(description = "문제 정보")
   private List<QuizDetail> quizDetailList;

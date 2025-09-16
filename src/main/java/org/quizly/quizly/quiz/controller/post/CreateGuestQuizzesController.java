@@ -8,10 +8,10 @@ import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
-import org.quizly.quizly.quiz.dto.request.CreateQuizRequest;
-import org.quizly.quizly.quiz.dto.response.CreateQuizResponse;
-import org.quizly.quizly.quiz.service.CreateQuizService;
-import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizErrorCode;
+import org.quizly.quizly.quiz.dto.request.CreateQuizzesRequest;
+import org.quizly.quizly.quiz.dto.response.CreateQuizzesResponse;
+import org.quizly.quizly.quiz.service.CreateGuestQuizzesService;
+import org.quizly.quizly.quiz.service.CreateGuestQuizzesService.CreateGuestQuizzesErrorCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,22 +21,22 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "quiz", description = "퀴즈")
-public class CreateQuizController {
+@Tag(name = "Quiz", description = "퀴즈")
+public class CreateGuestQuizzesController {
 
-  private final CreateQuizService createQuizService;
+  private final CreateGuestQuizzesService createGuestQuizzesService;
 
   @Operation(
-      summary = "퀴즈 생성 API",
-      description = "OX/객관식 문제를 제작합니다.",
-      operationId = "/quiz/create"
+      summary = "텍스트 기반 비회원 퀴즈 생성 API",
+      description = "비회원 전용 API로 3문제 생성 합니다.\n\n비회원 API로 토큰 없이 호출합니다.\n\n텍스트 기반 OX/객관식 퀴즈를 제작합니다.",
+      operationId = "/quizzes/guest"
   )
-  @PostMapping("/quiz/create")
-  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, CreateQuizErrorCode.class})
-  public ResponseEntity<CreateQuizResponse> createQuiz(
-      @RequestBody CreateQuizRequest request) {
-    CreateQuizService.CreateQuizResponse serviceResponse = createQuizService.execute(
-        CreateQuizService.CreateQuizRequest.builder()
+  @PostMapping("/quizzes/guest")
+  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, CreateGuestQuizzesErrorCode.class})
+  public ResponseEntity<CreateQuizzesResponse> createGuestQuizzes(
+      @RequestBody CreateQuizzesRequest request) {
+    CreateGuestQuizzesService.CreateGuestQuizzesResponse serviceResponse = createGuestQuizzesService.execute(
+        CreateGuestQuizzesService.CreateGuestQuizzesRequest.builder()
             .plainText(request.getPlainText())
             .type(request.getType())
             .build());
@@ -54,10 +54,10 @@ public class CreateQuizController {
     return ResponseEntity.ok(toResponse(serviceResponse));
   }
 
-  private CreateQuizResponse toResponse(CreateQuizService.CreateQuizResponse serviceResponse) {
+  private CreateQuizzesResponse toResponse(CreateGuestQuizzesService.CreateGuestQuizzesResponse serviceResponse) {
     List<Quiz> quizList = serviceResponse.getQuizList();
-    List<CreateQuizResponse.QuizDetail> quizDetailList = quizList.stream()
-        .map(quiz -> new CreateQuizResponse.QuizDetail(
+    List<CreateQuizzesResponse.QuizDetail> quizDetailList = quizList.stream()
+        .map(quiz -> new CreateQuizzesResponse.QuizDetail(
             quiz.getId(),
             quiz.getQuizText(),
             quiz.getQuizType().name(),
@@ -66,7 +66,7 @@ public class CreateQuizController {
             quiz.getExplanation(),
             quiz.getTopic()))
         .toList();
-    return CreateQuizResponse.builder()
+    return CreateQuizzesResponse.builder()
         .quizDetailList(quizDetailList)
         .build();
   }
