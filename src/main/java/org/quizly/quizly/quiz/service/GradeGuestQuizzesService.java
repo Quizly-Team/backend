@@ -19,6 +19,10 @@ import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.quiz.service.GradeGuestQuizzesService.GradeGuestQuizzesRequest;
 import org.quizly.quizly.quiz.service.GradeGuestQuizzesService.GradeGuestQuizzesResponse;
+import org.quizly.quizly.quiz.service.GradeMemberQuizzesService.GradeMemberQuizzesErrorCode;
+import org.quizly.quizly.quiz.service.GradeMemberQuizzesService.GradeMemberQuizzesResponse;
+import org.quizly.quizly.quiz.service.GraderQuizService.GraderQuizRequest;
+import org.quizly.quizly.quiz.service.GraderQuizService.GraderQuizResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +32,7 @@ import org.springframework.stereotype.Service;
 public class GradeGuestQuizzesService implements BaseService<GradeGuestQuizzesRequest, GradeGuestQuizzesResponse> {
 
   private final QuizRepository quizRepository;
+  private final GraderQuizService graderQuizService;
 
   @Override
   public GradeGuestQuizzesResponse execute(GradeGuestQuizzesRequest request) {
@@ -48,21 +53,23 @@ public class GradeGuestQuizzesService implements BaseService<GradeGuestQuizzesRe
 
     Quiz quiz = optionalQuiz.get();
 
-    String normalizedCorrectAnswer = normalizeText(quiz.getAnswer());
-    String normalizedUserAnswer = normalizeText(request.getUserAnswer());
-    boolean isCorrect = normalizedCorrectAnswer.equals(normalizedUserAnswer);
+    GraderQuizResponse graderQuizResponse = graderQuizService.execute(
+        GraderQuizRequest.builder()
+            .answer(quiz.getAnswer())
+            .userAnswer(request.getUserAnswer())
+            .build());
+    if (graderQuizResponse == null || !graderQuizResponse.isSuccess()) {
+      return GradeGuestQuizzesResponse.builder()
+          .success(false)
+          .errorCode(GradeGuestQuizzesErrorCode.GRADE_FAILED)
+          .build();
+    }
+    boolean isCorrect = graderQuizResponse.isCorrect();
 
     return GradeGuestQuizzesResponse.builder()
         .quiz(quiz)
         .isCorrect(isCorrect)
         .build();
-  }
-
-  private String normalizeText(String text) {
-    if (text == null) {
-      return "";
-    }
-    return text.trim().toUpperCase();
   }
 
 
@@ -71,7 +78,8 @@ public class GradeGuestQuizzesService implements BaseService<GradeGuestQuizzesRe
   public enum GradeGuestQuizzesErrorCode implements BaseErrorCode<DomainException> {
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다.");
+    QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
+    GRADE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채점에 실패하였습니다.");
 
     private final HttpStatus httpStatus;
 
