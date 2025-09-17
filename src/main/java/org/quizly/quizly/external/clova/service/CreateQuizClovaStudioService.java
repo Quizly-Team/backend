@@ -49,7 +49,7 @@ public class CreateQuizClovaStudioService implements BaseService<CreateQuizClova
         if (request == null || !request.isValid()) {
             return CreateQuizClovaStudioResponse.builder()
                 .success(false)
-                .errorCode(ClovaErrorCode.EMPTY_CLOVA_RESPONSE_BODY)
+                .errorCode(ClovaErrorCode.NOT_EXIST_CLOVA_REQUIRED_PARAMETER)
                 .build();
         }
         String systemContent = getPrompt(request.getPromptPath());

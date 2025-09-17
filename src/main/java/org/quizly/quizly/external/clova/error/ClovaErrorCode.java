@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ClovaErrorCode implements BaseErrorCode<ClovaException> {
 
-  NOT_EXIST_CLOVA_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "CLOVA 요청 팔수 파라미터가 존재하지 않습니다."),
+  NOT_EXIST_CLOVA_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "CLOVA 요청 필수 파라미터가 존재하지 않습니다."),
   FAILED_CREATE_CLOVA_REQUEST(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버 요청 생성에 실패하였습니다."),
   EMPTY_CLOVA_RESPONSE_BODY(HttpStatus.INTERNAL_SERVER_ERROR, "Clova API로부터 비어있는 응답 본문을 받았습니다."),
   FAILED_READ_CLOVA_RESPONSE(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버 응답 읽기에 실패하였습니다."),
