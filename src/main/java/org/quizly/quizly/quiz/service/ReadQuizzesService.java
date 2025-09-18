@@ -62,7 +62,7 @@ public class ReadQuizzesService implements BaseService<ReadQuizzesRequest, ReadQ
           .build();
     }
 
-    List<Quiz> quizList = quizRepository.findAllByUser(user);
+    List<Quiz> quizList = quizRepository.findAllByUserWithOptions(user);
     if (quizList.isEmpty()) {
       return ReadQuizzesResponse.builder()
           .success(true)
