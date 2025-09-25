@@ -6,13 +6,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import org.quizly.quizly.core.application.BaseResponse;
+import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 
 @Getter
 @NoArgsConstructor
 @ToString
 @SuperBuilder
 @Schema(description = "그룹별 문제 조회 응답")
-public class ReadQuizzesResponse {
+public class ReadQuizzesResponse extends BaseResponse<GlobalErrorCode> {
 
   @Schema(description = "그룹별 문제")
   private List<QuizGroup> quizGroupList;
