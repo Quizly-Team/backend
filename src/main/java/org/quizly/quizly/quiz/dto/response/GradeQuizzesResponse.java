@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import org.quizly.quizly.core.application.BaseResponse;
+import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 
 @Getter
 @Setter
@@ -15,7 +17,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @ToString
 @Schema(description = "문제 채점 응답")
-public class GradeQuizzesResponse {
+public class GradeQuizzesResponse extends BaseResponse<GlobalErrorCode> {
 
   @Schema(description = "문제 ID", example = "1")
   private Long quizId;
