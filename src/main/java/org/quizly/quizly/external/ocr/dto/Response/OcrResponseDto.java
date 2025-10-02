@@ -26,15 +26,14 @@ public class OcrResponseDto {
     }
 
     public String getFullText() {
-        if (images == null || images.isEmpty()) return "";
-        StringBuilder sb = new StringBuilder();
-        for (ImageResult image : images) {
-            if (image.getFields() != null) {
-                for (Field field : image.getFields()) {
-                    sb.append(field.getInferText()).append(" ");
-                }
-            }
+        if (images == null) {
+            return "";
         }
-        return sb.toString().trim();
+        return images.stream()
+                .filter(image -> image != null && image.getFields() != null)
+                .flatMap(image -> image.getFields().stream())
+                .filter(field -> field != null && field.getInferText() != null)
+                .map(Field::getInferText)
+                .collect(java.util.stream.Collectors.joining(" "));
     }
 }
