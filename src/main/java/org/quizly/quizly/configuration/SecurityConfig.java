@@ -58,7 +58,7 @@ public class SecurityConfig {
                 "/swagger-ui/**",
                 "/api-docs/**",
                 "/auth/reissue",
-                "/quizzes/guest",
+                "/quizzes/guest/**",
                 "/quizzes/{quizId}/answer/guest"
             ).permitAll()
             .anyRequest().authenticated());
