@@ -10,6 +10,7 @@ import org.quizly.quizly.external.ocr.service.ExtractTextFromOcrService;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.quiz.dto.response.CreateQuizzesResponse;
 import org.quizly.quizly.quiz.service.CreateMemberQuizzesService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -30,9 +31,9 @@ public class CreateOcrMemberQuizzesController {
             summary = "OCR 기반 회원 퀴즈 생성 API",
             description = "이미지(OCR) 기반으로 회원 전용 퀴즈 10문제를 생성합니다.\n\nplainText는 OCR에서 자동 추출합니다."
     )
-    @PostMapping("/quizzes/member/ocr")
+    @PostMapping(value = "/quizzes/member/ocr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CreateQuizzesResponse> createOcrMemberQuizzes(
-            @RequestParam("file") MultipartFile file,
+            @RequestPart("file") MultipartFile file,   // @RequestParam 대신 @RequestPart 추천
             @RequestParam("type") Quiz.QuizType type,
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
