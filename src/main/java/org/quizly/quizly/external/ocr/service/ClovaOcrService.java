@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import okhttp3.*;
 import org.quizly.quizly.external.ocr.dto.Request.OcrRequestDto;
 import org.quizly.quizly.external.ocr.dto.Response.OcrResponseDto;
+import org.quizly.quizly.external.ocr.error.OcrApiException;
+import org.quizly.quizly.external.ocr.error.OcrErrorCode;
 import org.quizly.quizly.external.ocr.property.OcrProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,16 +53,25 @@ public class ClovaOcrService {
                     .build();
 
             try (Response response = client.newCall(request).execute()) {
-                if (!response.isSuccessful() || response.body() == null) {
-                    throw new RuntimeException("OCR API 호출 실패: " + response);
+                if (!response.isSuccessful()) {
+                    throw OcrErrorCode.OCR_NETWORK_ERROR.toException();
                 }
-                String responseBody = response.body().string();
-                return objectMapper.readValue(responseBody, OcrResponseDto.class);
+                if (response.body() == null) {
+                    throw OcrErrorCode.EMPTY_OCR_RESPONSE_BODY.toException();
+                }
+
+                try {
+                    String responseBody = response.body().string();
+                    return objectMapper.readValue(responseBody, OcrResponseDto.class);
+                } catch (IOException e) {
+                    throw OcrErrorCode.FAILED_PARSE_OCR_RESPONSE.toException();
+                }
             }
         } catch (IOException e) {
-            throw new RuntimeException("OCR 처리 중 오류 발생", e);
+            throw OcrErrorCode.FAILED_READ_OCR_RESPONSE.toException();
         }
     }
+
 
     private String getFileExtension(String fileName) {
         if (fileName == null || fileName.isEmpty()) return "";
