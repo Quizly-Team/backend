@@ -41,12 +41,14 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
   }
 
   private OAuth2UserInfo getOAuth2UserInfo(String registrationId, OAuth2User oAuth2User) {
-    if (registrationId.equals("naver")) {
-      return new NaverUserInfo(oAuth2User.getAttributes());
-    }else if(registrationId.equals("kakao")){
-      return new KakaoUserInfo(oAuth2User.getAttributes());
+    switch (registrationId) {
+      case "naver":
+        return new NaverUserInfo(oAuth2User.getAttributes());
+      case "kakao":
+        return new KakaoUserInfo(oAuth2User.getAttributes());
+      default:
+        return null;
     }
-    return null;
   }
 
   private User processUser(OAuth2UserInfo oAuth2UserInfo) {
