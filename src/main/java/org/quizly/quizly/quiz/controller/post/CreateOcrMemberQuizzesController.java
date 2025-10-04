@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
+import org.quizly.quizly.external.ocr.service.ClovaOcrService;
 import org.quizly.quizly.external.ocr.service.ExtractTextFromOcrService;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.quiz.dto.response.CreateQuizzesResponse;
@@ -33,11 +34,17 @@ public class CreateOcrMemberQuizzesController {
     )
     @PostMapping(value = "/quizzes/member/ocr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CreateQuizzesResponse> createOcrMemberQuizzes(
-            @RequestPart("file") MultipartFile file,   // @RequestParam 대신 @RequestPart 추천
+            @RequestPart("file") MultipartFile file,
             @RequestParam("type") Quiz.QuizType type,
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        String plainText = extractTextFromOcrService.extractPlainText(file);
+        ClovaOcrService.ClovaOcrRequest ocrRequest = ClovaOcrService.ClovaOcrRequest.builder()
+                .file(file)
+                .build();
+
+        ClovaOcrService.ClovaOcrResponse ocrResponse = extractTextFromOcrService.execute(ocrRequest);
+
+        String plainText = ocrResponse.getPlainText();
 
         CreateMemberQuizzesService.CreateMemberQuizzesResponse serviceResponse =
                 createMemberQuizzesService.execute(
