@@ -18,13 +18,14 @@ import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz;
+import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.EffortLevel;
+import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.Message;
+import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.Message.Content;
 import org.quizly.quizly.external.clova.error.ClovaErrorCode;
 import org.quizly.quizly.core.util.TextResourceReaderUtil;
 import org.quizly.quizly.core.util.okhttp.OkHttpJsonRequest;
-import org.quizly.quizly.external.clova.dto.Request.Content;
 import org.quizly.quizly.external.clova.dto.Request.Hcx007Request;
-import org.quizly.quizly.external.clova.dto.Request.Message;
-import org.quizly.quizly.external.clova.dto.Response.Hcx007Response;
+import org.quizly.quizly.external.clova.dto.Response.Hcx007QuizResponse;
 import org.quizly.quizly.external.clova.property.Hcx007Property;
 import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService.CreateQuizClovaStudioRequest;
 import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService.CreateQuizClovaStudioResponse;
@@ -98,10 +99,10 @@ public class CreateQuizClovaStudioService implements BaseService<CreateQuizClova
 
                 String jsonContent = content.substring(startIndex, endIndex + 1);
 
-                List<Hcx007Response> hcx007Responses = objectMapper.readValue(jsonContent, new com.fasterxml.jackson.core.type.TypeReference<List<Hcx007Response>>() {});
+                List<Hcx007QuizResponse> hcx007QuizResponseList = objectMapper.readValue(jsonContent, new com.fasterxml.jackson.core.type.TypeReference<List<Hcx007QuizResponse>>() {});
 
                 return CreateQuizClovaStudioResponse.builder()
-                    .hcx007Responses(hcx007Responses)
+                    .hcx007QuizResponseList(hcx007QuizResponseList)
                     .build();
 
             } catch (IOException e) {
@@ -124,7 +125,7 @@ public class CreateQuizClovaStudioService implements BaseService<CreateQuizClova
     private String createClovaRequestBody(String plainText, Quiz.QuizType type, String systemContent) {
         Message systemMessage = new Message("system", List.of(new Content("text", systemContent)));
         Message userMessage = new Message("user", List.of(new Content("text", "<입력으로 들어온 정리> " + plainText + " 문제 유형: <" + type.name() + ">")));
-        Hcx007Request hcx007Request = new Hcx007Request(List.of(systemMessage, userMessage));
+        Hcx007Request hcx007Request = Hcx007Request.of(List.of(systemMessage, userMessage), EffortLevel.LOW);
 
         String jsonBody = new OkHttpJsonRequest(hcx007Request).convertRequestToString();
         log.debug("Request JSON Body: {}", jsonBody);
@@ -163,6 +164,6 @@ public class CreateQuizClovaStudioService implements BaseService<CreateQuizClova
     @AllArgsConstructor
     @ToString
     public static class CreateQuizClovaStudioResponse extends BaseResponse<ClovaErrorCode> {
-        private List<Hcx007Response> hcx007Responses;
+        private List<Hcx007QuizResponse> hcx007QuizResponseList;
     }
 }

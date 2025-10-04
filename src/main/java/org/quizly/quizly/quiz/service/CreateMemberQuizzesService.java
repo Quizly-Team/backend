@@ -20,7 +20,7 @@ import org.quizly.quizly.core.domin.repository.QuizRepository;
 import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
-import org.quizly.quizly.external.clova.dto.Response.Hcx007Response;
+import org.quizly.quizly.external.clova.dto.Response.Hcx007QuizResponse;
 import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService;
 import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService.CreateQuizClovaStudioResponse;
 import org.quizly.quizly.oauth.UserPrincipal;
@@ -81,8 +81,8 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
           .build();
     }
 
-    List<Hcx007Response> hcx007ResponseList = clovaResponse.getHcx007Responses();
-    if (hcx007ResponseList == null || hcx007ResponseList.isEmpty()) {
+    List<Hcx007QuizResponse> hcx007QuizResponseList = clovaResponse.getHcx007QuizResponseList();
+    if (hcx007QuizResponseList == null || hcx007QuizResponseList.isEmpty()) {
       log.info("[CreateMemberQuizzesService] No quizzes were generated from Clova Studio.");
       return CreateMemberQuizzesResponse.builder()
           .success(false)
@@ -90,21 +90,21 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
           .build();
     }
 
-    List<Quiz> quizList = saveQuiz(hcx007ResponseList, user);
+    List<Quiz> quizList = saveQuiz(hcx007QuizResponseList, user);
 
     return CreateMemberQuizzesResponse.builder().quizList(quizList).build();
   }
 
-  private List<Quiz> saveQuiz(List<Hcx007Response> hcx007ResponseList, User user) {
+  private List<Quiz> saveQuiz(List<Hcx007QuizResponse> hcx007QuizResponseList, User user) {
     Boolean guest = false;
-    List<Quiz> quizList = hcx007ResponseList.stream()
-        .map(hcx007Response -> Quiz.builder()
-            .quizText(hcx007Response.getQuiz())
-            .answer(hcx007Response.getAnswer())
-            .quizType(hcx007Response.getType())
-            .explanation(hcx007Response.getExplanation())
-            .options(hcx007Response.getOptions())
-            .topic(hcx007Response.getTopic())
+    List<Quiz> quizList = hcx007QuizResponseList.stream()
+        .map(hcx007QuizResponse -> Quiz.builder()
+            .quizText(hcx007QuizResponse.getQuiz())
+            .answer(hcx007QuizResponse.getAnswer())
+            .quizType(hcx007QuizResponse.getType())
+            .explanation(hcx007QuizResponse.getExplanation())
+            .options(hcx007QuizResponse.getOptions())
+            .topic(hcx007QuizResponse.getTopic())
             .user(user)
             .guest(guest)
             .build())
