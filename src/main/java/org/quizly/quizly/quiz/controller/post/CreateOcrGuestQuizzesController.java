@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
+import org.quizly.quizly.external.ocr.error.OcrApiException;
+import org.quizly.quizly.external.ocr.service.ClovaOcrService;
 import org.quizly.quizly.external.ocr.service.ExtractTextFromOcrService;
 import org.quizly.quizly.quiz.dto.response.CreateQuizzesResponse;
 import org.quizly.quizly.quiz.service.CreateGuestQuizzesService;
@@ -35,12 +37,23 @@ public class CreateOcrGuestQuizzesController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("type") Quiz.QuizType type
     ) {
-        String plainText = extractTextFromOcrService.extractPlainText(file);
+        ClovaOcrService.ClovaOcrRequest ocrRequest = ClovaOcrService.ClovaOcrRequest.builder()
+                .file(file)
+                .build();
+
+        ClovaOcrService.ClovaOcrResponse ocrResponse = extractTextFromOcrService.execute(ocrRequest);
+
+        if (!ocrResponse.isSuccess() || ocrResponse.getPlainText() == null || ocrResponse.getPlainText().isBlank()) {
+            throw Optional.ofNullable(ocrResponse.getErrorCode())
+                    .map(code -> (OcrApiException) code.toException())
+                    .orElseThrow(() -> GlobalErrorCode.INTERNAL_ERROR.toException());
+
+        }
 
         CreateGuestQuizzesService.CreateGuestQuizzesResponse serviceResponse =
                 createGuestQuizzesService.execute(
                         CreateGuestQuizzesService.CreateGuestQuizzesRequest.builder()
-                                .plainText(plainText)
+                                .plainText(ocrResponse.getPlainText())
                                 .type(type)
                                 .build()
                 );

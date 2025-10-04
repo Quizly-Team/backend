@@ -1,21 +1,26 @@
 package org.quizly.quizly.external.ocr.service;
 
 import lombok.RequiredArgsConstructor;
-import org.quizly.quizly.external.ocr.dto.Response.OcrResponseDto;
+import org.quizly.quizly.core.application.BaseService;
+import org.quizly.quizly.external.ocr.error.OcrErrorCode;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
-public class ExtractTextFromOcrService {
+public class ExtractTextFromOcrService implements BaseService<ClovaOcrService.ClovaOcrRequest, ClovaOcrService.ClovaOcrResponse> {
 
     private final ClovaOcrService clovaOcrService;
 
-    public String extractPlainText(MultipartFile file) {
-        OcrResponseDto response = clovaOcrService.extractTextFromImage(file);
-        if (response == null || response.getFullText().isBlank()) {
-            throw new IllegalArgumentException("OCR에서 텍스트를 추출할 수 없습니다.");
+    @Override
+    public ClovaOcrService.ClovaOcrResponse execute(ClovaOcrService.ClovaOcrRequest request) {
+        ClovaOcrService.ClovaOcrResponse response = clovaOcrService.execute(request);
+        if (!response.isSuccess() || response.getPlainText() == null || response.getPlainText().isBlank()) {
+            return ClovaOcrService.ClovaOcrResponse.builder()
+                    .success(false)
+                    .errorCode(OcrErrorCode.EMPTY_OCR_RESPONSE_BODY)
+                    .build();
         }
-        return response.getFullText();
+        return response;
     }
 }
+

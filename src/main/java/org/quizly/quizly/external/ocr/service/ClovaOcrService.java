@@ -1,11 +1,14 @@
 package org.quizly.quizly.external.ocr.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import okhttp3.*;
+import org.quizly.quizly.core.application.BaseRequest;
+import org.quizly.quizly.core.application.BaseResponse;
+import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.external.ocr.dto.Request.OcrRequestDto;
 import org.quizly.quizly.external.ocr.dto.Response.OcrResponseDto;
-import org.quizly.quizly.external.ocr.error.OcrApiException;
 import org.quizly.quizly.external.ocr.error.OcrErrorCode;
 import org.quizly.quizly.external.ocr.property.OcrProperty;
 import org.springframework.stereotype.Service;
@@ -15,21 +18,27 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
 
 @Service
 @RequiredArgsConstructor
-public class ClovaOcrService {
+public class ClovaOcrService implements BaseService<ClovaOcrService.ClovaOcrRequest, ClovaOcrService.ClovaOcrResponse> {
 
     private final OcrProperty ocrProperty;
     private final ObjectMapper objectMapper;
-    private final OkHttpClient client = new OkHttpClient.Builder()
-            .connectTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(120, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .build();
 
-    public OcrResponseDto extractTextFromImage(MultipartFile imageFile) {
+
+    @Override
+    public ClovaOcrResponse execute(ClovaOcrRequest request) {
+        if (request == null || !request.isValid()) {
+            return ClovaOcrResponse.builder()
+                    .success(false)
+                    .errorCode(OcrErrorCode.NOT_EXIST_OCR_REQUIRED_PARAMETER)
+                    .build();
+        }
+
         try {
+            MultipartFile imageFile = request.getFile();
             String fileExtension = getFileExtension(imageFile.getOriginalFilename());
 
             OcrRequestDto ocrRequest = new OcrRequestDto(
@@ -46,36 +55,65 @@ public class ClovaOcrService {
                             RequestBody.create(imageFile.getBytes(), MediaType.parse(imageFile.getContentType())))
                     .build();
 
-            Request request = new Request.Builder()
+            Request httpRequest = new Request.Builder()
                     .url(ocrProperty.getUrl())
                     .header("X-OCR-SECRET", ocrProperty.getSecret())
                     .post(requestBody)
                     .build();
 
-            try (Response response = client.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    throw OcrErrorCode.OCR_NETWORK_ERROR.toException();
-                }
-                if (response.body() == null) {
-                    throw OcrErrorCode.EMPTY_OCR_RESPONSE_BODY.toException();
+            try (Response response = createRequest(httpRequest)) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    return ClovaOcrResponse.builder()
+                            .success(false)
+                            .errorCode(OcrErrorCode.OCR_NETWORK_ERROR)
+                            .build();
                 }
 
-                try {
-                    String responseBody = response.body().string();
-                    return objectMapper.readValue(responseBody, OcrResponseDto.class);
-                } catch (IOException e) {
-                    throw OcrErrorCode.FAILED_PARSE_OCR_RESPONSE.toException();
-                }
+                String responseBody = response.body().string();
+                OcrResponseDto dto = objectMapper.readValue(responseBody, OcrResponseDto.class);
+
+                return ClovaOcrResponse.builder()
+                        .plainText(dto.getFullText())
+                        .rawResponse(dto)
+                        .success(true)
+                        .build();
             }
+
         } catch (IOException e) {
-            throw OcrErrorCode.FAILED_READ_OCR_RESPONSE.toException();
+            return ClovaOcrResponse.builder()
+                    .success(false)
+                    .errorCode(OcrErrorCode.FAILED_READ_OCR_RESPONSE)
+                    .build();
         }
     }
-
 
     private String getFileExtension(String fileName) {
         if (fileName == null || fileName.isEmpty()) return "";
         int dotIndex = fileName.lastIndexOf('.');
         return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
+    }
+
+    @Getter
+    @Setter
+    @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ClovaOcrRequest implements BaseRequest {
+        private MultipartFile file;
+
+        @Override
+        public boolean isValid() {
+            return file != null && !file.isEmpty();
+        }
+    }
+
+    @Getter
+    @Setter
+    @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ClovaOcrResponse extends BaseResponse<OcrErrorCode> {
+        private String plainText;
+        private OcrResponseDto rawResponse;
     }
 }
