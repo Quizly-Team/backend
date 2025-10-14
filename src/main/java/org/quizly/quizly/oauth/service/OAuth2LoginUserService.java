@@ -7,6 +7,7 @@ import org.quizly.quizly.core.domin.entity.User.Provider;
 import org.quizly.quizly.core.domin.entity.User.Role;
 import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.oauth.UserPrincipal;
+import org.quizly.quizly.oauth.dto.response.KakaoUserInfo;
 import org.quizly.quizly.oauth.dto.response.NaverUserInfo;
 import org.quizly.quizly.oauth.dto.response.OAuth2UserInfo;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -40,10 +41,14 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
   }
 
   private OAuth2UserInfo getOAuth2UserInfo(String registrationId, OAuth2User oAuth2User) {
-    if (registrationId.equals("naver")) {
-      return new NaverUserInfo(oAuth2User.getAttributes());
+    switch (registrationId) {
+      case "naver":
+        return new NaverUserInfo(oAuth2User.getAttributes());
+      case "kakao":
+        return new KakaoUserInfo(oAuth2User.getAttributes());
+      default:
+        return null;
     }
-    return null;
   }
 
   private User processUser(OAuth2UserInfo oAuth2UserInfo) {
