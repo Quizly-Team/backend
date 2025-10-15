@@ -1,6 +1,7 @@
 package org.quizly.quizly.external.clova.dto.Request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -18,10 +19,11 @@ public class Hcx007Request {
 
   private List<Message> messages;
   private Thinking thinking;
+  private ResponseFormat responseFormat;
 
   @Builder.Default private double topP = 0.8;
   @Builder.Default private int topK = 60;
-  @Builder.Default private int maxCompletionTokens = 5120;
+  @Builder.Default private int maxCompletionTokens = 10240;
   @Builder.Default private double temperature = 0.7;
   @Builder.Default private double repetitionPenalty = 1.0;
   @Builder.Default private int seed = ThreadLocalRandom.current().nextInt(1, 2147483647);
@@ -31,6 +33,14 @@ public class Hcx007Request {
     return Hcx007Request.builder()
         .messages(messages)
         .thinking(new Thinking(effortLevel))
+        .build();
+  }
+
+  public static Hcx007Request of(List<Message> messages, ResponseFormat responseFormat) {
+    return Hcx007Request.builder()
+        .messages(messages)
+        .responseFormat(responseFormat)
+        .thinking(new Thinking(EffortLevel.NONE))
         .build();
   }
 
@@ -61,5 +71,54 @@ public class Hcx007Request {
         String type,
         String text
     ) {}
+  }
+
+  public record ResponseFormat(
+      String type,
+      Schema schema
+  ) {
+    public record Schema(
+        String type,
+        Items items,
+        Integer minItems,
+        Integer maxItems
+    ) {
+      public record Items(
+          String type,
+          List<String> required,
+          Properties properties
+      ) {
+        public record Properties(
+            Property quiz,
+            @JsonProperty("type") TypeProperty type,
+            OptionsProperty options,
+            Property answer,
+            Property explanation
+        ) {
+          public record Property(
+              String type,
+              String description
+          ) {}
+
+          public record TypeProperty(
+              String type,
+              String description,
+              @JsonProperty("enum") List<String> enumValues
+          ) {}
+
+          public record OptionsProperty(
+              String type,
+              String description,
+              ItemsInfo items,
+              Integer minItems,
+              Integer maxItems
+          ) {
+            public record ItemsInfo(
+                String type
+            ) {}
+          }
+        }
+      }
+    }
   }
 }
