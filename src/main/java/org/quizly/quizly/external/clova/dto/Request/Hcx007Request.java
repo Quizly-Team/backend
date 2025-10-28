@@ -23,7 +23,7 @@ public class Hcx007Request {
 
   @Builder.Default private double topP = 0.8;
   @Builder.Default private int topK = 60;
-  @Builder.Default private int maxCompletionTokens = 10240;
+  @Builder.Default private int maxCompletionTokens = 4096;
   @Builder.Default private double temperature = 0.7;
   @Builder.Default private double repetitionPenalty = 1.0;
   @Builder.Default private int seed = ThreadLocalRandom.current().nextInt(1, 2147483647);
