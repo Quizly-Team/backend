@@ -1,15 +1,15 @@
 package org.quizly.quizly.mock.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
@@ -18,16 +18,12 @@ import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
-import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.ResponseFormat;
-import org.quizly.quizly.external.clova.service.CreateMockExamClovaStudioService.CreateMockExamClovaStudioRequest;
-import org.quizly.quizly.external.clova.service.CreateMockExamClovaStudioService.CreateMockExamClovaStudioResponse;
-import org.quizly.quizly.external.clova.util.ResponseFormatUtil;
 import org.quizly.quizly.external.clova.dto.Response.Hcx007MockExamResponse;
-import org.quizly.quizly.external.clova.service.CreateMockExamClovaStudioService;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType;
-import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType.TypeCategory;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService.CreateMemberMockExamRequest;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService.CreateMemberMockExamResponse;
+import org.quizly.quizly.mock.service.CreateMockQuizService.CreateMockQuizRequest;
+import org.quizly.quizly.mock.service.CreateMockQuizService.CreateMockQuizResponse;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,9 +34,12 @@ import org.springframework.stereotype.Service;
 public class CreateMemberMockExamService implements
     BaseService<CreateMemberMockExamRequest, CreateMemberMockExamResponse> {
 
-  private final CreateMockExamClovaStudioService createMockExamClovaStudioService;
+  private final CreateMockQuizService createMockQuizService;
 
   private static final int DEFAULT_MOCK_EXAM_COUNT = 20;
+  private static final int DEFAULT_MOCK_EXAM_BATCH_SIZE = 2;
+  private static final int DEFAULT_CHUNK_SIZE = 700;
+  private static final int DEFAULT_CHUNK_OVERLAP = 100;
 
   @Override
   public CreateMemberMockExamResponse execute(CreateMemberMockExamRequest request) {
@@ -51,84 +50,93 @@ public class CreateMemberMockExamService implements
           .build();
     }
 
-    Map<MockExamType, Integer> mockExamPlanMap = createMockExamPlanMap(request.getMockExamTypeList());
-    List<Hcx007MockExamResponse> hcx007MockExamResponseList = new java.util.ArrayList<>();
-
-    for (Map.Entry<MockExamType, Integer> entry : mockExamPlanMap.entrySet()) {
-      List<Hcx007MockExamResponse> hcx007MockExamResponseListForType = createMockExam(
-          entry.getKey(),
-          entry.getValue(),
-          request.getPlainText()
-      );
-
-      if (hcx007MockExamResponseListForType.isEmpty()) {
-        log.error("[CreateMemberMockExamService] Failed to create Mock Exam from Clova Studio. MockExamType: {}", entry.getKey());
-        return CreateMemberMockExamResponse.builder()
-            .success(false)
-            .errorCode(CreateMemberMockExamErrorCode.CLOVA_MOCK_EXAM_GENERATION_FAILED)
-            .build();
-      }
-
-      if (entry.getKey().equals(MockExamType.FIND_MATCH)) {
-        postProcessingFindMatch(hcx007MockExamResponseListForType);
-      }
-
-      hcx007MockExamResponseList.addAll(hcx007MockExamResponseListForType);
+    List<String> chunkList = createChunkList(request.getPlainText());
+    if (chunkList.isEmpty()) {
+      return CreateMemberMockExamResponse.builder()
+          .success(false)
+          .errorCode(CreateMemberMockExamErrorCode.FAILED_CREATE_CHUNK)
+          .build();
     }
+
+    List<CompletableFuture<CreateMockQuizResponse>> createMockQuizResponseFutureList = requestAsyncMockQuizTasks(
+        chunkList, request.getMockExamTypeList());
+    CompletableFuture.allOf(createMockQuizResponseFutureList.toArray(new CompletableFuture[0])).join();
+    List<Hcx007MockExamResponse> hcx007MockExamResponseList = joinAsyncMockQuizTasks(createMockQuizResponseFutureList);
+
+    if (hcx007MockExamResponseList.isEmpty() || hcx007MockExamResponseList.size() < DEFAULT_MOCK_EXAM_COUNT) {
+      log.error("[CreateMemberMockExamService] Failed to generate any mock exams from Clova Studio after all async.");
+      return CreateMemberMockExamResponse.builder()
+          .success(false)
+          .errorCode(CreateMemberMockExamErrorCode.CLOVA_MOCK_EXAM_GENERATION_FAILED)
+          .build();
+    }
+
+    postProcessingFindMatch(hcx007MockExamResponseList);
 
     return CreateMemberMockExamResponse.builder()
-      .quizList(hcx007MockExamResponseList)
-      .success(true)
-      .build();
+        .quizList(hcx007MockExamResponseList)
+        .success(true)
+        .build();
   }
 
+  private List<CompletableFuture<CreateMockQuizResponse>> requestAsyncMockQuizTasks(
+      List<String> chunkList, List<MockExamType> mockExamTypeList) {
 
+    Collections.shuffle(chunkList);
+    List<CompletableFuture<CreateMockQuizResponse>> futures = new ArrayList<>();
+    int totalTasks = (DEFAULT_MOCK_EXAM_COUNT + DEFAULT_MOCK_EXAM_BATCH_SIZE - 1) / DEFAULT_MOCK_EXAM_BATCH_SIZE;
+    int mockExamTypeListSize = mockExamTypeList.size();
+    int chunkListSize = chunkList.size();
 
-  private Map<MockExamType, Integer> createMockExamPlanMap(List<MockExamType> mockExamTypeList) {
-    int numTypes = mockExamTypeList.size();
-    Map<MockExamType, Integer> mockExamPlanMap = new LinkedHashMap<>();
+    for (int i = 0; i < totalTasks; i++) {
+      MockExamType mockExamType = mockExamTypeList.get(i % mockExamTypeListSize);
+      String selectedChunk = chunkList.get(i % chunkListSize);
 
-    int baseCount = DEFAULT_MOCK_EXAM_COUNT / numTypes;
-    int remainCount = DEFAULT_MOCK_EXAM_COUNT % numTypes;
+      CreateMockQuizRequest createMockQuizRequest = CreateMockQuizRequest.builder()
+          .type(mockExamType)
+          .quizCount(DEFAULT_MOCK_EXAM_BATCH_SIZE)
+          .plainText(selectedChunk)
+          .build();
 
-    for (MockExamType type : mockExamTypeList) {
-      mockExamPlanMap.put(type, baseCount);
+      CompletableFuture<CreateMockQuizResponse> future = createMockQuizService.execute(createMockQuizRequest);
+      futures.add(
+          future.exceptionally(ex -> {
+            log.error("[requestAsyncMockQuizTasks] Exception: {}", ex.getMessage(), ex);
+            return null;
+          })
+      );
     }
-
-    for (int i = 0; i < remainCount; i++) {
-      MockExamType currentType = mockExamTypeList.get(i);
-      mockExamPlanMap.put(currentType, mockExamPlanMap.get(currentType) + 1);
-    }
-
-    return mockExamPlanMap;
+    return futures;
   }
 
-  private List<Hcx007MockExamResponse> createMockExam(MockExamType type, int quizNumber, String plainText) {
-    String promptPath = type.getPromptPath();
-    if (promptPath == null) {
-      log.error("[CreateMemberMockExamService] Could not find a prompt path. MockExamType: {}", type);
-      return Collections.emptyList();
-    }
-    ResponseFormat responseFormat;
-    if(type.getTypeCategory() == TypeCategory.DESCRIPTIVE) {
-      responseFormat = ResponseFormatUtil.createDescriptiveMockExamResponseFormat(quizNumber, quizNumber);
-    } else {
-      responseFormat = ResponseFormatUtil.createSelectionMockExamResponseFormat(quizNumber, quizNumber);
-    }
+  private List<Hcx007MockExamResponse> joinAsyncMockQuizTasks(
+      List<CompletableFuture<CreateMockQuizResponse>> futures) {
 
-    CreateMockExamClovaStudioResponse createMockExamClovaStudioResponse = createMockExamClovaStudioService.execute(
-        CreateMockExamClovaStudioRequest.builder()
-            .plainText(plainText)
-            .promptPath(promptPath)
-            .responseFormat(responseFormat)
-            .build());
+    return futures.stream()
+        .map(CompletableFuture::join)
+        .filter(response -> response != null && response.isSuccess())
+        .map(CreateMockQuizResponse::getHcx007MockExamResponseList)
+        .filter(Objects::nonNull)
+        .flatMap(List::stream)
+        .toList();
+  }
 
-    if (createMockExamClovaStudioResponse != null && createMockExamClovaStudioResponse.isSuccess()) {
-      return createMockExamClovaStudioResponse.getHcx007MockExamResponse();
+  private List<String> createChunkList(String text) {
+    List<String> chunkList = new ArrayList<>();
+    if (text == null || text.length() <= DEFAULT_CHUNK_SIZE) {
+      if (text != null && !text.isEmpty()) {
+        chunkList.add(text);
+      }
+      return chunkList;
     }
 
-    log.error("[CreateMemberMockExamService] Failed to create mock exam from Clova Studio.");
-    return Collections.emptyList();
+    int start = 0;
+    while (start < text.length()) {
+      int end = Math.min(start + DEFAULT_CHUNK_SIZE, text.length());
+      chunkList.add(text.substring(start, end));
+      start += DEFAULT_CHUNK_SIZE - DEFAULT_CHUNK_OVERLAP;
+    }
+    return chunkList;
   }
 
   private int countItems(String option) {
@@ -144,7 +152,8 @@ public class CreateMemberMockExamService implements
         .forEach(quiz -> {
           if (quiz.getOptions().isEmpty()) {
             quiz.getOptions().add(quiz.getAnswer());
-          } else {
+          }
+          else {
             quiz.getOptions().set(0, quiz.getAnswer());
           }
         });
@@ -169,6 +178,7 @@ public class CreateMemberMockExamService implements
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
+    FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 입력을 chunk 단위 분리에 실패하였습니다."),
     CLOVA_MOCK_EXAM_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버에서 모의고사 생성에 실패하였습니다.");
 
     private final HttpStatus httpStatus;
@@ -181,9 +191,7 @@ public class CreateMemberMockExamService implements
     }
   }
 
-
   @Getter
-  @Setter
   @Builder
   @NoArgsConstructor
   @AllArgsConstructor
@@ -198,18 +206,19 @@ public class CreateMemberMockExamService implements
 
     @Override
     public boolean isValid() {
-      return plainText != null && !plainText.isEmpty() && mockExamTypeList != null && userPrincipal != null;
+      return plainText != null && !plainText.isEmpty() && mockExamTypeList != null
+          && !mockExamTypeList.isEmpty() && userPrincipal != null;
     }
   }
 
   @Getter
-  @Setter
   @SuperBuilder
   @NoArgsConstructor
   @AllArgsConstructor
   @ToString
   public static class CreateMemberMockExamResponse extends
       BaseResponse<CreateMemberMockExamErrorCode> {
+
     private List<Hcx007MockExamResponse> quizList;
   }
 }
