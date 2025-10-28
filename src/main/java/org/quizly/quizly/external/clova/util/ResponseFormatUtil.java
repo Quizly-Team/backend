@@ -12,27 +12,27 @@ import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.ResponseFormat
 
 public class ResponseFormatUtil {
 
-    public static ResponseFormat createSelectionMockExamResponseFormat(int minItems, int maxItems) {
-        OptionsProperty selectionOptions = new OptionsProperty(
-            "array",
-            "문제 선택지 목록 - 4개 선택지 존재",
-            new ItemsInfo("string"),
-            4,
-            4
-        );
-        return createMockExamResponseFormat(minItems, maxItems, selectionOptions);
+    public static ResponseFormat createSelectionMockExamResponseFormat(int quizCount) {
+        OptionsProperty selectionOptions = buildOptions("문제 선택지 목록 - 4개 선택지 존재", 4);
+        return createMockExamResponseFormat(quizCount, quizCount, selectionOptions);
     }
 
-    public static ResponseFormat createDescriptiveMockExamResponseFormat(int minItems, int maxItems) {
-        OptionsProperty descriptiveOptions = new OptionsProperty(
-            "array",
-            "문제 선택지 목록 - 빈 배열",
-            new ItemsInfo("string"),
-            0,
-            0
-        );
-        return createMockExamResponseFormat(minItems, maxItems, descriptiveOptions);
+    public static ResponseFormat createDescriptiveMockExamResponseFormat(int quizCount) {
+        OptionsProperty descriptiveOptions = buildOptions("문제 선택지 목록 - 빈 배열",0);
+        return createMockExamResponseFormat(quizCount, quizCount, descriptiveOptions);
     }
+
+    private static OptionsProperty buildOptions(String description, int OptionCount) {
+        System.out.println("@@@@@@@");
+        return new OptionsProperty(
+            "array",
+            description,
+            new ItemsInfo("string"),
+            OptionCount,
+            OptionCount
+        );
+    }
+
 
     private static ResponseFormat createMockExamResponseFormat(int minItems, int maxItems, OptionsProperty optionsProperty) {
         Properties properties = new Properties(
