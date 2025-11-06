@@ -1,15 +1,7 @@
 package org.quizly.quizly.core.domin.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -69,6 +61,16 @@ public class User extends BaseEntity {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private Role role;
+
+  @Column(nullable = true)
+  private String profileImageUrl;
+
+  @PrePersist
+  public void setDefaultProfileImage() {
+    if (this.profileImageUrl == null) {
+      this.profileImageUrl = "https://kr.object.ncloudstorage.com/quizly-profile-images/defaults/default_profile.png";
+    }
+  }
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Quiz> quizList = new ArrayList<>();
