@@ -59,6 +59,7 @@ public class UpdateUserProfileImageService implements BaseService<
                     ProfileImageService.UploadProfileImageRequest.builder()
                             .file(request.getFile())
                             .userId(user.getId())
+                            .existingUrl(user.getProfileImageUrl())
                             .build();
             ProfileImageService.UploadProfileImageResponse uploadResponse =
                     profileImageService.execute(uploadRequest);
