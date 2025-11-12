@@ -1,5 +1,5 @@
 package org.quizly.quizly.external.storage.service;
-
+import org.apache.tika.Tika;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +28,7 @@ public class ProfileImageService implements
         BaseService<ProfileImageService.UploadProfileImageRequest, ProfileImageService.UploadProfileImageResponse> {
 
     private final S3Client s3Client;
+    private static final Tika tika = new Tika();
 
     @Value("${object-storage.bucket}")
     private String bucket;
@@ -71,6 +72,26 @@ public class ProfileImageService implements
                     .errorCode(StorageErrorCode.INVALID_FILE_EXTENSION)
                     .build();
         }
+
+        String detectedType;
+        try {
+            detectedType = tika.detect(file.getInputStream());
+        } catch (IOException e) {
+            log.error("[ProfileImageService] MIME 탐지 실패", e);
+            return UploadProfileImageResponse.builder()
+                    .success(false)
+                    .errorCode(StorageErrorCode.INVALID_MIME_TYPE)
+                    .build();
+        }
+
+        if (detectedType == null || !detectedType.startsWith("image/")) {
+            log.warn("[ProfileImageService] MIME 검증 실패 - 감지된 타입: {}", detectedType);
+            return UploadProfileImageResponse.builder()
+                    .success(false)
+                    .errorCode(StorageErrorCode.INVALID_MIME_TYPE)
+                    .build();
+        }
+
         if (file.getSize() > 1 * 1024 * 1024) {
             return UploadProfileImageResponse.builder()
                     .success(false)
@@ -79,6 +100,16 @@ public class ProfileImageService implements
         }
 
         try {
+            if (request.getExistingUrl() != null && !request.getExistingUrl().isEmpty()) {
+                String existingKey = request.getExistingUrl()
+                        .replace(endpoint + "/" + bucket + "/", "");
+                s3Client.deleteObject(DeleteObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(existingKey)
+                        .build());
+                log.info("[ProfileImageService] 기존 프로필 이미지 삭제 완료: {}", existingKey);
+            }
+
             String fileName = "profiles/" + userId + "/" + UUID.randomUUID() + "_" + originalName;
             PutObjectRequest putRequest = PutObjectRequest.builder()
                     .bucket(bucket)
@@ -116,7 +147,7 @@ public class ProfileImageService implements
     public static class UploadProfileImageRequest implements BaseRequest {
         private MultipartFile file;
         private Long userId;
-
+        private String existingUrl;
         @Override
         public boolean isValid() {
             return file != null && userId != null;
