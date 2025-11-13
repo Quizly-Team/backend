@@ -74,6 +74,7 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
     userEntity.setProviderId(oAuth2UserInfo.getProviderId());
     userEntity.setEmail(oAuth2UserInfo.getEmail());
     userEntity.setName(oAuth2UserInfo.getName());
+    userEntity.setNickName(oAuth2UserInfo.getName());
     userEntity.setRole(Role.USER);
     userRepository.save(userEntity);
     return userEntity;
