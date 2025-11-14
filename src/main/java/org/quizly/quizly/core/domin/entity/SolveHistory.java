@@ -13,6 +13,8 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.domin.shared.BaseEntity;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,4 +37,12 @@ public class SolveHistory extends BaseEntity {
 
   @Column(nullable = false)
   private String userAnswer;
+
+  @Column(nullable = false)
+  private Double solveTime;
+
+  @Column(nullable = false)
+  private LocalDateTime submittedAt;
+
+
 }
