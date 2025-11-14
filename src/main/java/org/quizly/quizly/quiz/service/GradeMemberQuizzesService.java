@@ -1,5 +1,6 @@
 package org.quizly.quizly.quiz.service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -97,7 +98,7 @@ public class GradeMemberQuizzesService implements
     }
     boolean isCorrect = graderQuizResponse.isCorrect();
 
-    saveSolveHistory(user, quiz, request.getUserAnswer(), isCorrect);
+    saveSolveHistory(user, quiz, request.getUserAnswer(), isCorrect, request.getSolveTime());
 
     return GradeMemberQuizzesResponse.builder()
         .quiz(quiz)
@@ -105,15 +106,25 @@ public class GradeMemberQuizzesService implements
         .build();
   }
 
-  private void saveSolveHistory(User user, Quiz quiz, String userAnswer, boolean isCorrect) {
+  private void saveSolveHistory(
+          User user,
+          Quiz quiz,
+          String userAnswer,
+          boolean isCorrect,
+          Double solveTime
+  ) {
     SolveHistory solveHistory = SolveHistory.builder()
-        .user(user)
-        .quiz(quiz)
-        .isCorrect(isCorrect)
-        .userAnswer(userAnswer)
-        .build();
+            .user(user)
+            .quiz(quiz)
+            .isCorrect(isCorrect)
+            .userAnswer(userAnswer)
+            .solveTime(solveTime)
+            .submittedAt(LocalDateTime.now())
+            .build();
+
     solveHistoryRepository.save(solveHistory);
   }
+
 
   @Getter
   @RequiredArgsConstructor
@@ -150,9 +161,11 @@ public class GradeMemberQuizzesService implements
 
     private UserPrincipal userPrincipal;
 
+    private Double solveTime;
+
     @Override
     public boolean isValid() {
-      return quizId != null && userAnswer != null && userPrincipal != null;
+      return quizId != null && userAnswer != null && userPrincipal != null && solveTime != null && solveTime >= 0;
     }
   }
 
