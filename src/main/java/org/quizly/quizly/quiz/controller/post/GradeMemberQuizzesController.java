@@ -45,6 +45,7 @@ public class GradeMemberQuizzesController {
         GradeMemberQuizzesRequest.builder()
             .quizId(quizId)
             .userAnswer(request.getUserAnswer())
+                .solveTime(request.getSolveTime())
             .userPrincipal(userPrincipal)
             .build()
     );
