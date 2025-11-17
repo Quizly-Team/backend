@@ -47,7 +47,16 @@ public class GraderQuizService implements BaseService<GraderQuizRequest, GraderQ
     if (text == null) {
       return "";
     }
-    return text.trim().toUpperCase();
+    text = text.trim().toUpperCase();
+
+    if(text.equals("O") || text.equals("TRUE")){
+      return "TRUE";
+    }
+    if(text.equals("X") || text.equals("FALSE")){
+      return "FALSE";
+    }
+
+    return text;
   }
 
   @Getter
