@@ -12,18 +12,17 @@ import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.ResponseFormat
 
 public class ResponseFormatUtil {
 
-    public static ResponseFormat createSelectionMockExamResponseFormat(int quizCount) {
+    public static ResponseFormat createSelectionQuizResponseFormat(int quizCount) {
         OptionsProperty selectionOptions = buildOptions("문제 선택지 목록 - 4개 선택지 존재", 4);
         return createMockExamResponseFormat(quizCount, quizCount, selectionOptions);
     }
 
-    public static ResponseFormat createDescriptiveMockExamResponseFormat(int quizCount) {
+    public static ResponseFormat createDescriptiveQuizResponseFormat(int quizCount) {
         OptionsProperty descriptiveOptions = buildOptions("문제 선택지 목록 - 빈 배열",0);
         return createMockExamResponseFormat(quizCount, quizCount, descriptiveOptions);
     }
 
     private static OptionsProperty buildOptions(String description, int OptionCount) {
-        System.out.println("@@@@@@@");
         return new OptionsProperty(
             "array",
             description,
@@ -40,7 +39,7 @@ public class ResponseFormatUtil {
             new TypeProperty(
                 "string",
                 "문제의 유형",
-                List.of("FIND_CORRECT", "FIND_INCORRECT", "FIND_MATCH", "ESSAY", "SHORT_ANSWER", "TRUE_FALSE")
+                List.of("FIND_CORRECT", "FIND_INCORRECT", "FIND_MATCH", "ESSAY", "SHORT_ANSWER", "TRUE_FALSE", "MULTIPLE_CHOICE")
             ),
             optionsProperty,
             new Property("string", "퀴즈의 답안"),
