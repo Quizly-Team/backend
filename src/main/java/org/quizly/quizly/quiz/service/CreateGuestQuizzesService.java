@@ -110,7 +110,7 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
             .quizType(hcx007QuizResponse.getType())
             .explanation(hcx007QuizResponse.getExplanation())
             .options(hcx007QuizResponse.getOptions())
-            .topic("테스트")
+            .topic("guest")
             .user(null)
             .guest(true)
             .build())
