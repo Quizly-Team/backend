@@ -17,10 +17,9 @@ import okhttp3.Response;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
-import org.quizly.quizly.core.domin.entity.Quiz;
-import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.EffortLevel;
 import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.Message;
 import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.Message.Content;
+import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.ResponseFormat;
 import org.quizly.quizly.external.clova.error.ClovaErrorCode;
 import org.quizly.quizly.core.util.TextResourceReaderUtil;
 import org.quizly.quizly.core.util.okhttp.OkHttpJsonRequest;
@@ -54,7 +53,7 @@ public class CreateQuizClovaStudioService implements BaseService<CreateQuizClova
                 .build();
         }
         String systemContent = getPrompt(request.getPromptPath());
-        String requestBody = createClovaRequestBody(request.getPlainText(), request.getType(), systemContent);
+        String requestBody = createClovaRequestBody(request.getPlainText(), systemContent, request.getResponseFormat());
 
         Request httpRequest = new Request.Builder()
             .url(hcx007Property.getUrl())
@@ -122,10 +121,10 @@ public class CreateQuizClovaStudioService implements BaseService<CreateQuizClova
         }
     }
 
-    private String createClovaRequestBody(String plainText, Quiz.QuizType type, String systemContent) {
+    private String createClovaRequestBody(String plainText, String systemContent, ResponseFormat responseFormat) {
         Message systemMessage = new Message("system", List.of(new Content("text", systemContent)));
-        Message userMessage = new Message("user", List.of(new Content("text", "<입력으로 들어온 정리> " + plainText + " 문제 유형: <" + type.name() + ">")));
-        Hcx007Request hcx007Request = Hcx007Request.of(List.of(systemMessage, userMessage), EffortLevel.LOW);
+        Message userMessage = new Message("user", List.of(new Content("text", "<입력으로 들어온 정리> " + plainText)));
+        Hcx007Request hcx007Request = Hcx007Request.of(List.of(systemMessage, userMessage), responseFormat);
 
         String jsonBody = new OkHttpJsonRequest(hcx007Request).convertRequestToString();
         log.debug("Request JSON Body: {}", jsonBody);
@@ -148,12 +147,12 @@ public class CreateQuizClovaStudioService implements BaseService<CreateQuizClova
     @ToString
     public static class CreateQuizClovaStudioRequest implements BaseRequest {
         private String plainText;
-        private Quiz.QuizType type;
         private String promptPath;
+        private ResponseFormat responseFormat;
 
         @Override
         public boolean isValid() {
-            return plainText != null && !plainText.isEmpty() && type != null && promptPath != null && !promptPath.isEmpty();
+            return plainText != null && !plainText.isBlank() && promptPath != null && !promptPath.isBlank() && responseFormat != null;
         }
     }
 
