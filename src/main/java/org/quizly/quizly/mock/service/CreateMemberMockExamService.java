@@ -3,7 +3,6 @@ package org.quizly.quizly.mock.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,6 +17,8 @@ import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
+import org.quizly.quizly.core.util.AsyncTaskUtil;
+import org.quizly.quizly.core.util.TextProcessingUtil;
 import org.quizly.quizly.external.clova.dto.Response.Hcx007MockExamResponse;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService.CreateMemberMockExamRequest;
@@ -50,8 +51,10 @@ public class CreateMemberMockExamService implements
           .build();
     }
 
-    List<String> chunkList = createChunkList(request.getPlainText());
+    List<String> chunkList = TextProcessingUtil.createChunkList(
+        request.getPlainText(), DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP);
     if (chunkList.isEmpty()) {
+      log.error("[CreateMemberMockExamService] Failed to create chunks from plainText");
       return CreateMemberMockExamResponse.builder()
           .success(false)
           .errorCode(CreateMemberMockExamErrorCode.FAILED_CREATE_CHUNK)
@@ -59,9 +62,16 @@ public class CreateMemberMockExamService implements
     }
 
     List<CompletableFuture<CreateMockQuizResponse>> createMockQuizResponseFutureList = requestAsyncMockQuizTasks(
-        chunkList, request.getMockExamTypeList());
+        chunkList, request.getMockExamTypeList()
+    );
     CompletableFuture.allOf(createMockQuizResponseFutureList.toArray(new CompletableFuture[0])).join();
-    List<Hcx007MockExamResponse> hcx007MockExamResponseList = joinAsyncMockQuizTasks(createMockQuizResponseFutureList);
+    List<Hcx007MockExamResponse> hcx007MockExamResponseList = AsyncTaskUtil.joinAsyncTasks(
+        createMockQuizResponseFutureList, response -> {
+          if (response.isSuccess()) {
+            return response.getHcx007MockExamResponseList();
+          }
+          return null;
+        });
 
     if (hcx007MockExamResponseList.isEmpty() || hcx007MockExamResponseList.size() < DEFAULT_MOCK_EXAM_COUNT) {
       log.error("[CreateMemberMockExamService] Failed to generate any mock exams from Clova Studio after all async.");
@@ -101,7 +111,7 @@ public class CreateMemberMockExamService implements
       CompletableFuture<CreateMockQuizResponse> future = createMockQuizService.execute(createMockQuizRequest);
       futures.add(
           future.exceptionally(ex -> {
-            log.error("[requestAsyncMockQuizTasks] Exception: {}", ex.getMessage(), ex);
+            log.error("[CreateMemberMockExamService] Async mock exam creation failed for chunk (length: {})", selectedChunk.length(), ex);
             return null;
           })
       );
@@ -109,42 +119,6 @@ public class CreateMemberMockExamService implements
     return futures;
   }
 
-  private List<Hcx007MockExamResponse> joinAsyncMockQuizTasks(
-      List<CompletableFuture<CreateMockQuizResponse>> futures) {
-
-    return futures.stream()
-        .map(CompletableFuture::join)
-        .filter(response -> response != null && response.isSuccess())
-        .map(CreateMockQuizResponse::getHcx007MockExamResponseList)
-        .filter(Objects::nonNull)
-        .flatMap(List::stream)
-        .toList();
-  }
-
-  private List<String> createChunkList(String text) {
-    List<String> chunkList = new ArrayList<>();
-    if (text == null || text.length() <= DEFAULT_CHUNK_SIZE) {
-      if (text != null && !text.isEmpty()) {
-        chunkList.add(text);
-      }
-      return chunkList;
-    }
-
-    int start = 0;
-    while (start < text.length()) {
-      int end = Math.min(start + DEFAULT_CHUNK_SIZE, text.length());
-      chunkList.add(text.substring(start, end));
-      start += DEFAULT_CHUNK_SIZE - DEFAULT_CHUNK_OVERLAP;
-    }
-    return chunkList;
-  }
-
-  private int countItems(String option) {
-    if (option == null) {
-      return 0;
-    }
-    return option.replaceAll("[\\s,]", "").length();
-  }
 
   private void postProcessingFindMatch(List<Hcx007MockExamResponse> responseList) {
     responseList.stream()
@@ -170,6 +144,13 @@ public class CreateMemberMockExamService implements
         });
       }
     });
+  }
+
+  private int countItems(String option) {
+    if (option == null) {
+      return 0;
+    }
+    return option.replaceAll("[\\s,]", "").length();
   }
 
   @Getter
