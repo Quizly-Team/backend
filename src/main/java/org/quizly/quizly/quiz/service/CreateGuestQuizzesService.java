@@ -1,5 +1,6 @@
 package org.quizly.quizly.quiz.service;
 
+import java.util.concurrent.CompletableFuture;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,11 +17,13 @@ import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.domin.repository.QuizRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
-import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService;
+import org.quizly.quizly.core.util.AsyncTaskUtil;
+import org.quizly.quizly.core.util.TextProcessingUtil;
 import org.quizly.quizly.external.clova.dto.Response.Hcx007QuizResponse;
-import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService.CreateQuizClovaStudioResponse;
 import org.quizly.quizly.quiz.service.CreateGuestQuizzesService.CreateGuestQuizzesRequest;
 import org.quizly.quizly.quiz.service.CreateGuestQuizzesService.CreateGuestQuizzesResponse;
+import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizRequest;
+import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -32,10 +35,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzesRequest, CreateGuestQuizzesResponse> {
 
-  private final CreateQuizClovaStudioService createQuizClovaStudioService;
+  private final CreateQuizService createQuizService;
   private final QuizRepository quizRepository;
 
-  private static final String BASIC_QUIZ_GUEST_PROMPT_PATH = "prompt/basic_quiz_guest.txt";
+  private static final int DEFAULT_QUIZ_COUNT = 3;
+  private static final int DEFAULT_QUIZ_BATCH_SIZE = 3;
+  private static final int DEFAULT_CHUNK_SIZE = 1000;
+  private static final int DEFAULT_CHUNK_OVERLAP = 100;
+
 
   @Override
   public CreateGuestQuizzesResponse execute(CreateGuestQuizzesRequest request) {
@@ -46,24 +53,40 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
           .build();
     }
 
-    CreateQuizClovaStudioResponse clovaResponse = createQuizClovaStudioService.execute(
-        CreateQuizClovaStudioService.CreateQuizClovaStudioRequest.builder()
-            .plainText(request.getPlainText())
-            .type(request.getType())
-            .promptPath(BASIC_QUIZ_GUEST_PROMPT_PATH)
-            .build()
-    );
-
-    if (!clovaResponse.isSuccess()) {
-      log.error("[CreateGuestQuizzesService] Failed to create quiz from Clova Studio. Error: {}", clovaResponse.getErrorCode());
+    List<String> chunkList = TextProcessingUtil.createChunkList(
+        request.getPlainText(), DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP);
+    if (chunkList.isEmpty()) {
+      log.error("[CreateGuestQuizzesService] Failed to create chunks from plainText");
       return CreateGuestQuizzesResponse.builder()
           .success(false)
-          .errorCode(CreateGuestQuizzesErrorCode.FAILED_CREATE_CLOVA_REQUEST)
+          .errorCode(CreateGuestQuizzesErrorCode.FAILED_CREATE_CHUNK)
           .build();
     }
 
-    List<Hcx007QuizResponse> hcx007QuizResponseList = clovaResponse.getHcx007QuizResponseList();
-    if (hcx007QuizResponseList == null || hcx007QuizResponseList.isEmpty()) {
+    Quiz.QuizType type = request.getType();
+    List<CompletableFuture<CreateQuizResponse>> futures = AsyncTaskUtil.requestAsyncTasks(
+        chunkList,
+        DEFAULT_QUIZ_COUNT,
+        DEFAULT_QUIZ_BATCH_SIZE,
+        (chunk, batchSize) -> createQuizService.execute(
+            CreateQuizRequest.builder()
+                .type(type)
+                .quizCount(batchSize)
+                .plainText(chunk)
+                .build()
+        ),
+        "CreateGuestQuizzesService"
+    );
+
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    List<Hcx007QuizResponse> hcx007QuizResponseList = AsyncTaskUtil.joinAsyncTasks(futures, response -> {
+      if (response.isSuccess()) {
+        return response.getHcx007QuizResponseList();
+      }
+      return null;
+    });
+
+    if (hcx007QuizResponseList.isEmpty() || hcx007QuizResponseList.size() < DEFAULT_QUIZ_COUNT) {
       log.info("[CreateGuestQuizzesService] No quizzes were generated from Clova Studio.");
       return CreateGuestQuizzesResponse.builder()
           .success(false)
@@ -71,13 +94,15 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
           .build();
     }
 
-    List<Quiz> quizList = saveQuiz(hcx007QuizResponseList);
+    List<Quiz> quizList = saveQuiz(
+        hcx007QuizResponseList.stream()
+            .limit(DEFAULT_QUIZ_COUNT)
+            .collect(Collectors.toList()));
 
     return CreateGuestQuizzesResponse.builder().quizList(quizList).build();
   }
 
   private List<Quiz> saveQuiz(List<Hcx007QuizResponse> hcx007QuizResponseList) {
-    Boolean guest = true;
     List<Quiz> quizList = hcx007QuizResponseList.stream()
         .map(hcx007QuizResponse -> Quiz.builder()
             .quizText(hcx007QuizResponse.getQuiz())
@@ -85,13 +110,14 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
             .quizType(hcx007QuizResponse.getType())
             .explanation(hcx007QuizResponse.getExplanation())
             .options(hcx007QuizResponse.getOptions())
-            .topic(hcx007QuizResponse.getTopic())
+            .topic("테스트")
             .user(null)
-            .guest(guest)
+            .guest(true)
             .build())
         .collect(Collectors.toList());
     return quizRepository.saveAll(quizList);
   }
+
 
   @Getter
   @RequiredArgsConstructor
@@ -99,6 +125,7 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     FAILED_CREATE_CLOVA_REQUEST(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버 요청 생성에 실패하였습니다."),
+    FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "텍스트 청크 생성에 실패하였습니다."),
     CLOVA_QUIZ_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버에서 퀴즈 생성에 실패하였습니다.");
 
     private final HttpStatus httpStatus;

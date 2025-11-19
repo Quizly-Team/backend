@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.domin.shared.BaseEntity;
@@ -20,9 +21,13 @@ import org.quizly.quizly.core.domin.shared.BaseEntity;
 @Table(name = "quiz")
 public class Quiz extends BaseEntity {
 
+  @Getter
+  @RequiredArgsConstructor
   public enum QuizType {
-    MULTIPLE_CHOICE,
-    TRUE_FALSE
+    MULTIPLE_CHOICE("prompt/basic_quiz/multiple_choice.txt"),
+    TRUE_FALSE("prompt/basic_quiz/true_false.txt");
+
+    private final String promptPath;
   }
 
   @Column(nullable = false)
