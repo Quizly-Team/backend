@@ -83,9 +83,9 @@ public class CreateMockQuizService implements BaseAsyncService<CreateMockQuizReq
     TypeCategory category = request.getType().getTypeCategory();
 
     if (category == TypeCategory.DESCRIPTIVE) {
-      return ResponseFormatUtil.createDescriptiveMockExamResponseFormat(quizCount);
+      return ResponseFormatUtil.createDescriptiveQuizResponseFormat(quizCount);
     } else {
-      return ResponseFormatUtil.createSelectionMockExamResponseFormat(quizCount);
+      return ResponseFormatUtil.createSelectionQuizResponseFormat(quizCount);
     }
   }
 
