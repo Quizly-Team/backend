@@ -42,7 +42,7 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
   private static final int DEFAULT_QUIZ_BATCH_SIZE = 3;
   private static final int DEFAULT_CHUNK_SIZE = 1000;
   private static final int DEFAULT_CHUNK_OVERLAP = 100;
-
+  private static final String GUEST_TOPIC = "guest";
 
   @Override
   public CreateGuestQuizzesResponse execute(CreateGuestQuizzesRequest request) {
@@ -110,7 +110,7 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
             .quizType(hcx007QuizResponse.getType())
             .explanation(hcx007QuizResponse.getExplanation())
             .options(hcx007QuizResponse.getOptions())
-            .topic("테스트")
+            .topic(GUEST_TOPIC)
             .user(null)
             .guest(true)
             .build())
