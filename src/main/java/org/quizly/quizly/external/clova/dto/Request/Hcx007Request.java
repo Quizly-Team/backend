@@ -75,50 +75,85 @@ public class Hcx007Request {
 
   public record ResponseFormat(
       String type,
-      Schema schema
+      Object schema
   ) {
-    public record Schema(
-        String type,
-        Items items,
-        Integer minItems,
-        Integer maxItems
-    ) {
-      public record Items(
-          String type,
-          List<String> required,
-          Properties properties
-      ) {
-        public record Properties(
-            Property quiz,
-            @JsonProperty("type") TypeProperty type,
-            OptionsProperty options,
-            Property answer,
-            Property explanation
-        ) {
-          public record Property(
-              String type,
-              String description
-          ) {}
-
-          public record TypeProperty(
-              String type,
-              String description,
-              @JsonProperty("enum") List<String> enumValues
-          ) {}
-
-          public record OptionsProperty(
-              String type,
-              String description,
-              ItemsInfo items,
-              Integer minItems,
-              Integer maxItems
-          ) {
-            public record ItemsInfo(
-                String type
-            ) {}
-          }
-        }
-      }
+    public static ResponseFormat json(ArraySchema schema) {
+      return new ResponseFormat("json", schema);
     }
+
+    public static ResponseFormat json(ObjectSchema schema) {
+      return new ResponseFormat("json", schema);
+    }
+  }
+
+  // Quiz, MockExam Schema
+  public record ArraySchema(
+      String type,
+      Items items,
+      Integer minItems,
+      Integer maxItems
+  ) {
+    public static ArraySchema of(Items items, int minItems, int maxItems) {
+      return new ArraySchema("array", items, minItems, maxItems);
+    }
+  }
+
+  // Topic Schema
+  public record ObjectSchema(
+      String type,
+      List<String> required,
+      Object properties
+  ) {
+    public static ObjectSchema of(List<String> required, Object properties) {
+      return new ObjectSchema("object", required, properties);
+    }
+  }
+
+  // ArraySchema 내부 데이터
+  public record Items(
+      String type,
+      List<String> required,
+      Object properties
+  ) {
+    public static Items of(List<String> required, Object properties) {
+      return new Items("object", required, properties);
+    }
+  }
+
+  public record QuizProperties(
+      PropertyField quiz,
+      @JsonProperty("type") TypePropertyField type,
+      OptionsPropertyField options,
+      PropertyField answer,
+      PropertyField explanation
+  ) {}
+
+  // ObjectSchema 내부 데이터
+  public record TopicProperties(
+      PropertyField topic
+  ) {}
+
+  // 공통 필드 타입들
+  public record PropertyField(
+      String type,
+      String description
+  ) {}
+
+  public record TypePropertyField(
+      String type,
+      String description,
+      @JsonProperty("enum") List<String> enumValues
+  ) {}
+
+  public record OptionsPropertyField(
+      String type,
+      String description,
+      ItemsInfo items,
+      Integer minItems,
+      Integer maxItems
+  ) {
+    public record ItemsInfo(
+        String type
+    ) {}
   }
 }

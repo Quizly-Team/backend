@@ -29,6 +29,8 @@ import org.quizly.quizly.quiz.service.CreateMemberQuizzesService.CreateMemberQui
 import org.quizly.quizly.quiz.service.CreateMemberQuizzesService.CreateMemberQuizzesResponse;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizRequest;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizResponse;
+import org.quizly.quizly.quiz.service.CreateTopicService.CreateTopicRequest;
+import org.quizly.quizly.quiz.service.CreateTopicService.CreateTopicResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +40,7 @@ import org.springframework.stereotype.Service;
 public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizzesRequest, CreateMemberQuizzesResponse> {
 
   private final CreateQuizService createQuizService;
+  private final CreateTopicService createTopicService;
   private final QuizRepository quizRepository;
   private final UserRepository userRepository;
 
@@ -68,6 +71,19 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
       return CreateMemberQuizzesResponse.builder()
           .success(false)
           .errorCode(CreateMemberQuizzesErrorCode.NOT_FOUND_USER)
+          .build();
+    }
+
+    CreateTopicResponse createTopicResponse = createTopicService.execute(
+        CreateTopicRequest.builder()
+            .plainText(request.getPlainText())
+            .build());
+
+    if (createTopicResponse == null || !createTopicResponse.isSuccess()) {
+      log.error("[CreateMemberQuizzesService] Failed to create topic. Response: {}", createTopicResponse);
+      return CreateMemberQuizzesResponse.builder()
+          .success(false)
+          .errorCode(CreateMemberQuizzesErrorCode.FAILED_CREATE_TOPIC)
           .build();
     }
 
@@ -116,14 +132,16 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
         hcx007QuizResponseList.stream()
             .limit(DEFAULT_QUIZ_COUNT)
             .collect(Collectors.toList()),
-        user);
+        user,
+        createTopicResponse.getTopic()
+        );
 
     return CreateMemberQuizzesResponse.builder()
         .quizList(quizList)
         .build();
   }
 
-  private List<Quiz> saveQuiz(List<Hcx007QuizResponse> hcx007QuizResponseList, User user) {
+  private List<Quiz> saveQuiz(List<Hcx007QuizResponse> hcx007QuizResponseList, User user, String topic) {
     List<Quiz> quizList = hcx007QuizResponseList.stream()
         .map(hcx007QuizResponse -> Quiz.builder()
             .quizText(hcx007QuizResponse.getQuiz())
@@ -131,7 +149,7 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
             .quizType(hcx007QuizResponse.getType())
             .explanation(hcx007QuizResponse.getExplanation())
             .options(hcx007QuizResponse.getOptions())
-            .topic("테스트")
+            .topic(topic)
             .user(user)
             .guest(false)
             .build())
@@ -146,6 +164,7 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
+    FAILED_CREATE_TOPIC(HttpStatus.INTERNAL_SERVER_ERROR, "주제 생성에 실패하였습니다."),
     FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "텍스트 청크 생성에 실패하였습니다."),
     FAILED_CREATE_CLOVA_REQUEST(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버 요청 생성에 실패하였습니다."),
     CLOVA_QUIZ_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버에서 퀴즈 생성에 실패하였습니다.");
