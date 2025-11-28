@@ -59,14 +59,15 @@ public class GradeMemberQuizzesService implements
           .errorCode(GradeMemberQuizzesErrorCode.NOT_EXIST_PROVIDER_ID)
           .build();
     }
-    User user = userRepository.findByProviderId(providerId);
-    if (user == null) {
+    Optional<User> userOptional = userRepository.findByProviderId(providerId);
+    if (userOptional.isEmpty()) {
       log.error("[GradeMemberQuizzesService] User not found for providerId: {}", providerId);
       return GradeMemberQuizzesResponse.builder()
           .success(false)
           .errorCode(GradeMemberQuizzesErrorCode.NOT_FOUND_USER)
           .build();
     }
+    User user = userOptional.get();
 
     Optional<Quiz> optionalQuiz = quizRepository.findById(request.getQuizId());
     if (optionalQuiz.isEmpty()) {

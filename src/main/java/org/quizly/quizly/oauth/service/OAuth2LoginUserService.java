@@ -1,5 +1,6 @@
 package org.quizly.quizly.oauth.service;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quizly.quizly.core.domin.entity.User;
@@ -52,13 +53,11 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
   }
 
   private User processUser(OAuth2UserInfo oAuth2UserInfo) {
-    User existData = userRepository.findByProviderId(oAuth2UserInfo.getProviderId());
+    Optional<User> existDataOptional = userRepository.findByProviderId(oAuth2UserInfo.getProviderId());
 
-    if (existData == null) {
-      return createUser(oAuth2UserInfo);
-    }
+    return existDataOptional.map(user -> updateUser(user, oAuth2UserInfo))
+        .orElseGet(() -> createUser(oAuth2UserInfo));
 
-    return updateUser(existData, oAuth2UserInfo);
   }
 
   private User createUser(OAuth2UserInfo oAuth2UserInfo) {

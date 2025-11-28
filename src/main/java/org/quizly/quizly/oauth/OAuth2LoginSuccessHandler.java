@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.core.domin.entity.RefreshToken;
 import org.quizly.quizly.core.domin.repository.RefreshTokenRepository;
@@ -51,9 +52,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     String accessToken = jwtProvider.generateAccessToken(providerId, role);
     String refreshToken = jwtProvider.generateRefreshToken(providerId);
 
-    RefreshToken refreshTokenEntity = refreshTokenRepository.findByProviderId(providerId);
-    if (refreshTokenEntity != null) {
-      refreshTokenEntity.setToken(refreshToken);
+    Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByProviderId(providerId);
+    if (refreshTokenOptional.isPresent()) {
+      refreshTokenOptional.get().setToken(refreshToken);
     } else {
       refreshTokenRepository.save(new RefreshToken(providerId, customUserDetails.getName(), refreshToken));
     }

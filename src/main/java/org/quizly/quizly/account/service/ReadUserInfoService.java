@@ -1,5 +1,6 @@
 package org.quizly.quizly.account.service;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -47,14 +48,15 @@ public class ReadUserInfoService implements BaseService<ReadUserInfoRequest, Rea
           .errorCode(ReadUserInfoErrorCode.NOT_EXIST_PROVIDER_ID)
           .build();
     }
-    User user = userRepository.findByProviderId(providerId);
-    if (user == null) {
+    Optional<User> userOptional = userRepository.findByProviderId(providerId);
+    if (userOptional.isEmpty()) {
       log.error("[ReadUserInfoService] User not found for providerId: {}", providerId);
       return ReadUserInfoResponse.builder()
           .success(false)
           .errorCode(ReadUserInfoErrorCode.NOT_FOUND_USER)
           .build();
     }
+    User user = userOptional.get();
 
     return ReadUserInfoResponse.builder()
         .name(user.getName())

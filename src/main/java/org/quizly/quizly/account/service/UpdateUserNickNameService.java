@@ -1,5 +1,6 @@
 package org.quizly.quizly.account.service;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -48,14 +49,15 @@ public class UpdateUserNickNameService implements BaseService<UpdateUserNickName
           .build();
     }
 
-    User user = userRepository.findByProviderId(providerId);
-    if (user == null) {
+    Optional<User> userOptional = userRepository.findByProviderId(providerId);
+    if (userOptional.isEmpty()) {
       log.error("[UpdateUserNickNameService] User not found for providerId: {}", providerId);
       return UpdateUserNickNameResponse.builder()
           .success(false)
           .errorCode(UpdateUserNickNameErrorCode.NOT_FOUND_USER)
           .build();
     }
+    User user = userOptional.get();
 
     String newNickName = request.getNickName();
     UpdateUserNickNameErrorCode validationError = validateNickName(newNickName);

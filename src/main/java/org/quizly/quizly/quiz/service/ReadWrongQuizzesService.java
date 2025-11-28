@@ -1,6 +1,7 @@
 package org.quizly.quizly.quiz.service;
 
 import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -50,14 +51,15 @@ public class ReadWrongQuizzesService implements BaseService<ReadWrongQuizzesRequ
           .errorCode(ReadWrongQuizzesErrorCode.NOT_EXIST_PROVIDER_ID)
           .build();
     }
-    User user = userRepository.findByProviderId(providerId);
-    if (user == null) {
+    Optional<User> userOptional = userRepository.findByProviderId(providerId);
+    if (userOptional.isEmpty()) {
       log.error("[ReadWrongQuizzesService] User not found for providerId: {}", providerId);
       return ReadWrongQuizzesResponse.builder()
           .success(false)
           .errorCode(ReadWrongQuizzesErrorCode.NOT_FOUND_USER)
           .build();
     }
+    User user = userOptional.get();
 
     List<SolveHistory> wrongSolveHistoryList = solveHistoryRepository.findLatestWrongSolveHistoriesByUser(user);
 

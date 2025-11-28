@@ -1,6 +1,7 @@
 package org.quizly.quizly.quiz.service;
 
 import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -53,14 +54,15 @@ public class UpdateQuizzesTopicService implements
           .errorCode(UpdateQuizzesTopicErrorCode.NOT_EXIST_PROVIDER_ID)
           .build();
     }
-    User user = userRepository.findByProviderId(providerId);
-    if (user == null) {
+    Optional<User> userOptional = userRepository.findByProviderId(providerId);
+    if (userOptional.isEmpty()) {
       log.error("[UpdateQuizzesTopicService] User not found for providerId: {}", providerId);
       return UpdateQuizzesTopicResponse.builder()
           .success(false)
           .errorCode(UpdateQuizzesTopicErrorCode.NOT_FOUND_USER)
           .build();
     }
+    User user = userOptional.get();
 
     List<Quiz> quizList = quizRepository.findAllById(request.getQuizIdList());
 
