@@ -1,6 +1,7 @@
 package org.quizly.quizly.quiz.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -65,14 +66,16 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
           .errorCode(CreateMemberQuizzesErrorCode.NOT_EXIST_PROVIDER_ID)
           .build();
     }
-    User user = userRepository.findByProviderId(providerId);
-    if (user == null) {
+
+    Optional<User> userOptional = userRepository.findByProviderId(providerId);
+    if (userOptional.isEmpty()) {
       log.error("[CreateMemberQuizzesService] User not found for providerId: {}", providerId);
       return CreateMemberQuizzesResponse.builder()
           .success(false)
           .errorCode(CreateMemberQuizzesErrorCode.NOT_FOUND_USER)
           .build();
     }
+    User user = userOptional.get();
 
     CreateTopicResponse createTopicResponse = createTopicService.execute(
         CreateTopicRequest.builder()
