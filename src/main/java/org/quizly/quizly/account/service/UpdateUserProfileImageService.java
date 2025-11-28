@@ -1,5 +1,6 @@
 package org.quizly.quizly.account.service;
 
+import java.util.Optional;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
@@ -45,14 +46,15 @@ public class UpdateUserProfileImageService implements BaseService<
                     .errorCode(UpdateUserProfileImageErrorCode.NOT_EXIST_PROVIDER_ID)
                     .build();
         }
-        User user = userRepository.findByProviderId(providerId);
-        if (user == null) {
+        Optional<User> userOptional = userRepository.findByProviderId(providerId);
+        if (userOptional.isEmpty()) {
             log.error("[UpdateUserProfileImageService] User not found for providerId: {}", providerId);
             return UpdateUserProfileImageResponse.builder()
                     .success(false)
                     .errorCode(UpdateUserProfileImageErrorCode.NOT_FOUND_USER)
                     .build();
         }
+        User user = userOptional.get();
 
         try {
             ProfileImageService.UploadProfileImageRequest uploadRequest =

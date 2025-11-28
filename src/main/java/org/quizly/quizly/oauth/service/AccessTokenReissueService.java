@@ -1,5 +1,6 @@
 package org.quizly.quizly.oauth.service;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,7 +15,6 @@ import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.RefreshToken;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.entity.User.Role;
 import org.quizly.quizly.core.domin.repository.RefreshTokenRepository;
 import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
@@ -59,26 +59,28 @@ public class AccessTokenReissueService implements BaseService<AccessTokenReissue
 
         String providerId = jwtProvider.getProviderId(refreshToken);
 
-        User user = userRepository.findByProviderId(providerId);
-        if (user == null) {
-            log.warn("User not found for providerId derived from a refresh token. ProviderId: {}", providerId);
+        Optional<User> userOptional = userRepository.findByProviderId(providerId);
+        if (userOptional.isEmpty()) {
+            log.warn("[AccessTokenReissueService] User not found for providerId derived from a refresh token. ProviderId: {}", providerId);
             return AccessTokenReissueResponse.builder()
                 .success(false)
                 .errorCode(AccessTokenReissueErrorCode.USER_NOT_FOUND)
                 .build();
         }
+        User user = userOptional.get();
 
         String role = user.getRole().getKey();
 
-        RefreshToken refreshTokenEntity = refreshTokenRepository.findByProviderId(providerId);
-
-        if (refreshTokenEntity == null) {
+        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByProviderId(providerId);
+        if (refreshTokenOptional.isEmpty()) {
             return AccessTokenReissueResponse.builder()
                 .success(false)
                 .errorCode(AccessTokenReissueErrorCode.REFRESH_TOKEN_NOT_FOUND)
                 .build();
         }
-        if (!refreshTokenEntity.getToken().equals(refreshToken)) {
+        RefreshToken savedRefreshToken = refreshTokenOptional.get();
+
+        if (!savedRefreshToken.getToken().equals(refreshToken)) {
             log.warn("Refresh Token Mismatch Detected. ProviderId: {}", providerId);
             return AccessTokenReissueResponse.builder()
                 .success(false)
@@ -88,7 +90,7 @@ public class AccessTokenReissueService implements BaseService<AccessTokenReissue
         String newAccessToken = jwtProvider.generateAccessToken(providerId, role);
         String newRefreshToken = jwtProvider.generateRefreshToken(providerId);
 
-        refreshTokenEntity.setToken(newRefreshToken);
+        savedRefreshToken.setToken(newRefreshToken);
 
         return AccessTokenReissueResponse.builder()
             .accessToken(newAccessToken)
