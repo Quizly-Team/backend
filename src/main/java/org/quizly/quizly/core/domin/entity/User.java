@@ -2,8 +2,6 @@ package org.quizly.quizly.core.domin.entity;
 
 import jakarta.persistence.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -74,10 +72,4 @@ public class User extends BaseEntity {
       this.profileImageUrl = "https://kr.object.ncloudstorage.com/quizly-profile-images/defaults/default_profile.png";
     }
   }
-
-  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<Quiz> quizList = new ArrayList<>();
-
-  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<SolveHistory> solveHistories = new ArrayList<>();
 }
