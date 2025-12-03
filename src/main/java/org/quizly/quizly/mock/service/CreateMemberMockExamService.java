@@ -37,7 +37,9 @@ public class CreateMemberMockExamService implements
 
   private final CreateMockQuizService createMockQuizService;
 
-  private static final int DEFAULT_MOCK_EXAM_COUNT = 20;
+  private static final int MIN_QUIZ_COUNT = 10;
+  private static final int MAX_QUIZ_COUNT = 30;
+  private static final int DEFAULT_QUIZ_COUNT = 20;
   private static final int DEFAULT_MOCK_EXAM_BATCH_SIZE = 2;
   private static final int DEFAULT_CHUNK_SIZE = 700;
   private static final int DEFAULT_CHUNK_OVERLAP = 100;
@@ -48,6 +50,17 @@ public class CreateMemberMockExamService implements
       return CreateMemberMockExamResponse.builder()
           .success(false)
           .errorCode(CreateMemberMockExamErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+          .build();
+    }
+
+    int quizCount = request.getQuizCount() != null
+        ? request.getQuizCount()
+        : DEFAULT_QUIZ_COUNT;
+
+    if (quizCount < MIN_QUIZ_COUNT || quizCount > MAX_QUIZ_COUNT) {
+      return CreateMemberMockExamResponse.builder()
+          .success(false)
+          .errorCode(CreateMemberMockExamErrorCode.INVALID_QUIZ_COUNT_RANGE)
           .build();
     }
 
@@ -62,7 +75,7 @@ public class CreateMemberMockExamService implements
     }
 
     List<CompletableFuture<CreateMockQuizResponse>> createMockQuizResponseFutureList = requestAsyncMockQuizTasks(
-        chunkList, request.getMockExamTypeList()
+        chunkList, request.getMockExamTypeList(), quizCount
     );
     CompletableFuture.allOf(createMockQuizResponseFutureList.toArray(new CompletableFuture[0])).join();
     List<Hcx007MockExamResponse> hcx007MockExamResponseList = AsyncTaskUtil.joinAsyncTasks(
@@ -73,7 +86,7 @@ public class CreateMemberMockExamService implements
           return null;
         });
 
-    if (hcx007MockExamResponseList.isEmpty() || hcx007MockExamResponseList.size() < DEFAULT_MOCK_EXAM_COUNT) {
+    if (hcx007MockExamResponseList.isEmpty() || hcx007MockExamResponseList.size() < quizCount) {
       log.error("[CreateMemberMockExamService] Failed to generate any mock exams from Clova Studio after all async.");
       return CreateMemberMockExamResponse.builder()
           .success(false)
@@ -90,11 +103,11 @@ public class CreateMemberMockExamService implements
   }
 
   private List<CompletableFuture<CreateMockQuizResponse>> requestAsyncMockQuizTasks(
-      List<String> chunkList, List<MockExamType> mockExamTypeList) {
+      List<String> chunkList, List<MockExamType> mockExamTypeList, int quizCount) {
 
     Collections.shuffle(chunkList);
     List<CompletableFuture<CreateMockQuizResponse>> futures = new ArrayList<>();
-    int totalTasks = (DEFAULT_MOCK_EXAM_COUNT + DEFAULT_MOCK_EXAM_BATCH_SIZE - 1) / DEFAULT_MOCK_EXAM_BATCH_SIZE;
+    int totalTasks = (quizCount + DEFAULT_MOCK_EXAM_BATCH_SIZE - 1) / DEFAULT_MOCK_EXAM_BATCH_SIZE;
     int mockExamTypeListSize = mockExamTypeList.size();
     int chunkListSize = chunkList.size();
 
@@ -159,6 +172,7 @@ public class CreateMemberMockExamService implements
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
+    INVALID_QUIZ_COUNT_RANGE(HttpStatus.BAD_REQUEST, "모의고사 문제 개수는 10개 이상 30개 이하여야 합니다."),
     FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 입력을 chunk 단위 분리에 실패하였습니다."),
     CLOVA_MOCK_EXAM_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버에서 모의고사 생성에 실패하였습니다.");
 
@@ -184,6 +198,8 @@ public class CreateMemberMockExamService implements
     private List<MockExamType> mockExamTypeList;
 
     private UserPrincipal userPrincipal;
+
+    private Integer quizCount;
 
     @Override
     public boolean isValid() {
