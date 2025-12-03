@@ -4,17 +4,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
-import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.external.clova.dto.Response.Hcx007MockExamResponse;
-import org.quizly.quizly.external.clova.service.CreateMockExamClovaStudioService;
 import org.quizly.quizly.external.ocr.service.ClovaOcrService;
 import org.quizly.quizly.external.ocr.service.ExtractTextFromOcrService;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest;
 import org.quizly.quizly.mock.dto.response.CreateMemberMockExamResponse;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService;
 import org.quizly.quizly.oauth.UserPrincipal;
-import org.quizly.quizly.quiz.service.CreateMemberQuizzesService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,6 +41,7 @@ public class CreateMemberOcrMockExamController {
     public ResponseEntity<CreateMemberMockExamResponse> createOcrMemberMockExam(
             @RequestParam("file") MultipartFile file,
             @RequestParam("mockExamTypeList") List<CreateMemberMockExamRequest.MockExamType> mockExamTypeList,
+            @RequestParam(value = "quizCount", required = false) Integer quizCount,
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
         ClovaOcrService.ClovaOcrRequest ocrRequest = ClovaOcrService.ClovaOcrRequest.builder()
@@ -65,6 +63,7 @@ public class CreateMemberOcrMockExamController {
                         .plainText(plainText)
                         .mockExamTypeList(mockExamTypeList)
                         .userPrincipal(userPrincipal)
+                        .quizCount(quizCount)
                         .build());
 
         if (serviceResponse == null || !serviceResponse.isSuccess()) {

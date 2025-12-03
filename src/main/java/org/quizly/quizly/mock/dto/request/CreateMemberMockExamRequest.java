@@ -40,6 +40,9 @@ public class CreateMemberMockExamRequest implements BaseRequest {
   @Schema(description = "모의고사 유형 목록", example = "[\"FIND_MATCH\", \"ESSAY\"]")
   private List<MockExamType> mockExamTypeList;
 
+  @Schema(description = "모의고사 문제 개수 (기본값: 20, 범위: 10~30)", nullable = true, example = "20")
+  private Integer quizCount;
+
   @Override
   public boolean isValid() {
     return plainText != null && mockExamTypeList != null && !mockExamTypeList.isEmpty();
