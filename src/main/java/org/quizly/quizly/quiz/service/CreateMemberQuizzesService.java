@@ -46,8 +46,8 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
   private final UserRepository userRepository;
 
   private static final int DEFAULT_QUIZ_COUNT = 10;
-  private static final int DEFAULT_QUIZ_BATCH_SIZE = 3;
-  private static final int DEFAULT_CHUNK_SIZE = 1000;
+  private static final int DEFAULT_QUIZ_BATCH_SIZE = 2;
+  private static final int DEFAULT_CHUNK_SIZE = 500;
   private static final int DEFAULT_CHUNK_OVERLAP = 100;
 
   @Override

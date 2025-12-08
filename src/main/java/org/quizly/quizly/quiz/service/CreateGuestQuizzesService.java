@@ -39,8 +39,8 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
   private final QuizRepository quizRepository;
 
   private static final int DEFAULT_QUIZ_COUNT = 3;
-  private static final int DEFAULT_QUIZ_BATCH_SIZE = 3;
-  private static final int DEFAULT_CHUNK_SIZE = 1000;
+  private static final int DEFAULT_QUIZ_BATCH_SIZE = 2;
+  private static final int DEFAULT_CHUNK_SIZE = 500;
   private static final int DEFAULT_CHUNK_OVERLAP = 100;
   private static final String GUEST_TOPIC = "guest";
 
