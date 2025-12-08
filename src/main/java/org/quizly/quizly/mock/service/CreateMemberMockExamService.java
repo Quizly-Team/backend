@@ -41,8 +41,10 @@ public class CreateMemberMockExamService implements
   private static final int MAX_QUIZ_COUNT = 30;
   private static final int DEFAULT_QUIZ_COUNT = 20;
   private static final int DEFAULT_MOCK_EXAM_BATCH_SIZE = 2;
-  private static final int DEFAULT_CHUNK_SIZE = 700;
+  private static final int DEFAULT_CHUNK_SIZE = 500;
   private static final int DEFAULT_CHUNK_OVERLAP = 100;
+  private static final int MIN_CHUNK_SIZE = 200;
+
 
   @Override
   public CreateMemberMockExamResponse execute(CreateMemberMockExamRequest request) {
@@ -74,6 +76,8 @@ public class CreateMemberMockExamService implements
           .build();
     }
 
+    postProcessingChunkList(chunkList);
+
     List<CompletableFuture<CreateMockQuizResponse>> createMockQuizResponseFutureList = requestAsyncMockQuizTasks(
         chunkList, request.getMockExamTypeList(), quizCount
     );
@@ -100,6 +104,25 @@ public class CreateMemberMockExamService implements
         .quizList(hcx007MockExamResponseList)
         .success(true)
         .build();
+  }
+
+  private void postProcessingChunkList(List<String> chunkList) {
+    if (chunkList.size() <= 1) {
+      return;
+    }
+
+    int lastIndex = chunkList.size() - 1;
+    String lastChunk = chunkList.get(lastIndex);
+
+    if (lastChunk.length() <= MIN_CHUNK_SIZE) {
+      if (lastChunk.length() <= DEFAULT_CHUNK_OVERLAP) {
+        chunkList.remove(lastIndex);
+      } else {
+        String targetChunk = chunkList.get(lastIndex - 1);
+        chunkList.set(lastIndex - 1, targetChunk + lastChunk.substring(DEFAULT_CHUNK_OVERLAP));
+        chunkList.remove(lastIndex);
+      }
+    }
   }
 
   private List<CompletableFuture<CreateMockQuizResponse>> requestAsyncMockQuizTasks(
