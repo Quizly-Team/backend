@@ -1,5 +1,4 @@
 ## Quizly
-
 <img width="75%" alt="Image" src="https://github.com/user-attachments/assets/d787acb8-ec06-4bbc-8935-11527a86eb8f" />
 
 ## 소개 영상
