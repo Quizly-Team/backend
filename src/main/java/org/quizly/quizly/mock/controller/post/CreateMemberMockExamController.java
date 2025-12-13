@@ -44,7 +44,6 @@ public class CreateMemberMockExamController {
           .plainText(request.getPlainText())
           .mockExamTypeList(request.getMockExamTypeList())
           .userPrincipal(userPrincipal)
-          .quizCount(request.getQuizCount())
           .build());
 
     if (serviceResponse == null || !serviceResponse.isSuccess()) {

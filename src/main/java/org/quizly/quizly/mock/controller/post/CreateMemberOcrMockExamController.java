@@ -41,7 +41,6 @@ public class CreateMemberOcrMockExamController {
     public ResponseEntity<CreateMemberMockExamResponse> createOcrMemberMockExam(
             @RequestParam("file") MultipartFile file,
             @RequestParam("mockExamTypeList") List<CreateMemberMockExamRequest.MockExamType> mockExamTypeList,
-            @RequestParam(value = "quizCount", required = false) Integer quizCount,
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
         ClovaOcrService.ClovaOcrRequest ocrRequest = ClovaOcrService.ClovaOcrRequest.builder()
@@ -63,7 +62,6 @@ public class CreateMemberOcrMockExamController {
                         .plainText(plainText)
                         .mockExamTypeList(mockExamTypeList)
                         .userPrincipal(userPrincipal)
-                        .quizCount(quizCount)
                         .build());
 
         if (serviceResponse == null || !serviceResponse.isSuccess()) {

@@ -39,7 +39,6 @@ public class CreateMemberMockExamService implements
 
   private static final int MIN_QUIZ_COUNT = 10;
   private static final int MAX_QUIZ_COUNT = 30;
-  private static final int DEFAULT_QUIZ_COUNT = 20;
   private static final int DEFAULT_MOCK_EXAM_BATCH_SIZE = 2;
   private static final int DEFAULT_CHUNK_SIZE = 500;
   private static final int DEFAULT_CHUNK_OVERLAP = 100;
@@ -55,17 +54,6 @@ public class CreateMemberMockExamService implements
           .build();
     }
 
-    int quizCount = request.getQuizCount() != null
-        ? request.getQuizCount()
-        : DEFAULT_QUIZ_COUNT;
-
-    if (quizCount < MIN_QUIZ_COUNT || quizCount > MAX_QUIZ_COUNT) {
-      return CreateMemberMockExamResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberMockExamErrorCode.INVALID_QUIZ_COUNT_RANGE)
-          .build();
-    }
-
     List<String> chunkList = TextProcessingUtil.createChunkList(
         request.getPlainText(), DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP);
     if (chunkList.isEmpty()) {
@@ -75,8 +63,9 @@ public class CreateMemberMockExamService implements
           .errorCode(CreateMemberMockExamErrorCode.FAILED_CREATE_CHUNK)
           .build();
     }
-
     postProcessingChunkList(chunkList);
+
+    int quizCount = calculateQuizCount(chunkList.size());
 
     List<CompletableFuture<CreateMockQuizResponse>> createMockQuizResponseFutureList = requestAsyncMockQuizTasks(
         chunkList, request.getMockExamTypeList(), quizCount
@@ -187,6 +176,14 @@ public class CreateMemberMockExamService implements
       return 0;
     }
     return option.replaceAll("[\\s,]", "").length();
+  }
+
+  private int calculateQuizCount(int listSize) {
+    int quizCount = listSize * DEFAULT_MOCK_EXAM_BATCH_SIZE;
+
+    if (quizCount < MIN_QUIZ_COUNT) return MIN_QUIZ_COUNT;
+    if (quizCount > MAX_QUIZ_COUNT) return MAX_QUIZ_COUNT;
+    return quizCount;
   }
 
   @Getter
