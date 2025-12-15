@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
+import org.quizly.quizly.core.util.TextProcessingUtil;
 import org.quizly.quizly.external.clova.dto.Response.Hcx007MockExamResponse;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest;
 import org.quizly.quizly.mock.dto.response.CreateMemberMockExamResponse;
@@ -39,12 +40,22 @@ public class CreateMemberMockExamController {
       @RequestBody CreateMemberMockExamRequest request,
       @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-    CreateMemberMockExamService.CreateMemberMockExamResponse serviceResponse = createMemberMockExamService.execute(
-        CreateMemberMockExamService.CreateMemberMockExamRequest.builder()
-          .plainText(request.getPlainText())
-          .mockExamTypeList(request.getMockExamTypeList())
-          .userPrincipal(userPrincipal)
-          .build());
+
+    List<String> chunkList =
+            TextProcessingUtil.createChunkList(
+                    request.getPlainText(), 500, 100
+            );
+
+    CreateMemberMockExamService.CreateMemberMockExamResponse serviceResponse =
+            createMemberMockExamService.execute(
+                    CreateMemberMockExamService.CreateMemberMockExamRequest.builder()
+                            .chunkList(chunkList)
+                            .mockExamTypeList(request.getMockExamTypeList())
+                            .userPrincipal(userPrincipal)
+                            .build()
+            );
+
+
 
     if (serviceResponse == null || !serviceResponse.isSuccess()) {
       Optional.ofNullable(serviceResponse)
