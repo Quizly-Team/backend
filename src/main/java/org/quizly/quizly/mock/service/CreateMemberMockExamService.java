@@ -54,8 +54,9 @@ public class CreateMemberMockExamService implements
           .build();
     }
 
-    List<String> chunkList = TextProcessingUtil.createChunkList(
-        request.getPlainText(), DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP);
+
+    List<String> chunkList = request.getChunkList();
+
     if (chunkList.isEmpty()) {
       log.error("[CreateMemberMockExamService] Failed to create chunks from plainText");
       return CreateMemberMockExamResponse.builder()
@@ -213,7 +214,7 @@ public class CreateMemberMockExamService implements
   @ToString
   public static class CreateMemberMockExamRequest implements BaseRequest {
 
-    private String plainText;
+    private List<String> chunkList;
 
     private List<MockExamType> mockExamTypeList;
 
@@ -223,7 +224,7 @@ public class CreateMemberMockExamService implements
 
     @Override
     public boolean isValid() {
-      return plainText != null && !plainText.isEmpty() && mockExamTypeList != null
+      return chunkList != null && !chunkList.isEmpty() && mockExamTypeList != null
           && !mockExamTypeList.isEmpty() && userPrincipal != null;
     }
   }
