@@ -13,6 +13,13 @@ import java.util.Optional;
 
 public interface UserQuizTypeDailySummaryRepository extends JpaRepository<UserQuizTypeDailySummary, Long> {
 
+  @Query("SELECT uqtds FROM UserQuizTypeDailySummary uqtds WHERE uqtds.user = :user AND uqtds.date BETWEEN :startDate AND :endDate")
+  List<UserQuizTypeDailySummary> findByUserAndDateBetween(
+      @Param("user") User user,
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate
+  );
+
   Optional<UserQuizTypeDailySummary> findByUserAndQuizTypeAndDate(
       User user,
       QuizType quizType,
