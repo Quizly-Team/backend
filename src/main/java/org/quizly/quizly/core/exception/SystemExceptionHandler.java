@@ -4,6 +4,7 @@ import java.util.Optional;
 import org.quizly.quizly.core.presentation.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import lombok.extern.slf4j.Slf4j;
@@ -26,5 +27,12 @@ public class SystemExceptionHandler {
     ErrorResponse errorResponse = ErrorResponse.of(e);
     return ResponseEntity.status(httpStatus)
         .body(errorResponse);
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException e) {
+    log.warn("[SystemExceptionHandler] Access Denied", e);
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .body(ErrorResponse.of(403, e));
   }
 }
