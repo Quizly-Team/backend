@@ -16,8 +16,20 @@ import java.util.List;
 @Schema(description = "마이페이지 대시보드 응답")
 public class ReadDashboardResponse {
 
-  @Schema(description = "문제 유형별 통계 (최근 1달)")
+  @Schema(description = "이번 달 누적 학습 통계 (이번 달 1일 ~ 오늘)")
+  private CumulativeSummary cumulativeSummary;
+
+  @Schema(description = "문제 유형별 통계 (이번 달 1일 ~ 오늘)")
   private List<QuizTypeSummary> quizTypeSummaryList;
+
+  public record CumulativeSummary(
+      @Schema(description = "총 풀이 수", example = "100")
+      int solvedCount,
+      @Schema(description = "정답 수", example = "75")
+      int correctCount,
+      @Schema(description = "오답 수", example = "25")
+      int wrongCount
+  ){}
 
   public record QuizTypeSummary(
       @Schema(description = "문제 유형")
