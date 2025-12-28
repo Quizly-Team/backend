@@ -49,23 +49,28 @@ public class CreateMemberMockExamService implements
   public CreateMemberMockExamResponse execute(CreateMemberMockExamRequest request) {
     if (request == null || !request.isValid()) {
       return CreateMemberMockExamResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberMockExamErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-          .build();
+              .success(false)
+              .errorCode(CreateMemberMockExamErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+              .build();
     }
 
+    String plainText = request.getPlainText();
+    List<String> chunkList = TextProcessingUtil.createChunkList(
+            plainText,
+            DEFAULT_CHUNK_SIZE,
+            DEFAULT_CHUNK_OVERLAP
+    );
 
-    List<String> chunkList = request.getChunkList();
+
 
     if (chunkList.isEmpty()) {
-      log.error("[CreateMemberMockExamService] Failed to create chunks from plainText");
       return CreateMemberMockExamResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberMockExamErrorCode.FAILED_CREATE_CHUNK)
-          .build();
+              .success(false)
+              .errorCode(CreateMemberMockExamErrorCode.FAILED_CREATE_CHUNK)
+              .build();
     }
-    postProcessingChunkList(chunkList);
 
+    postProcessingChunkList(chunkList);
     int quizCount = calculateQuizCount(chunkList.size());
 
     List<CompletableFuture<CreateMockQuizResponse>> createMockQuizResponseFutureList = requestAsyncMockQuizTasks(
@@ -214,7 +219,7 @@ public class CreateMemberMockExamService implements
   @ToString
   public static class CreateMemberMockExamRequest implements BaseRequest {
 
-    private List<String> chunkList;
+    private String plainText;
 
     private List<MockExamType> mockExamTypeList;
 
@@ -224,8 +229,9 @@ public class CreateMemberMockExamService implements
 
     @Override
     public boolean isValid() {
-      return chunkList != null && !chunkList.isEmpty() && mockExamTypeList != null
-          && !mockExamTypeList.isEmpty() && userPrincipal != null;
+      return plainText != null && !plainText.isBlank()
+              && mockExamTypeList != null && !mockExamTypeList.isEmpty()
+              && userPrincipal != null;
     }
   }
 
