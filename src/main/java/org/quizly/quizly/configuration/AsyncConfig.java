@@ -31,4 +31,16 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean(name = "ocrTaskExecutor")
+    public Executor ocrTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(20);
+        executor.setMaxPoolSize(40);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("OCR-");
+        executor.initialize();
+        return executor;
+    }
+
 }

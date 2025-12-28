@@ -12,7 +12,7 @@ import java.util.List;
 @Log4j2
 public class PdfBoxPageBatchExtractor {
 
-    private static final int DEFAULT_BATCH_SIZE = 10;
+    private static final int BATCH_PAGE_SIZE = 10;
 
     public static List<MultipartFile> splitToPdfBatches(MultipartFile file) {
         List<MultipartFile> result = new ArrayList<>();
@@ -21,8 +21,8 @@ public class PdfBoxPageBatchExtractor {
             int totalPages = origin.getNumberOfPages();
 
 
-            for (int start = 0; start < totalPages; start += DEFAULT_BATCH_SIZE) {
-                int end = Math.min(start + DEFAULT_BATCH_SIZE, totalPages);
+            for (int start = 0; start < totalPages; start += BATCH_PAGE_SIZE) {
+                int end = Math.min(start + BATCH_PAGE_SIZE, totalPages);
 
 
                 try (PDDocument batchDoc = new PDDocument();
@@ -38,7 +38,7 @@ public class PdfBoxPageBatchExtractor {
 
                     MultipartFile batchFile = new ByteArrayMultipartFile(
                             "file",
-                            "batch_" + (start / DEFAULT_BATCH_SIZE) + ".pdf",
+                            "batch_" + (start / BATCH_PAGE_SIZE) + ".pdf",
                             MediaType.APPLICATION_PDF_VALUE,
                             pdfBytes
                     );
