@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse;
+import org.quizly.quizly.account.dto.response.ReadDashboardResponse.CumulativeSummary;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse.QuizTypeSummary;
 import org.quizly.quizly.account.service.ReadDashboardService;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardErrorCode;
@@ -31,6 +32,7 @@ public class ReadDashboardController {
   @Operation(
       summary = "마이페이지 대시보드 조회 API",
       description = "현재 로그인 유저의 학습 통계 대시보드 정보를 조회합니다.\n\n"
+          + "- 이번 달 누적 학습 통계: 총 풀이 수, 정답 수, 오답 수(이번 달 1일 ~ 오늘)\n"
           + "- 문제 유형별 통계: 각 유형별 풀이 수, 정답 수, 오답 수(이번 달 1일 ~ 오늘)\n",
       operationId = "/account/dashboard"
   )
@@ -59,6 +61,12 @@ public class ReadDashboardController {
   }
 
   private ReadDashboardResponse toResponse(ReadDashboardService.ReadDashboardServiceResponse serviceResponse) {
+    CumulativeSummary cumulativeSummary = new CumulativeSummary(
+        serviceResponse.getCumulativeSummary().solvedCount(),
+        serviceResponse.getCumulativeSummary().correctCount(),
+        serviceResponse.getCumulativeSummary().wrongCount()
+    );
+
     List<QuizTypeSummary> quizTypeSummaryList = serviceResponse.getQuizTypeSummaryList().stream()
         .map(summary -> new QuizTypeSummary(
             summary.quizType(),
@@ -70,6 +78,7 @@ public class ReadDashboardController {
 
     return ReadDashboardResponse.builder()
         .quizTypeSummaryList(quizTypeSummaryList)
+        .cumulativeSummary(cumulativeSummary)
         .build();
   }
 }

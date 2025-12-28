@@ -1,8 +1,11 @@
 package org.quizly.quizly.account.service;
 
+import java.util.stream.Collectors;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
+import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.CumulativeSummary;
+import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.QuizTypeSummary;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
@@ -58,10 +61,12 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     }
     User user = userOptional.get();
 
-    List<ReadDashboardServiceResponse.QuizTypeSummary> quizTypeSummaryList = calculateQuizTypeSummaryList(user);
+    List<QuizTypeSummary> quizTypeSummaryList = calculateQuizTypeSummaryList(user);
+    CumulativeSummary cumulativeSummary = calculateCumulativeSummary(quizTypeSummaryList);
 
     return ReadDashboardServiceResponse.builder()
         .quizTypeSummaryList(quizTypeSummaryList)
+        .cumulativeSummary(cumulativeSummary)
         .build();
   }
 
@@ -114,6 +119,16 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
             entry.getValue().getWrongCount()
         ))
         .toList();
+  }
+
+  private ReadDashboardServiceResponse.CumulativeSummary calculateCumulativeSummary(
+      List<ReadDashboardServiceResponse.QuizTypeSummary> quizTypeSummaryList) {
+    return quizTypeSummaryList.stream()
+        .collect(Collectors.teeing(
+            Collectors.summingInt(ReadDashboardServiceResponse.QuizTypeSummary::solvedCount),
+            Collectors.summingInt(ReadDashboardServiceResponse.QuizTypeSummary::correctCount),
+            (solved, correct) -> new ReadDashboardServiceResponse.CumulativeSummary(solved, correct, solved - correct)
+        ));
   }
 
   @Getter
@@ -169,7 +184,14 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
   @AllArgsConstructor
   @ToString
   public static class ReadDashboardServiceResponse extends BaseResponse<ReadDashboardErrorCode> {
+    private CumulativeSummary cumulativeSummary;
     private List<QuizTypeSummary> quizTypeSummaryList;
+
+    public record CumulativeSummary(
+        int solvedCount,
+        int correctCount,
+        int wrongCount
+    ){}
 
     public record QuizTypeSummary(
         QuizType quizType,
