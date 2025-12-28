@@ -46,10 +46,10 @@ public class CreateMemberMockExamController {
                     request.getPlainText(), 500, 100
             );
 
-    CreateMemberMockExamService.CreateMemberMockExamResponse serviceResponse =
+    var serviceResponse =
             createMemberMockExamService.execute(
                     CreateMemberMockExamService.CreateMemberMockExamRequest.builder()
-                            .chunkList(chunkList)
+                            .plainText(request.getPlainText())
                             .mockExamTypeList(request.getMockExamTypeList())
                             .userPrincipal(userPrincipal)
                             .build()
