@@ -54,7 +54,6 @@ public interface SolveHistoryRepository extends JpaRepository<SolveHistory, Long
     Long getCorrectCount();
   }
 
-
   @Query("""
     SELECT q.topic as topic,
            COUNT(sh) as totalCount,
@@ -81,12 +80,34 @@ public interface SolveHistoryRepository extends JpaRepository<SolveHistory, Long
           Pageable pageable
   );
 
-
-
   interface TopicSummary {
     String getTopic();
     Long getTotalCount();
     Long getCorrectCount();
+  }
+
+  @Query("SELECT FUNCTION('HOUR', sh.submittedAt) as hourOfDay, " +
+      "COUNT(sh) as solvedCount " +
+      "FROM SolveHistory sh " +
+      "WHERE sh.user = :user " +
+      "AND sh.submittedAt >= :startDateTime " +
+      "AND sh.submittedAt < :endDateTime " +
+      "GROUP BY FUNCTION('HOUR', sh.submittedAt)")
+  List<HourlySummary> findHourlySummaryByUserAndDateTimeRange(
+      @Param("user") User user,
+      @Param("startDateTime") LocalDateTime startDateTime,
+      @Param("endDateTime") LocalDateTime endDateTime
+  );
+
+  default List<HourlySummary> findHourlySummaryByUserAndDate(User user, LocalDate date) {
+    LocalDateTime startDateTime = date.atStartOfDay();
+    LocalDateTime endDateTime = date.plusDays(1).atStartOfDay();
+    return findHourlySummaryByUserAndDateTimeRange(user, startDateTime, endDateTime);
+  }
+
+  interface HourlySummary {
+    Integer getHourOfDay();
+    Long getSolvedCount();
   }
 
 }
