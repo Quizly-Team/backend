@@ -22,6 +22,9 @@ public class ReadDashboardResponse {
   @Schema(description = "문제 유형별 통계 (이번 달 1일 ~ 오늘)")
   private List<QuizTypeSummary> quizTypeSummaryList;
 
+  @Schema(description = "주제 유형별 통계 (최근 등록된 6개)")
+  private List<TopicSummary> topicSummaryList;
+
   public record CumulativeSummary(
       @Schema(description = "총 풀이 수", example = "100")
       int solvedCount,
@@ -40,5 +43,16 @@ public class ReadDashboardResponse {
       int correctCount,
       @Schema(description = "오답 수", example = "10")
       int wrongCount
+  ){}
+  public record TopicSummary(
+      @Schema(description = "주제 명")
+      String topic,
+      @Schema(description = "총 풀이 수", example = "50")
+      int solvedCount,
+      @Schema(description = "정답 수", example = "40")
+      int correctCount,
+      @Schema(description = "오답 수", example = "10")
+      int wrongCount
+
   ){}
 }

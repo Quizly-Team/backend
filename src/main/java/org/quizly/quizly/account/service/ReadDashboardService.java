@@ -1,5 +1,6 @@
 package org.quizly.quizly.account.service;
 
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -17,6 +18,7 @@ import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,10 +65,12 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
 
     List<QuizTypeSummary> quizTypeSummaryList = calculateQuizTypeSummaryList(user);
     CumulativeSummary cumulativeSummary = calculateCumulativeSummary(quizTypeSummaryList);
+    List<ReadDashboardServiceResponse.TopicSummary> topicSummaryList = calculateTopicSummaryList(user);
 
     return ReadDashboardServiceResponse.builder()
         .quizTypeSummaryList(quizTypeSummaryList)
         .cumulativeSummary(cumulativeSummary)
+        .topicSummaryList(topicSummaryList)
         .build();
   }
 
@@ -79,6 +83,43 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     aggregateTodaySolveHistoryList(user, today, aggregateCountMap);
 
     return toQuizTypeSummaryList(aggregateCountMap);
+  }
+
+  private List<ReadDashboardServiceResponse.TopicSummary> calculateTopicSummaryList(User user) {
+
+    LocalDate today = LocalDate.now();
+    LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
+    LocalDateTime startOfNextMonth = startOfMonth.plusMonths(1);
+
+    List<SolveHistoryRepository.TopicSummary> summaries =
+            solveHistoryRepository.findMonthlyTopicSummary(
+                    user,
+                    startOfMonth,
+                    startOfNextMonth,
+                    PageRequest.of(0, 6)
+            );
+
+    return summaries.stream()
+            .map(s -> {
+              int solved = Optional.ofNullable(s.getTotalCount())
+                      .map(v -> v.intValue())
+                      .orElse(0);
+
+              int correct = Optional.ofNullable(s.getCorrectCount())
+                      .map(v -> v.intValue())
+                      .orElse(0);
+
+              int wrong = solved - correct;
+
+
+              return new ReadDashboardServiceResponse.TopicSummary(
+                      s.getTopic(),
+                      solved,
+                      correct,
+                      wrong
+              );
+            })
+            .toList();
   }
 
   private void aggregatePastSummaryList(User user, LocalDate today, Map<QuizType, QuizTypeCounts> aggregateCountMap) {
@@ -130,6 +171,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
             (solved, correct) -> new ReadDashboardServiceResponse.CumulativeSummary(solved, correct, solved - correct)
         ));
   }
+
 
   @Getter
   private static class QuizTypeCounts {
@@ -186,6 +228,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
   public static class ReadDashboardServiceResponse extends BaseResponse<ReadDashboardErrorCode> {
     private CumulativeSummary cumulativeSummary;
     private List<QuizTypeSummary> quizTypeSummaryList;
+    private List<TopicSummary> topicSummaryList;
 
     public record CumulativeSummary(
         int solvedCount,
@@ -199,5 +242,13 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
         int correctCount,
         int wrongCount
     ){}
+
+    public record TopicSummary(
+        String topic,
+        int solvedCount,
+        int correctCount,
+        int wrongCount
+    ){}
+
   }
 }
