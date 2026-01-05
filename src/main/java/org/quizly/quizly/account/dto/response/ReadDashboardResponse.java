@@ -29,6 +29,9 @@ public class ReadDashboardResponse {
   @Schema(description = "월별 학습 문제 기록 - 문제를 푼 날짜만 반환")
   private List<DailySummary> dailySummaryList;
 
+  @Schema(description = "시간대별 학습 패턴 (7개 시간대 모두 반환)")
+  private List<HourlySummary> hourlySummaryList;
+
   public record CumulativeSummary(
       @Schema(description = "총 풀이 수", example = "100")
       int solvedCount,
@@ -65,6 +68,13 @@ public class ReadDashboardResponse {
       @Schema(description = "날짜", example = "2025-12-01")
       LocalDate date,
       @Schema(description = "해당 날짜에 푼 문제 수", example = "5")
+      int solvedCount
+  ){}
+
+  public record HourlySummary(
+      @Schema(description = "시작 시각 (0, 6, 9, 12, 15, 18, 21)", example = "9")
+      int startHour,
+      @Schema(description = "해당 시간대에 푼 문제 수", example = "15")
       int solvedCount
   ){}
 }
