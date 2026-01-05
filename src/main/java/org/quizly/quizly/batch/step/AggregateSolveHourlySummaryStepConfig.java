@@ -22,6 +22,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Configuration
 @RequiredArgsConstructor
@@ -57,6 +60,12 @@ public class AggregateSolveHourlySummaryStepConfig {
         List<HourlySummary> hourlySummaryList =
             solveHistoryRepository.findHourlySummaryByUserAndDate(user, targetDate);
 
+        List<SolveHourlySummary> existSolveHourlySummaryList =
+            solveHourlySummaryRepository.findByUserAndDate(user, targetDate);
+
+        Map<Integer, SolveHourlySummary> existingMap = existSolveHourlySummaryList.stream()
+            .collect(Collectors.toMap(SolveHourlySummary::getHour, Function.identity()));
+
         List<SolveHourlySummary> solveHourlySummaryList = new ArrayList<>();
         for (HourlySummary hourlySummary : hourlySummaryList) {
           Integer hour = hourlySummary.getHourOfDay();
@@ -64,13 +73,13 @@ public class AggregateSolveHourlySummaryStepConfig {
             continue;
           }
 
-          SolveHourlySummary solveHourlySummary = solveHourlySummaryRepository
-              .findByUserAndDateAndHour(user, targetDate, hour)
-              .orElse(SolveHourlySummary.builder()
+          SolveHourlySummary solveHourlySummary = existingMap.getOrDefault(hour,
+              SolveHourlySummary.builder()
                   .user(user)
                   .date(targetDate)
                   .hour(hour)
-                  .build());
+                  .build()
+          );
 
           solveHourlySummary.setSolvedCount(
               hourlySummary.getSolvedCount() != null

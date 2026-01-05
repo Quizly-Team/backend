@@ -8,10 +8,12 @@ import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.CumulativeSummary;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.DailySummary;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.QuizTypeSummary;
+import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.HourlySummary;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz.QuizType;
+import org.quizly.quizly.core.domin.entity.SolveHourlySummary;
 import org.quizly.quizly.core.domin.entity.User;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
 import org.quizly.quizly.core.domin.repository.SolveHourlySummaryRepository;
@@ -33,6 +35,8 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReadDashboardService implements BaseService<ReadDashboardService.ReadDashboardRequest, ReadDashboardService.ReadDashboardServiceResponse> {
+
+  private static final int[] TIME_SLOTS = {0, 6, 9, 12, 15, 18, 21};
 
   private final UserRepository userRepository;
   private final SolveHistoryRepository solveHistoryRepository;
@@ -70,12 +74,14 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     CumulativeSummary cumulativeSummary = calculateCumulativeSummary(quizTypeSummaryList);
     List<ReadDashboardServiceResponse.TopicSummary> topicSummaryList = calculateTopicSummaryList(user);
     List<DailySummary> dailySummaryList = calculateDailySummaryList(user);
+    List<HourlySummary> hourlySummaryList = calculateHourlySummaryList(user);
 
     return ReadDashboardServiceResponse.builder()
         .quizTypeSummaryList(quizTypeSummaryList)
         .cumulativeSummary(cumulativeSummary)
         .topicSummaryList(topicSummaryList)
         .dailySummaryList(dailySummaryList)
+        .hourlySummaryList(hourlySummaryList)
         .build();
   }
 
@@ -217,6 +223,67 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
         .toList();
   }
 
+  private List<HourlySummary> calculateHourlySummaryList(User user) {
+    LocalDate today = LocalDate.now();
+    LocalDate startOfMonth = today.withDayOfMonth(1);
+    LocalDate yesterday = today.minusDays(1);
+
+    Map<Integer, Integer> hourlyCountMap = new HashMap<>();
+    for (int slot : TIME_SLOTS) {
+      hourlyCountMap.put(slot, 0);
+    }
+
+    if (!startOfMonth.isAfter(yesterday)) {
+      aggregatePastHourlyData(user, startOfMonth, yesterday, hourlyCountMap);
+    }
+
+    aggregateTodayHourlyData(user, today, hourlyCountMap);
+
+    return Arrays.stream(TIME_SLOTS)
+        .mapToObj(slot -> new HourlySummary(slot, hourlyCountMap.get(slot)))
+        .toList();
+  }
+
+  private void aggregatePastHourlyData(User user, LocalDate startDate, LocalDate endDate,
+                                          Map<Integer, Integer> hourlyCountMap) {
+    List<SolveHourlySummary> hourlySummaryList =
+        solveHourlySummaryRepository.findByUserAndDateBetween(user, startDate, endDate);
+
+    for (SolveHourlySummary summary : hourlySummaryList) {
+      int hour = summary.getHour();
+      int count = summary.getSolvedCount();
+
+      int targetSlot = findTimeSlot(hour);
+      hourlyCountMap.merge(targetSlot, count, Integer::sum);
+    }
+  }
+
+  private void aggregateTodayHourlyData(User user, LocalDate today,
+                                           Map<Integer, Integer> hourlyCountMap) {
+    List<SolveHistoryRepository.HourlySummary> todayHourlyData =
+        solveHistoryRepository.findHourlySummaryByUserAndDate(user, today);
+
+    for (SolveHistoryRepository.HourlySummary summary : todayHourlyData) {
+      Integer hour = summary.getHourOfDay();
+      if (hour == null) {
+        continue;
+      }
+
+      int count = Optional.ofNullable(summary.getSolvedCount()).map(Long::intValue).orElse(0);
+      int targetSlot = findTimeSlot(hour);
+      hourlyCountMap.merge(targetSlot, count, Integer::sum);
+    }
+  }
+
+  private int findTimeSlot(int hour) {
+    for (int i = TIME_SLOTS.length - 1; i >= 0; i--) {
+      if (hour >= TIME_SLOTS[i]) {
+        return TIME_SLOTS[i];
+      }
+    }
+    return TIME_SLOTS[0];
+  }
+
   @Getter
   private static class QuizTypeCounts {
     private int solvedCount = 0;
@@ -274,6 +341,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     private List<QuizTypeSummary> quizTypeSummaryList;
     private List<TopicSummary> topicSummaryList;
     private List<DailySummary> dailySummaryList;
+    private List<HourlySummary> hourlySummaryList;
 
     public record CumulativeSummary(
         int solvedCount,
@@ -297,6 +365,11 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
 
     public record DailySummary(
         LocalDate date,
+        int solvedCount
+    ){}
+
+    public record HourlySummary(
+        int startHour,
         int solvedCount
     ){}
   }

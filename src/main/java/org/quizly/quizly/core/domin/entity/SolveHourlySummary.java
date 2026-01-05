@@ -31,8 +31,8 @@ public class SolveHourlySummary extends BaseEntity {
   private LocalDate date;
 
   @Column(name = "hour", nullable = false)
-  private Integer hour;
+  private int hour;
 
   @Column(nullable = false)
-  private Integer solvedCount;
+  private int solvedCount;
 }
