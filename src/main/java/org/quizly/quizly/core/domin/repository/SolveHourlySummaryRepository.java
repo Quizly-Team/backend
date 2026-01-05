@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 public interface SolveHourlySummaryRepository extends JpaRepository<SolveHourlySummary, Long> {
 
@@ -24,10 +23,15 @@ public interface SolveHourlySummaryRepository extends JpaRepository<SolveHourlyS
       @Param("endDate") LocalDate endDate
   );
 
-  Optional<SolveHourlySummary> findByUserAndDateAndHour(
+  List<SolveHourlySummary> findByUserAndDate(
       User user,
-      LocalDate date,
-      Integer hour
+      LocalDate date
+  );
+
+  List<SolveHourlySummary> findByUserAndDateBetween(
+      User user,
+      LocalDate startDate,
+      LocalDate endDate
   );
 
   interface DailySummary {

@@ -7,6 +7,7 @@ import org.quizly.quizly.account.dto.response.ReadDashboardResponse;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse.CumulativeSummary;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse.DailySummary;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse.QuizTypeSummary;
+import org.quizly.quizly.account.dto.response.ReadDashboardResponse.HourlySummary;
 import org.quizly.quizly.account.service.ReadDashboardService;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardErrorCode;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardRequest;
@@ -36,7 +37,8 @@ public class ReadDashboardController {
           + "- 이번 달 누적 학습 통계: 총 풀이 수, 정답 수, 오답 수(이번 달 1일 ~ 오늘)\n"
           + "- 문제 유형별 통계: 각 유형별 풀이 수, 정답 수, 오답 수(이번 달 1일 ~ 오늘)\n"
           + "- 주제 유형별 통계: 각 주제별 풀이 수, 정답 수, 오답 수(최근 6개 주제만 반환)\n"
-          + "- 월별 학습 문제 기록: GitHub 잔디처럼 날짜별 풀이 수 (문제를 푼 날짜만 반환)\n",
+          + "- 월별 학습 문제 기록: GitHub 잔디처럼 날짜별 풀이 수 (문제를 푼 날짜만 반환)\n"
+          + "- 시간대별 학습 패턴: 7개 시간대(0, 6, 9, 12, 15, 18, 21시)별 풀이 수 (모든 시간대 반환)\n",
       operationId = "/account/dashboard"
   )
   @GetMapping("/account/dashboard")
@@ -96,11 +98,19 @@ public class ReadDashboardController {
         ))
         .collect(Collectors.toList());
 
+    List<HourlySummary> hourlySummaryList = serviceResponse.getHourlySummaryList().stream()
+        .map(summary -> new HourlySummary(
+            summary.startHour(),
+            summary.solvedCount()
+        ))
+        .collect(Collectors.toList());
+
     return ReadDashboardResponse.builder()
         .quizTypeSummaryList(quizTypeSummaryList)
         .cumulativeSummary(cumulativeSummary)
         .topicSummaryList(topicSummaryList)
         .dailySummaryList(dailySummaryList)
+        .hourlySummaryList(hourlySummaryList)
         .build();
   }
 }
