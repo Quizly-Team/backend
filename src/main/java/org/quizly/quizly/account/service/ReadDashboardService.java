@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.CumulativeSummary;
+import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.DailySummary;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.QuizTypeSummary;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
@@ -13,6 +14,7 @@ import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz.QuizType;
 import org.quizly.quizly.core.domin.entity.User;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
+import org.quizly.quizly.core.domin.repository.SolveHourlySummaryRepository;
 import org.quizly.quizly.core.domin.repository.UserQuizTypeDailySummaryRepository;
 import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
@@ -35,6 +37,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
   private final UserRepository userRepository;
   private final SolveHistoryRepository solveHistoryRepository;
   private final UserQuizTypeDailySummaryRepository userQuizTypeDailySummaryRepository;
+  private final SolveHourlySummaryRepository solveHourlySummaryRepository;
 
   @Override
   public ReadDashboardServiceResponse execute(ReadDashboardRequest request) {
@@ -66,11 +69,13 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     List<QuizTypeSummary> quizTypeSummaryList = calculateQuizTypeSummaryList(user);
     CumulativeSummary cumulativeSummary = calculateCumulativeSummary(quizTypeSummaryList);
     List<ReadDashboardServiceResponse.TopicSummary> topicSummaryList = calculateTopicSummaryList(user);
+    List<DailySummary> dailySummaryList = calculateDailySummaryList(user);
 
     return ReadDashboardServiceResponse.builder()
         .quizTypeSummaryList(quizTypeSummaryList)
         .cumulativeSummary(cumulativeSummary)
         .topicSummaryList(topicSummaryList)
+        .dailySummaryList(dailySummaryList)
         .build();
   }
 
@@ -172,6 +177,45 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
         ));
   }
 
+  private List<DailySummary> calculateDailySummaryList(User user) {
+    LocalDate today = LocalDate.now();
+
+    List<DailySummary> pastDailySummaryList = getPastDailySummary(user, today);
+    List<DailySummary> todayDailySummaryList = getTodayDailySummary(user, today);
+
+    List<DailySummary> dailySummaryList = new ArrayList<>(pastDailySummaryList);
+    dailySummaryList.addAll(todayDailySummaryList);
+    return dailySummaryList;
+  }
+
+  private List<DailySummary> getPastDailySummary(User user, LocalDate today) {
+    LocalDate startOfMonth = today.withDayOfMonth(1);
+    LocalDate yesterday = today.minusDays(1);
+
+    if (startOfMonth.isAfter(yesterday)) {
+      return Collections.emptyList();
+    }
+
+    return solveHourlySummaryRepository
+        .findDailySummaryByUserAndDateBetween(user, startOfMonth, yesterday)
+        .stream()
+        .map(summary -> new DailySummary(
+            summary.getDate(),
+            Optional.ofNullable(summary.getSolvedCount()).map(Long::intValue).orElse(0)
+        ))
+        .toList();
+  }
+
+  private List<DailySummary> getTodayDailySummary(User user, LocalDate today) {
+    return solveHistoryRepository
+        .findDailySummaryByUserAndDate(user, today)
+        .stream()
+        .map(summary -> new DailySummary(
+            summary.getDate(),
+            Optional.ofNullable(summary.getSolvedCount()).map(Long::intValue).orElse(0)
+        ))
+        .toList();
+  }
 
   @Getter
   private static class QuizTypeCounts {
@@ -229,6 +273,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     private CumulativeSummary cumulativeSummary;
     private List<QuizTypeSummary> quizTypeSummaryList;
     private List<TopicSummary> topicSummaryList;
+    private List<DailySummary> dailySummaryList;
 
     public record CumulativeSummary(
         int solvedCount,
@@ -250,5 +295,9 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
         int wrongCount
     ){}
 
+    public record DailySummary(
+        LocalDate date,
+        int solvedCount
+    ){}
   }
 }

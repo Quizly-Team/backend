@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse.CumulativeSummary;
+import org.quizly.quizly.account.dto.response.ReadDashboardResponse.DailySummary;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse.QuizTypeSummary;
 import org.quizly.quizly.account.service.ReadDashboardService;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardErrorCode;
@@ -34,7 +35,8 @@ public class ReadDashboardController {
       description = "현재 로그인 유저의 학습 통계 대시보드 정보를 조회합니다.\n\n"
           + "- 이번 달 누적 학습 통계: 총 풀이 수, 정답 수, 오답 수(이번 달 1일 ~ 오늘)\n"
           + "- 문제 유형별 통계: 각 유형별 풀이 수, 정답 수, 오답 수(이번 달 1일 ~ 오늘)\n"
-          + "- 주제 유형별 통계: 각 주제별 풀이 수, 정답 수, 오답 수(최근 6개 주제만 반환)\n",
+          + "- 주제 유형별 통계: 각 주제별 풀이 수, 정답 수, 오답 수(최근 6개 주제만 반환)\n"
+          + "- 월별 학습 문제 기록: GitHub 잔디처럼 날짜별 풀이 수 (문제를 푼 날짜만 반환)\n",
       operationId = "/account/dashboard"
   )
   @GetMapping("/account/dashboard")
@@ -76,6 +78,7 @@ public class ReadDashboardController {
             summary.wrongCount()
         ))
         .collect(Collectors.toList());
+
     List<ReadDashboardResponse.TopicSummary> topicSummaryList = serviceResponse.getTopicSummaryList().stream()
             .map(summary -> new ReadDashboardResponse.TopicSummary(
                     summary.topic(),
@@ -86,10 +89,18 @@ public class ReadDashboardController {
             .collect(Collectors.toList());
 
 
-      return ReadDashboardResponse.builder()
-              .quizTypeSummaryList(quizTypeSummaryList)
-              .cumulativeSummary(cumulativeSummary)
-              .topicSummaryList(topicSummaryList)
-              .build();
+    List<DailySummary> dailySummaryList = serviceResponse.getDailySummaryList().stream()
+        .map(summary -> new DailySummary(
+            summary.date(),
+            summary.solvedCount()
+        ))
+        .collect(Collectors.toList());
+
+    return ReadDashboardResponse.builder()
+        .quizTypeSummaryList(quizTypeSummaryList)
+        .cumulativeSummary(cumulativeSummary)
+        .topicSummaryList(topicSummaryList)
+        .dailySummaryList(dailySummaryList)
+        .build();
   }
 }

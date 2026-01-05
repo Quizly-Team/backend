@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.quizly.quizly.core.domin.entity.Quiz.QuizType;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -24,6 +25,9 @@ public class ReadDashboardResponse {
 
   @Schema(description = "주제 유형별 통계 (최근 등록된 6개)")
   private List<TopicSummary> topicSummaryList;
+
+  @Schema(description = "월별 학습 문제 기록 - 문제를 푼 날짜만 반환")
+  private List<DailySummary> dailySummaryList;
 
   public record CumulativeSummary(
       @Schema(description = "총 풀이 수", example = "100")
@@ -44,6 +48,7 @@ public class ReadDashboardResponse {
       @Schema(description = "오답 수", example = "10")
       int wrongCount
   ){}
+
   public record TopicSummary(
       @Schema(description = "주제 명")
       String topic,
@@ -54,5 +59,12 @@ public class ReadDashboardResponse {
       @Schema(description = "오답 수", example = "10")
       int wrongCount
 
+  ){}
+
+  public record DailySummary(
+      @Schema(description = "날짜", example = "2025-12-01")
+      LocalDate date,
+      @Schema(description = "해당 날짜에 푼 문제 수", example = "5")
+      int solvedCount
   ){}
 }
