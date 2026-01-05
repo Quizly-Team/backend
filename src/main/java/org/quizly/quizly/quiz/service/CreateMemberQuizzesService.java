@@ -1,5 +1,6 @@
 package org.quizly.quizly.quiz.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -17,8 +18,10 @@ import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz;
+import org.quizly.quizly.core.domin.entity.SolveHistory;
 import org.quizly.quizly.core.domin.entity.User;
 import org.quizly.quizly.core.domin.repository.QuizRepository;
+import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
 import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
@@ -44,6 +47,7 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
   private final CreateTopicService createTopicService;
   private final QuizRepository quizRepository;
   private final UserRepository userRepository;
+  private final SolveHistoryRepository solveHistoryRepository;
 
   private static final int DEFAULT_QUIZ_COUNT = 10;
   private static final int DEFAULT_QUIZ_BATCH_SIZE = 2;
@@ -157,7 +161,21 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
             .guest(false)
             .build())
         .collect(Collectors.toList());
-    return quizRepository.saveAll(quizList);
+
+    List<Quiz> savedQuizList = quizRepository.saveAll(quizList);
+
+    List<SolveHistory> initialHistoryList = savedQuizList.stream()
+        .map(quiz -> SolveHistory.builder()
+            .user(user)
+            .quiz(quiz)
+            .isCorrect(false)
+            .submittedAt(LocalDateTime.now())
+            .build())
+        .collect(Collectors.toList());
+
+    solveHistoryRepository.saveAll(initialHistoryList);
+
+    return savedQuizList;
   }
 
   @Getter

@@ -12,10 +12,10 @@ import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.quiz.dto.request.GradeQuizzesRequest;
 import org.quizly.quizly.quiz.dto.response.GradeQuizzesResponse;
-import org.quizly.quizly.quiz.service.GradeMemberQuizzesService;
-import org.quizly.quizly.quiz.service.GradeMemberQuizzesService.GradeMemberQuizzesErrorCode;
-import org.quizly.quizly.quiz.service.GradeMemberQuizzesService.GradeMemberQuizzesRequest;
-import org.quizly.quizly.quiz.service.GradeMemberQuizzesService.GradeMemberQuizzesResponse;
+import org.quizly.quizly.quiz.service.GradeMemberWrongQuizzesService;
+import org.quizly.quizly.quiz.service.GradeMemberWrongQuizzesService.GradeMemberWrongQuizzesErrorCode;
+import org.quizly.quizly.quiz.service.GradeMemberWrongQuizzesService.GradeMemberWrongQuizzesRequest;
+import org.quizly.quizly.quiz.service.GradeMemberWrongQuizzesService.GradeMemberWrongQuizzesResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,30 +26,30 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Quiz", description = "퀴즈")
-public class GradeMemberQuizzesController {
+public class GradeMemberWrongQuizzesController {
 
-  private final GradeMemberQuizzesService gradeMemberQuizzesService;
+  private final GradeMemberWrongQuizzesService gradeMemberWrongQuizzesService;
 
   @Operation(
-      summary = "회원 문제 채점 API",
-      description = "문제를 제작 후 풀 때 사용하는 API입니다.\n\n"
-          + "답변을 제출하면 문제를 채점하고 풀이 기록을 저장합니다.\n"
-          + "주의: 오답 노트에서 다시 풀 때는 /quizzes/{quizId}/answer/retry API를 사용하세요.\n\n"
+      summary = "회원 오답 노트 문제 채점 API",
+      description = "오답 노트에서 틀린 문제를 다시 풀 때 사용하는 API입니다.\n\n"
+          + "답변을 제출하면 문제를 채점하고 새로운 풀이 기록을 저장합니다.\n\n"
+          + "주의: 처음 문제를 풀 때는 /quizzes/{quizId}/answer/member API를 사용하세요.\n\n"
           + "회원 API로 요청 시 토큰이 필요합니다.\n\n"
           + "userAnswer : 객관식의 경우 TRUE/FALSE, 주관식의 경우 String 형식으로 답변을 입력받습니다.",
-      operationId = "/quizzes/{quizId}/answer/member"
+      operationId = "/quizzes/{quizId}/answer/retry"
   )
-  @PostMapping("/quizzes/{quizId}/answer/member")
-  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, GradeMemberQuizzesErrorCode.class})
-  public ResponseEntity<GradeQuizzesResponse> gradeMemberQuizzes(
+  @PostMapping("/quizzes/{quizId}/answer/retry")
+  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, GradeMemberWrongQuizzesErrorCode.class})
+  public ResponseEntity<GradeQuizzesResponse> gradeMemberWrongQuizzes(
       @PathVariable(name = "quizId") @Schema(description = "문제 ID", example = "1") Long quizId,
       @AuthenticationPrincipal UserPrincipal userPrincipal,
       @RequestBody GradeQuizzesRequest request) {
-    GradeMemberQuizzesResponse serviceResponse = gradeMemberQuizzesService.execute(
-        GradeMemberQuizzesRequest.builder()
+    GradeMemberWrongQuizzesResponse serviceResponse = gradeMemberWrongQuizzesService.execute(
+        GradeMemberWrongQuizzesRequest.builder()
             .quizId(quizId)
             .userAnswer(request.getUserAnswer())
-                .solveTime(request.getSolveTime())
+            .solveTime(request.getSolveTime())
             .userPrincipal(userPrincipal)
             .build()
     );
@@ -78,4 +78,3 @@ public class GradeMemberQuizzesController {
             .build());
   }
 }
-
