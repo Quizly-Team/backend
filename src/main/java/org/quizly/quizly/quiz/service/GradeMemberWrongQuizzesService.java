@@ -23,8 +23,8 @@ import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
-import org.quizly.quizly.quiz.service.GradeMemberQuizzesService.GradeMemberQuizzesRequest;
-import org.quizly.quizly.quiz.service.GradeMemberQuizzesService.GradeMemberQuizzesResponse;
+import org.quizly.quizly.quiz.service.GradeMemberWrongQuizzesService.GradeMemberWrongQuizzesRequest;
+import org.quizly.quizly.quiz.service.GradeMemberWrongQuizzesService.GradeMemberWrongQuizzesResponse;
 import org.quizly.quizly.quiz.service.GraderQuizService.GraderQuizRequest;
 import org.quizly.quizly.quiz.service.GraderQuizService.GraderQuizResponse;
 import org.springframework.http.HttpStatus;
@@ -35,8 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class GradeMemberQuizzesService implements
-    BaseService<GradeMemberQuizzesRequest, GradeMemberQuizzesResponse> {
+public class GradeMemberWrongQuizzesService implements
+    BaseService<GradeMemberWrongQuizzesRequest, GradeMemberWrongQuizzesResponse> {
 
   private final QuizRepository quizRepository;
   private final UserRepository userRepository;
@@ -44,45 +44,45 @@ public class GradeMemberQuizzesService implements
   private final GraderQuizService graderQuizService;
 
   @Override
-  public GradeMemberQuizzesResponse execute(GradeMemberQuizzesRequest request) {
+  public GradeMemberWrongQuizzesResponse execute(GradeMemberWrongQuizzesRequest request) {
     if (request == null || !request.isValid()) {
-      return GradeMemberQuizzesResponse.builder()
+      return GradeMemberWrongQuizzesResponse.builder()
           .success(false)
-          .errorCode(GradeMemberQuizzesErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+          .errorCode(GradeMemberWrongQuizzesErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
           .build();
     }
 
     String providerId = request.getUserPrincipal().getProviderId();
     if (providerId == null || providerId.isBlank()) {
-      return GradeMemberQuizzesResponse.builder()
+      return GradeMemberWrongQuizzesResponse.builder()
           .success(false)
-          .errorCode(GradeMemberQuizzesErrorCode.NOT_EXIST_PROVIDER_ID)
+          .errorCode(GradeMemberWrongQuizzesErrorCode.NOT_EXIST_PROVIDER_ID)
           .build();
     }
     Optional<User> userOptional = userRepository.findByProviderId(providerId);
     if (userOptional.isEmpty()) {
-      log.error("[GradeMemberQuizzesService] User not found for providerId: {}", providerId);
-      return GradeMemberQuizzesResponse.builder()
+      log.error("[GradeMemberWrongQuizzesService] User not found for providerId: {}", providerId);
+      return GradeMemberWrongQuizzesResponse.builder()
           .success(false)
-          .errorCode(GradeMemberQuizzesErrorCode.NOT_FOUND_USER)
+          .errorCode(GradeMemberWrongQuizzesErrorCode.NOT_FOUND_USER)
           .build();
     }
     User user = userOptional.get();
 
     Optional<Quiz> optionalQuiz = quizRepository.findById(request.getQuizId());
     if (optionalQuiz.isEmpty()) {
-      return GradeMemberQuizzesResponse.builder()
+      return GradeMemberWrongQuizzesResponse.builder()
           .success(false)
-          .errorCode(GradeMemberQuizzesErrorCode.QUIZ_NOT_FOUND)
+          .errorCode(GradeMemberWrongQuizzesErrorCode.QUIZ_NOT_FOUND)
           .build();
     }
     Quiz quiz = optionalQuiz.get();
 
     if (quiz.getUser() == null || !quiz.getUser().equals(user)) {
-      log.error("[GradeMemberQuizzesService] Cannot solve other quiz userId: {}, quizId: {} ", user.getId(), quiz.getId());
-      return GradeMemberQuizzesResponse.builder()
+      log.error("[GradeMemberWrongQuizzesService] Cannot solve other quiz userId: {}, quizId: {} ", user.getId(), quiz.getId());
+      return GradeMemberWrongQuizzesResponse.builder()
           .success(false)
-          .errorCode(GradeMemberQuizzesErrorCode.CANNOT_SOLVE_OTHER_QUIZ)
+          .errorCode(GradeMemberWrongQuizzesErrorCode.CANNOT_SOLVE_OTHER_QUIZ)
           .build();
     }
 
@@ -92,57 +92,52 @@ public class GradeMemberQuizzesService implements
             .userAnswer(request.getUserAnswer())
             .build());
     if (graderQuizResponse == null || !graderQuizResponse.isSuccess()) {
-      return GradeMemberQuizzesResponse.builder()
+      return GradeMemberWrongQuizzesResponse.builder()
           .success(false)
-          .errorCode(GradeMemberQuizzesErrorCode.GRADE_FAILED)
+          .errorCode(GradeMemberWrongQuizzesErrorCode.GRADE_FAILED)
           .build();
     }
     boolean isCorrect = graderQuizResponse.isCorrect();
 
-    Optional<SolveHistory> existingHistory = solveHistoryRepository
-            .findFirstByUserAndQuizOrderByCreatedAtDesc(user, quiz);
+    saveSolveHistory(user, quiz, request.getUserAnswer(), isCorrect, request.getSolveTime());
 
-    if (existingHistory.isEmpty()) {
-      log.error("[GradeMemberQuizzesService] Draft not found: userId={}, quizId={}", user.getId(), quiz.getId());
-      return GradeMemberQuizzesResponse.builder()
-          .success(false)
-          .errorCode(GradeMemberQuizzesErrorCode.DRAFT_NOT_FOUND)
-          .build();
-    }
-
-    updateSolveHistory(existingHistory.get(), request.getUserAnswer(), isCorrect, request.getSolveTime());
-
-    return GradeMemberQuizzesResponse.builder()
+    return GradeMemberWrongQuizzesResponse.builder()
         .success(true)
         .quiz(quiz)
         .isCorrect(isCorrect)
         .build();
   }
 
-  private void updateSolveHistory(
-          SolveHistory history,
+  private void saveSolveHistory(
+          User user,
+          Quiz quiz,
           String userAnswer,
           boolean isCorrect,
           Double solveTime
   ) {
-    history.setIsCorrect(isCorrect);
-    history.setUserAnswer(userAnswer);
-    history.setSolveTime(solveTime);
-    history.setSubmittedAt(LocalDateTime.now());
+    SolveHistory solveHistory = SolveHistory.builder()
+            .user(user)
+            .quiz(quiz)
+            .isCorrect(isCorrect)
+            .userAnswer(userAnswer)
+            .solveTime(solveTime)
+            .submittedAt(LocalDateTime.now())
+            .build();
+
+    solveHistoryRepository.save(solveHistory);
   }
 
 
   @Getter
   @RequiredArgsConstructor
-  public enum GradeMemberQuizzesErrorCode implements BaseErrorCode<DomainException> {
+  public enum GradeMemberWrongQuizzesErrorCode implements BaseErrorCode<DomainException> {
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
     NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
     CANNOT_SOLVE_OTHER_QUIZ(HttpStatus.FORBIDDEN, "다른 유저가 만든 퀴즈는 풀 수 없습니다."),
-    GRADE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채점에 실패하였습니다."),
-    DRAFT_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "풀이 기록 초안을 찾을 수 없습니다.");
+    GRADE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채점에 실패하였습니다.");
 
     private final HttpStatus httpStatus;
 
@@ -160,7 +155,7 @@ public class GradeMemberQuizzesService implements
   @NoArgsConstructor
   @AllArgsConstructor
   @ToString
-  public static class GradeMemberQuizzesRequest implements BaseRequest {
+  public static class GradeMemberWrongQuizzesRequest implements BaseRequest {
 
     private Long quizId;
 
@@ -182,7 +177,7 @@ public class GradeMemberQuizzesService implements
   @NoArgsConstructor
   @AllArgsConstructor
   @ToString
-  public static class GradeMemberQuizzesResponse extends BaseResponse<GradeMemberQuizzesErrorCode> {
+  public static class GradeMemberWrongQuizzesResponse extends BaseResponse<GradeMemberWrongQuizzesErrorCode> {
 
     private Quiz quiz;
     private boolean isCorrect;

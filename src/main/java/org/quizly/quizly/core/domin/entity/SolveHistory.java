@@ -32,16 +32,16 @@ public class SolveHistory extends BaseEntity {
   @JoinColumn(name = "quiz_id", nullable = false)
   private Quiz quiz;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private Boolean isCorrect;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private String userAnswer;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private Double solveTime;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private LocalDateTime submittedAt;
 
 
