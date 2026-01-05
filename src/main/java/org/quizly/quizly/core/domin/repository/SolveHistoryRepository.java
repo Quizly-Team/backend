@@ -86,6 +86,26 @@ public interface SolveHistoryRepository extends JpaRepository<SolveHistory, Long
     Long getCorrectCount();
   }
 
+  @Query("SELECT CAST(sh.submittedAt AS LocalDate) as date, " +
+      "COUNT(sh) as solvedCount " +
+      "FROM SolveHistory sh " +
+      "WHERE sh.user = :user " +
+      "AND sh.submittedAt >= :startDateTime " +
+      "AND sh.submittedAt < :endDateTime " +
+      "GROUP BY CAST(sh.submittedAt AS LocalDate) " +
+      "ORDER BY CAST(sh.submittedAt AS LocalDate)")
+  List<DailySummary> findDailySummaryByUserAndDateTimeRange(
+      @Param("user") User user,
+      @Param("startDateTime") LocalDateTime startDateTime,
+      @Param("endDateTime") LocalDateTime endDateTime
+  );
+
+  default List<DailySummary> findDailySummaryByUserAndDate(User user, LocalDate date) {
+    LocalDateTime startDateTime = date.atStartOfDay();
+    LocalDateTime endDateTime = date.plusDays(1).atStartOfDay();
+    return findDailySummaryByUserAndDateTimeRange(user, startDateTime, endDateTime);
+  }
+
   @Query("SELECT FUNCTION('HOUR', sh.submittedAt) as hourOfDay, " +
       "COUNT(sh) as solvedCount " +
       "FROM SolveHistory sh " +
@@ -103,6 +123,11 @@ public interface SolveHistoryRepository extends JpaRepository<SolveHistory, Long
     LocalDateTime startDateTime = date.atStartOfDay();
     LocalDateTime endDateTime = date.plusDays(1).atStartOfDay();
     return findHourlySummaryByUserAndDateTimeRange(user, startDateTime, endDateTime);
+  }
+
+  interface DailySummary {
+    LocalDate getDate();
+    Long getSolvedCount();
   }
 
   interface HourlySummary {
