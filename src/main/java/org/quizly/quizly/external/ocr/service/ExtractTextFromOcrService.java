@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.external.ocr.error.OcrErrorCode;
 import org.springframework.stereotype.Service;
+
 @Service
 @RequiredArgsConstructor
 public class ExtractTextFromOcrService implements BaseService<ClovaOcrService.ClovaOcrRequest, ClovaOcrService.ClovaOcrResponse> {
