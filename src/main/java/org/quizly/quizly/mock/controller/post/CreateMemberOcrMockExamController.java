@@ -39,7 +39,11 @@ public class CreateMemberOcrMockExamController {
             @RequestParam("mockExamTypeList") List<org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType> mockExamTypeList,
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
-        String plainText = asyncOcrService.extractMergedPlainText(file);
+        String plainText = asyncOcrService.execute(
+            AsyncOcrService.OcrExtractRequest.builder()
+                .file(file)
+                .build()
+        ).getPlainText();
 
         var response = createMemberMockExamService.execute(
                 CreateMemberMockExamRequest.builder()
