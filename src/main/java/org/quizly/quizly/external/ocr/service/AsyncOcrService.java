@@ -8,16 +8,15 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
-import org.quizly.quizly.core.application.BaseAsyncService;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
+import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.core.util.PdfBoxPageBatchExtractor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,58 +28,64 @@ import java.util.stream.Collectors;
 @Log4j2
 @Component
 @RequiredArgsConstructor
-public class AsyncOcrService implements BaseAsyncService<AsyncOcrService.OcrExtractRequest, AsyncOcrService.OcrExtractResponse> {
+public class AsyncOcrService implements BaseService<AsyncOcrService.OcrExtractRequest, AsyncOcrService.OcrExtractResponse>{
 
     private final ExtractTextFromOcrService extractTextService;
 
     @Autowired
     @Qualifier("ocrTaskExecutor")
     private Executor ocrExecutor;
-    @Async("ocrTaskExecutor")
+
     @Override
-    public CompletableFuture<OcrExtractResponse> execute(OcrExtractRequest request) {
+    public OcrExtractResponse execute(OcrExtractRequest request) {
+
         if (request == null || !request.isValid()) {
-            return CompletableFuture.completedFuture(
-                    OcrExtractResponse.builder()
-                            .success(false)
-                            .errorCode(OcrExtractErrorCode.NOT_EXIST_FILE)
-                            .build()
-            );
+            return OcrExtractResponse.builder()
+                .success(false)
+                .errorCode(OcrExtractErrorCode.NOT_EXIST_FILE)
+                .build();
         }
 
-        MultipartFile file = request.getFile();
-        log.info("[AsyncOcrService] OCR extract start. Thread: {}", Thread.currentThread().getName());
+        log.info("[AsyncOcrService] OCR extract start. Thread: {}",
+            Thread.currentThread().getName());
 
-        String mergedText = extractMergedPlainText(file);
+        String mergedText = extractMergedPlainTextAsync(request.getFile()).join();
 
-        return CompletableFuture.completedFuture(
-                OcrExtractResponse.builder()
-                        .success(true)
-                        .plainText(mergedText)
-                        .build()
-        );
+        return OcrExtractResponse.builder()
+            .success(true)
+            .plainText(mergedText)
+            .build();
     }
 
-    public String extractMergedPlainText(MultipartFile file) {
-        List<MultipartFile> batches = PdfBoxPageBatchExtractor.splitToPdfBatches(file);
+
+    private CompletableFuture<String> extractMergedPlainTextAsync(MultipartFile file) {
+
+        List<MultipartFile> batches =
+            PdfBoxPageBatchExtractor.splitToPdfBatches(file);
 
         List<CompletableFuture<ClovaOcrService.ClovaOcrResponse>> futures =
                 batches.stream()
                         .map(this::callAsync)
                         .toList();
 
-        return futures.stream()
+        CompletableFuture<Void> allDone =
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+        return allDone.thenApply(v ->
+            futures.stream()
                 .map(CompletableFuture::join)
                 .filter(ClovaOcrService.ClovaOcrResponse::isSuccess)
                 .map(ClovaOcrService.ClovaOcrResponse::getPlainText)
-                .collect(Collectors.joining("\n"));
+                .collect(Collectors.joining("\n"))
+        );
     }
 
-    @Async("ocrTaskExecutor")
+
     public CompletableFuture<ClovaOcrService.ClovaOcrResponse> callAsync(MultipartFile batch) {
-        ClovaOcrService.ClovaOcrRequest request = ClovaOcrService.ClovaOcrRequest.builder()
-                .file(batch)
-                .build();
+        ClovaOcrService.ClovaOcrRequest request =
+                ClovaOcrService.ClovaOcrRequest.builder()
+                        .file(batch)
+                        .build();
 
         return CompletableFuture.supplyAsync(
                 () -> extractTextService.execute(request),

@@ -40,12 +40,6 @@ public class CreateMemberMockExamController {
       @RequestBody CreateMemberMockExamRequest request,
       @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-
-    List<String> chunkList =
-            TextProcessingUtil.createChunkList(
-                    request.getPlainText(), 500, 100
-            );
-
     var serviceResponse =
             createMemberMockExamService.execute(
                     CreateMemberMockExamService.CreateMemberMockExamRequest.builder()
@@ -54,8 +48,6 @@ public class CreateMemberMockExamController {
                             .userPrincipal(userPrincipal)
                             .build()
             );
-
-
 
     if (serviceResponse == null || !serviceResponse.isSuccess()) {
       Optional.ofNullable(serviceResponse)
