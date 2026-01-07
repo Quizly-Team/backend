@@ -1,34 +1,32 @@
 package org.quizly.quizly.account.service;
 
-import java.time.LocalDateTime;
-import java.util.stream.Collectors;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
-import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.CumulativeSummary;
-import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.DailySummary;
-import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.QuizTypeSummary;
-import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardServiceResponse.HourlySummary;
+import org.quizly.quizly.account.service.ReadCumulativeSummaryService.ReadCumulativeSummaryRequest;
+import org.quizly.quizly.account.service.ReadCumulativeSummaryService.ReadCumulativeSummaryResponse;
+import org.quizly.quizly.account.service.ReadDailySummaryService.ReadDailySummaryRequest;
+import org.quizly.quizly.account.service.ReadDailySummaryService.ReadDailySummaryResponse;
+import org.quizly.quizly.account.service.ReadHourlySummaryService.ReadHourlySummaryRequest;
+import org.quizly.quizly.account.service.ReadHourlySummaryService.ReadHourlySummaryResponse;
+import org.quizly.quizly.account.service.ReadQuizTypeSummaryService.ReadQuizTypeSummaryRequest;
+import org.quizly.quizly.account.service.ReadQuizTypeSummaryService.ReadQuizTypeSummaryResponse;
+import org.quizly.quizly.account.service.ReadTopicSummaryService.ReadTopicSummaryRequest;
+import org.quizly.quizly.account.service.ReadTopicSummaryService.ReadTopicSummaryResponse;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
-import org.quizly.quizly.core.domin.entity.Quiz.QuizType;
-import org.quizly.quizly.core.domin.entity.SolveHourlySummary;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
-import org.quizly.quizly.core.domin.repository.SolveHourlySummaryRepository;
-import org.quizly.quizly.core.domin.repository.SolveTypeSummaryRepository;
-import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
 
 @Log4j2
 @Service
@@ -36,12 +34,12 @@ import java.util.*;
 @Transactional(readOnly = true)
 public class ReadDashboardService implements BaseService<ReadDashboardService.ReadDashboardRequest, ReadDashboardService.ReadDashboardServiceResponse> {
 
-  private static final int[] TIME_SLOTS = {0, 6, 9, 12, 15, 18, 21};
-
-  private final UserRepository userRepository;
-  private final SolveHistoryRepository solveHistoryRepository;
-  private final SolveTypeSummaryRepository solveTypeSummaryRepository;
-  private final SolveHourlySummaryRepository solveHourlySummaryRepository;
+  private final ReadUserService readUserService;
+  private final ReadQuizTypeSummaryService readQuizTypeSummaryService;
+  private final ReadTopicSummaryService readTopicSummaryService;
+  private final ReadCumulativeSummaryService readCumulativeSummaryService;
+  private final ReadDailySummaryService readDailySummaryService;
+  private final ReadHourlySummaryService readHourlySummaryService;
 
   @Override
   public ReadDashboardServiceResponse execute(ReadDashboardRequest request) {
@@ -52,251 +50,93 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
           .build();
     }
 
-    String providerId = request.getUserPrincipal().getProviderId();
-    if (providerId == null || providerId.isBlank()) {
-      return ReadDashboardServiceResponse.builder()
-          .success(false)
-          .errorCode(ReadDashboardErrorCode.NOT_EXIST_PROVIDER_ID)
-          .build();
-    }
+    ReadUserResponse readUserResponse = readUserService.execute(
+        ReadUserRequest.builder()
+            .userPrincipal(request.getUserPrincipal())
+            .build()
+    );
 
-    Optional<User> userOptional = userRepository.findByProviderId(providerId);
-    if (userOptional.isEmpty()) {
-      log.error("[ReadDashboardService] User not found for providerId: {}", providerId);
+
+    if (!readUserResponse.isSuccess()) {
       return ReadDashboardServiceResponse.builder()
           .success(false)
           .errorCode(ReadDashboardErrorCode.NOT_FOUND_USER)
           .build();
     }
-    User user = userOptional.get();
+    User user = readUserResponse.getUser();
 
-    List<QuizTypeSummary> quizTypeSummaryList = calculateQuizTypeSummaryList(user);
-    CumulativeSummary cumulativeSummary = calculateCumulativeSummary(quizTypeSummaryList);
-    List<ReadDashboardServiceResponse.TopicSummary> topicSummaryList = calculateTopicSummaryList(user);
-    List<DailySummary> dailySummaryList = calculateDailySummaryList(user);
-    List<HourlySummary> hourlySummaryList = calculateHourlySummaryList(user);
+    ReadQuizTypeSummaryResponse quizTypeSummaryResponse = readQuizTypeSummaryService.execute(
+        ReadQuizTypeSummaryRequest.builder()
+            .user(user)
+            .build()
+    );
+
+    if (!quizTypeSummaryResponse.isSuccess()) {
+      return ReadDashboardServiceResponse.builder()
+          .success(false)
+          .errorCode(ReadDashboardErrorCode.FAILED_TO_GET_QUIZ_TYPE_SUMMARY)
+          .build();
+    }
+
+    ReadTopicSummaryResponse topicSummaryResponse = readTopicSummaryService.execute(
+        ReadTopicSummaryRequest.builder()
+            .user(user)
+            .build()
+    );
+
+    if (!topicSummaryResponse.isSuccess()) {
+      return ReadDashboardServiceResponse.builder()
+          .success(false)
+          .errorCode(ReadDashboardErrorCode.FAILED_TO_GET_TOPIC_SUMMARY)
+          .build();
+    }
+
+    ReadCumulativeSummaryResponse cumulativeSummaryResponse = readCumulativeSummaryService.execute(
+        ReadCumulativeSummaryRequest.builder()
+            .quizTypeSummaryList(quizTypeSummaryResponse.getQuizTypeSummaryList())
+            .build()
+    );
+
+    if (!cumulativeSummaryResponse.isSuccess()) {
+      return ReadDashboardServiceResponse.builder()
+          .success(false)
+          .errorCode(ReadDashboardErrorCode.FAILED_TO_GET_CUMULATIVE_SUMMARY)
+          .build();
+    }
+
+    ReadDailySummaryResponse dailySummaryResponse = readDailySummaryService.execute(
+        ReadDailySummaryRequest.builder()
+            .user(user)
+            .build()
+    );
+
+    if (!dailySummaryResponse.isSuccess()) {
+      return ReadDashboardServiceResponse.builder()
+          .success(false)
+          .errorCode(ReadDashboardErrorCode.FAILED_TO_GET_DAILY_SUMMARY)
+          .build();
+    }
+
+    ReadHourlySummaryResponse hourlySummaryResponse = readHourlySummaryService.execute(
+        ReadHourlySummaryRequest.builder()
+            .user(user)
+            .build()
+    );
+
+    if (!hourlySummaryResponse.isSuccess()) {
+      return ReadDashboardServiceResponse.builder()
+          .success(false)
+          .errorCode(ReadDashboardErrorCode.FAILED_TO_GET_HOURLY_SUMMARY)
+          .build();
+    }
 
     return ReadDashboardServiceResponse.builder()
-        .quizTypeSummaryList(quizTypeSummaryList)
-        .cumulativeSummary(cumulativeSummary)
-        .topicSummaryList(topicSummaryList)
-        .dailySummaryList(dailySummaryList)
-        .hourlySummaryList(hourlySummaryList)
+        .quizTypeSummaryList(quizTypeSummaryResponse.getQuizTypeSummaryList())
+        .topicSummaryList(topicSummaryResponse.getTopicSummaryList())
+        .cumulativeSummary(cumulativeSummaryResponse.getCumulativeSummary())
+        .dailySummaryList(dailySummaryResponse.getDailySummaryList())
+        .hourlySummaryList(hourlySummaryResponse.getHourlySummaryList())
         .build();
-  }
-
-  private List<ReadDashboardServiceResponse.QuizTypeSummary> calculateQuizTypeSummaryList(User user) {
-    LocalDate today = LocalDate.now();
-
-    Map<QuizType, QuizTypeCounts> aggregateCountMap = new EnumMap<>(QuizType.class);
-
-    aggregatePastSummaryList(user, today, aggregateCountMap);
-    aggregateTodaySolveHistoryList(user, today, aggregateCountMap);
-
-    return toQuizTypeSummaryList(aggregateCountMap);
-  }
-
-  private List<ReadDashboardServiceResponse.TopicSummary> calculateTopicSummaryList(User user) {
-
-    LocalDate today = LocalDate.now();
-    LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
-    LocalDateTime startOfNextMonth = startOfMonth.plusMonths(1);
-
-    List<SolveHistoryRepository.TopicSummary> summaries =
-            solveHistoryRepository.findMonthlyTopicSummary(
-                    user,
-                    startOfMonth,
-                    startOfNextMonth,
-                    PageRequest.of(0, 6)
-            );
-
-    return summaries.stream()
-            .map(s -> {
-              int solved = Optional.ofNullable(s.getTotalCount())
-                      .map(v -> v.intValue())
-                      .orElse(0);
-
-              int correct = Optional.ofNullable(s.getCorrectCount())
-                      .map(v -> v.intValue())
-                      .orElse(0);
-
-              int wrong = solved - correct;
-
-
-              return new ReadDashboardServiceResponse.TopicSummary(
-                      s.getTopic(),
-                      solved,
-                      correct,
-                      wrong
-              );
-            })
-            .toList();
-  }
-
-  private void aggregatePastSummaryList(User user, LocalDate today, Map<QuizType, QuizTypeCounts> aggregateCountMap) {
-    LocalDate startOfMonth = today.withDayOfMonth(1);
-    LocalDate yesterday = today.minusDays(1);
-
-    if (startOfMonth.isAfter(yesterday)) {
-      return;
-    }
-
-    solveTypeSummaryRepository
-        .findByUserAndDateBetween(user, startOfMonth, yesterday)
-        .forEach(summary ->
-            aggregateCountMap
-                .computeIfAbsent(summary.getQuizType(), k -> new QuizTypeCounts())
-                .add(summary.getSolvedCount(), summary.getCorrectCount())
-        );
-  }
-
-  private void aggregateTodaySolveHistoryList(User user, LocalDate today, Map<QuizType, QuizTypeCounts> aggregateCountMap) {
-    solveHistoryRepository
-        .findFirstAttemptsByQuizTypeAndDate(user, today)
-        .forEach(summary -> {
-          int solved = Optional.ofNullable(summary.getTotalCount()).map(Long::intValue).orElse(0);
-          int correct = Optional.ofNullable(summary.getCorrectCount()).map(Long::intValue).orElse(0);
-
-          aggregateCountMap.computeIfAbsent(summary.getQuizType(), k -> new QuizTypeCounts())
-              .add(solved, correct);
-        });
-  }
-
-  private List<ReadDashboardServiceResponse.QuizTypeSummary> toQuizTypeSummaryList(Map<QuizType, QuizTypeCounts> aggregateCountMap) {
-    return aggregateCountMap.entrySet().stream()
-        .map(entry -> new ReadDashboardServiceResponse.QuizTypeSummary(
-            entry.getKey(),
-            entry.getValue().getSolvedCount(),
-            entry.getValue().getCorrectCount(),
-            entry.getValue().getWrongCount()
-        ))
-        .toList();
-  }
-
-  private ReadDashboardServiceResponse.CumulativeSummary calculateCumulativeSummary(
-      List<ReadDashboardServiceResponse.QuizTypeSummary> quizTypeSummaryList) {
-    return quizTypeSummaryList.stream()
-        .collect(Collectors.teeing(
-            Collectors.summingInt(ReadDashboardServiceResponse.QuizTypeSummary::solvedCount),
-            Collectors.summingInt(ReadDashboardServiceResponse.QuizTypeSummary::correctCount),
-            (solved, correct) -> new ReadDashboardServiceResponse.CumulativeSummary(solved, correct, solved - correct)
-        ));
-  }
-
-  private List<DailySummary> calculateDailySummaryList(User user) {
-    LocalDate today = LocalDate.now();
-
-    List<DailySummary> pastDailySummaryList = getPastDailySummary(user, today);
-    List<DailySummary> todayDailySummaryList = getTodayDailySummary(user, today);
-
-    List<DailySummary> dailySummaryList = new ArrayList<>(pastDailySummaryList);
-    dailySummaryList.addAll(todayDailySummaryList);
-    return dailySummaryList;
-  }
-
-  private List<DailySummary> getPastDailySummary(User user, LocalDate today) {
-    LocalDate startOfMonth = today.withDayOfMonth(1);
-    LocalDate yesterday = today.minusDays(1);
-
-    if (startOfMonth.isAfter(yesterday)) {
-      return Collections.emptyList();
-    }
-
-    return solveHourlySummaryRepository
-        .findDailySummaryByUserAndDateBetween(user, startOfMonth, yesterday)
-        .stream()
-        .map(summary -> new DailySummary(
-            summary.getDate(),
-            Optional.ofNullable(summary.getSolvedCount()).map(Long::intValue).orElse(0)
-        ))
-        .toList();
-  }
-
-  private List<DailySummary> getTodayDailySummary(User user, LocalDate today) {
-    return solveHistoryRepository
-        .findDailySummaryByUserAndDate(user, today)
-        .stream()
-        .map(summary -> new DailySummary(
-            summary.getDate(),
-            Optional.ofNullable(summary.getSolvedCount()).map(Long::intValue).orElse(0)
-        ))
-        .toList();
-  }
-
-  private List<HourlySummary> calculateHourlySummaryList(User user) {
-    LocalDate today = LocalDate.now();
-    LocalDate startOfMonth = today.withDayOfMonth(1);
-    LocalDate yesterday = today.minusDays(1);
-
-    Map<Integer, Integer> hourlyCountMap = new HashMap<>();
-    for (int slot : TIME_SLOTS) {
-      hourlyCountMap.put(slot, 0);
-    }
-
-    if (!startOfMonth.isAfter(yesterday)) {
-      aggregatePastHourlyData(user, startOfMonth, yesterday, hourlyCountMap);
-    }
-
-    aggregateTodayHourlyData(user, today, hourlyCountMap);
-
-    return Arrays.stream(TIME_SLOTS)
-        .mapToObj(slot -> new HourlySummary(slot, hourlyCountMap.get(slot)))
-        .toList();
-  }
-
-  private void aggregatePastHourlyData(User user, LocalDate startDate, LocalDate endDate,
-                                          Map<Integer, Integer> hourlyCountMap) {
-    List<SolveHourlySummary> hourlySummaryList =
-        solveHourlySummaryRepository.findByUserAndDateBetween(user, startDate, endDate);
-
-    for (SolveHourlySummary summary : hourlySummaryList) {
-      int hour = summary.getHour();
-      int count = summary.getSolvedCount();
-
-      int targetSlot = findTimeSlot(hour);
-      hourlyCountMap.merge(targetSlot, count, Integer::sum);
-    }
-  }
-
-  private void aggregateTodayHourlyData(User user, LocalDate today,
-                                           Map<Integer, Integer> hourlyCountMap) {
-    List<SolveHistoryRepository.HourlySummary> todayHourlyData =
-        solveHistoryRepository.findHourlySummaryByUserAndDate(user, today);
-
-    for (SolveHistoryRepository.HourlySummary summary : todayHourlyData) {
-      Integer hour = summary.getHourOfDay();
-      if (hour == null) {
-        continue;
-      }
-
-      int count = Optional.ofNullable(summary.getSolvedCount()).map(Long::intValue).orElse(0);
-      int targetSlot = findTimeSlot(hour);
-      hourlyCountMap.merge(targetSlot, count, Integer::sum);
-    }
-  }
-
-  private int findTimeSlot(int hour) {
-    for (int i = TIME_SLOTS.length - 1; i >= 0; i--) {
-      if (hour >= TIME_SLOTS[i]) {
-        return TIME_SLOTS[i];
-      }
-    }
-    return TIME_SLOTS[0];
-  }
-
-  @Getter
-  private static class QuizTypeCounts {
-    private int solvedCount = 0;
-    private int correctCount = 0;
-
-    void add(int solved, int correct) {
-      this.solvedCount += solved;
-      this.correctCount += correct;
-    }
-
-    int getWrongCount() {
-      return solvedCount - correctCount;
-    }
   }
 
   @Getter
@@ -304,7 +144,12 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
   public enum ReadDashboardErrorCode implements BaseErrorCode<DomainException> {
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
-    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.");
+    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
+    FAILED_TO_GET_QUIZ_TYPE_SUMMARY(HttpStatus.INTERNAL_SERVER_ERROR, "퀴즈 타입 통계 조회에 실패했습니다."),
+    FAILED_TO_GET_TOPIC_SUMMARY(HttpStatus.INTERNAL_SERVER_ERROR, "주제별 통계 조회에 실패했습니다."),
+    FAILED_TO_GET_CUMULATIVE_SUMMARY(HttpStatus.INTERNAL_SERVER_ERROR, "누적 통계 조회에 실패했습니다."),
+    FAILED_TO_GET_DAILY_SUMMARY(HttpStatus.INTERNAL_SERVER_ERROR, "일별 통계 조회에 실패했습니다."),
+    FAILED_TO_GET_HOURLY_SUMMARY(HttpStatus.INTERNAL_SERVER_ERROR, "시간대별 통계 조회에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
@@ -337,40 +182,10 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
   @AllArgsConstructor
   @ToString
   public static class ReadDashboardServiceResponse extends BaseResponse<ReadDashboardErrorCode> {
-    private CumulativeSummary cumulativeSummary;
-    private List<QuizTypeSummary> quizTypeSummaryList;
-    private List<TopicSummary> topicSummaryList;
-    private List<DailySummary> dailySummaryList;
-    private List<HourlySummary> hourlySummaryList;
-
-    public record CumulativeSummary(
-        int solvedCount,
-        int correctCount,
-        int wrongCount
-    ){}
-
-    public record QuizTypeSummary(
-        QuizType quizType,
-        int solvedCount,
-        int correctCount,
-        int wrongCount
-    ){}
-
-    public record TopicSummary(
-        String topic,
-        int solvedCount,
-        int correctCount,
-        int wrongCount
-    ){}
-
-    public record DailySummary(
-        LocalDate date,
-        int solvedCount
-    ){}
-
-    public record HourlySummary(
-        int startHour,
-        int solvedCount
-    ){}
+    private ReadCumulativeSummaryResponse.CumulativeSummary cumulativeSummary;
+    private List<ReadQuizTypeSummaryResponse.QuizTypeSummary> quizTypeSummaryList;
+    private List<ReadTopicSummaryResponse.TopicSummary> topicSummaryList;
+    private List<ReadDailySummaryResponse.DailySummary> dailySummaryList;
+    private List<ReadHourlySummaryResponse.HourlySummary> hourlySummaryList;
   }
 }
