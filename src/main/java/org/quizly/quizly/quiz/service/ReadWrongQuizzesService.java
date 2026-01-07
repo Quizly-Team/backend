@@ -1,7 +1,6 @@
 package org.quizly.quizly.quiz.service;
 
 import java.util.List;
-import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,8 +16,10 @@ import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.domin.entity.SolveHistory;
 import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.account.service.ReadUserService;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
-import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
@@ -32,7 +33,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ReadWrongQuizzesService implements BaseService<ReadWrongQuizzesRequest, ReadWrongQuizzesResponse> {
 
-  private final UserRepository userRepository;
+  private final ReadUserService readUserService;
   private final SolveHistoryRepository solveHistoryRepository;
 
   @Override
@@ -44,22 +45,19 @@ public class ReadWrongQuizzesService implements BaseService<ReadWrongQuizzesRequ
           .build();
     }
 
-    String providerId = request.getUserPrincipal().getProviderId();
-    if (providerId == null || providerId.isEmpty()) {
-      return ReadWrongQuizzesResponse.builder()
-          .success(false)
-          .errorCode(ReadWrongQuizzesErrorCode.NOT_EXIST_PROVIDER_ID)
-          .build();
-    }
-    Optional<User> userOptional = userRepository.findByProviderId(providerId);
-    if (userOptional.isEmpty()) {
-      log.error("[ReadWrongQuizzesService] User not found for providerId: {}", providerId);
+    ReadUserResponse readUserResponse = readUserService.execute(
+        ReadUserRequest.builder()
+            .userPrincipal(request.getUserPrincipal())
+            .build()
+    );
+
+    if (!readUserResponse.isSuccess()) {
       return ReadWrongQuizzesResponse.builder()
           .success(false)
           .errorCode(ReadWrongQuizzesErrorCode.NOT_FOUND_USER)
           .build();
     }
-    User user = userOptional.get();
+    User user = readUserResponse.getUser();
 
     List<SolveHistory> wrongSolveHistoryList = solveHistoryRepository.findLatestWrongSolveHistoriesByUser(user);
 
@@ -78,7 +76,6 @@ public class ReadWrongQuizzesService implements BaseService<ReadWrongQuizzesRequ
   public enum ReadWrongQuizzesErrorCode implements BaseErrorCode<DomainException> {
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;

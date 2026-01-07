@@ -1,6 +1,5 @@
 package org.quizly.quizly.account.service;
 
-import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.account.service.UpdateUserNickNameService.UpdateUserNickNameRequest;
 import org.quizly.quizly.account.service.UpdateUserNickNameService.UpdateUserNickNameResponse;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
@@ -30,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class UpdateUserNickNameService implements BaseService<UpdateUserNickNameRequest, UpdateUserNickNameResponse> {
 
+  private final ReadUserService readUserService;
   private final UserRepository userRepository;
 
   @Override
@@ -41,23 +43,19 @@ public class UpdateUserNickNameService implements BaseService<UpdateUserNickName
           .build();
     }
 
-    String providerId = request.getUserPrincipal().getProviderId();
-    if (providerId == null || providerId.isEmpty()) {
-      return UpdateUserNickNameResponse.builder()
-          .success(false)
-          .errorCode(UpdateUserNickNameErrorCode.NOT_EXIST_PROVIDER_ID)
-          .build();
-    }
+    ReadUserResponse readUserResponse = readUserService.execute(
+        ReadUserRequest.builder()
+            .userPrincipal(request.getUserPrincipal())
+            .build()
+    );
 
-    Optional<User> userOptional = userRepository.findByProviderId(providerId);
-    if (userOptional.isEmpty()) {
-      log.error("[UpdateUserNickNameService] User not found for providerId: {}", providerId);
+    if (!readUserResponse.isSuccess()) {
       return UpdateUserNickNameResponse.builder()
           .success(false)
           .errorCode(UpdateUserNickNameErrorCode.NOT_FOUND_USER)
           .build();
     }
-    User user = userOptional.get();
+    User user = readUserResponse.getUser();
 
     String newNickName = request.getNickName();
     UpdateUserNickNameErrorCode validationError = validateNickName(newNickName);
@@ -88,7 +86,6 @@ public class UpdateUserNickNameService implements BaseService<UpdateUserNickName
   public enum UpdateUserNickNameErrorCode implements BaseErrorCode<DomainException> {
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
     INVALID_NICKNAME_LENGTH(HttpStatus.BAD_REQUEST, "닉네임은 2자 이상 20자 이하여야 합니다.");
 
