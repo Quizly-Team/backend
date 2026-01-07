@@ -17,7 +17,7 @@ import org.quizly.quizly.core.domin.entity.SolveHourlySummary;
 import org.quizly.quizly.core.domin.entity.User;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
 import org.quizly.quizly.core.domin.repository.SolveHourlySummaryRepository;
-import org.quizly.quizly.core.domin.repository.UserQuizTypeDailySummaryRepository;
+import org.quizly.quizly.core.domin.repository.SolveTypeSummaryRepository;
 import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
@@ -40,7 +40,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
 
   private final UserRepository userRepository;
   private final SolveHistoryRepository solveHistoryRepository;
-  private final UserQuizTypeDailySummaryRepository userQuizTypeDailySummaryRepository;
+  private final SolveTypeSummaryRepository solveTypeSummaryRepository;
   private final SolveHourlySummaryRepository solveHourlySummaryRepository;
 
   @Override
@@ -141,7 +141,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
       return;
     }
 
-    userQuizTypeDailySummaryRepository
+    solveTypeSummaryRepository
         .findByUserAndDateBetween(user, startOfMonth, yesterday)
         .forEach(summary ->
             aggregateCountMap

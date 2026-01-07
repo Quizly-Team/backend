@@ -1,12 +1,13 @@
 package org.quizly.quizly.batch.step;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.entity.UserQuizTypeDailySummary;
+import org.quizly.quizly.core.domin.entity.SolveTypeSummary;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository.QuizTypeSummary;
-import org.quizly.quizly.core.domin.repository.UserQuizTypeDailySummaryRepository;
+import org.quizly.quizly.core.domin.repository.SolveTypeSummaryRepository;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.repository.JobRepository;
@@ -26,29 +27,29 @@ import java.util.List;
 @Configuration
 @RequiredArgsConstructor
 @Log4j2
-public class AggregateUserQuizTypeDailySummaryStepConfig {
+public class AggregateSolveTypeSummaryStepConfig {
 
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
   private final SolveHistoryRepository solveHistoryRepository;
-  private final UserQuizTypeDailySummaryRepository quizTypeDailySummaryRepository;
+  private final SolveTypeSummaryRepository solveTypeSummaryRepository;
 
   @Bean
-  public Step aggregateUserQuizTypeDailySummaryStep(
+  public Step aggregateSolveTypeSummaryStep(
       ItemReader<User> aggregationUserReader,
-      ItemProcessor<User, List<UserQuizTypeDailySummary>> aggregateUserQuizTypeDailySummaryProcessor,
-      ItemWriter<List<UserQuizTypeDailySummary>> aggregateUserQuizTypeDailySummaryWriter) {
-    return new StepBuilder("aggregateUserQuizTypeDailySummaryStep", jobRepository)
-        .<User, List<UserQuizTypeDailySummary>>chunk(20, transactionManager)
+      ItemProcessor<User, List<SolveTypeSummary>> aggregateSolveTypeSummaryProcessor,
+      ItemWriter<List<SolveTypeSummary>> aggregateSolveTypeSummaryWriter) {
+    return new StepBuilder("aggregateSolveTypeSummaryStep", jobRepository)
+        .<User, List<SolveTypeSummary>>chunk(20, transactionManager)
         .reader(aggregationUserReader)
-        .processor(aggregateUserQuizTypeDailySummaryProcessor)
-        .writer(aggregateUserQuizTypeDailySummaryWriter)
+        .processor(aggregateSolveTypeSummaryProcessor)
+        .writer(aggregateSolveTypeSummaryWriter)
         .build();
   }
 
   @Bean
   @StepScope
-  public ItemProcessor<User, List<UserQuizTypeDailySummary>> aggregateUserQuizTypeDailySummaryProcessor(
+  public ItemProcessor<User, List<SolveTypeSummary>> aggregateSolveTypeSummaryProcessor(
       @Value("#{jobParameters['targetDate']}") String targetDateStr) {
     return user -> {
       try {
@@ -57,25 +58,27 @@ public class AggregateUserQuizTypeDailySummaryStepConfig {
         List<QuizTypeSummary> typeSummaryList =
             solveHistoryRepository.findFirstAttemptsByQuizTypeAndDate(user, targetDate);
 
-        List<UserQuizTypeDailySummary> summaryList = new ArrayList<>();
+        List<SolveTypeSummary> solveTypeSummaryList = new ArrayList<>();
         for (QuizTypeSummary typeSummary : typeSummaryList) {
-          UserQuizTypeDailySummary summary = quizTypeDailySummaryRepository
+          SolveTypeSummary solveTypeSummary = solveTypeSummaryRepository
               .findByUserAndQuizTypeAndDate(user, typeSummary.getQuizType(), targetDate)
-              .orElse(UserQuizTypeDailySummary.builder()
+              .orElse(SolveTypeSummary.builder()
                   .user(user)
                   .quizType(typeSummary.getQuizType())
                   .date(targetDate)
                   .build());
 
-          summary.setSolvedCount(typeSummary.getTotalCount() != null ? typeSummary.getTotalCount().intValue() : 0);
-          summary.setCorrectCount(typeSummary.getCorrectCount() != null ? typeSummary.getCorrectCount().intValue() : 0);
+          solveTypeSummary.setSolvedCount(
+              Optional.ofNullable(typeSummary.getTotalCount()).map(Long::intValue).orElse(0));
+          solveTypeSummary.setCorrectCount(
+              Optional.ofNullable(typeSummary.getCorrectCount()).map(Long::intValue).orElse(0));
 
-          summaryList.add(summary);
+          solveTypeSummaryList.add(solveTypeSummary);
         }
 
-        return summaryList;
+        return solveTypeSummaryList;
       } catch (Exception e) {
-        log.error("[AggregateUserQuizTypeDailySummaryProcessor] Failed for user: {}, targetDate: {}",
+        log.error("[AggregateSolveTypeSummaryProcessor] Failed for user: {}, targetDate: {}",
             user.getId(), targetDateStr, e);
         return null;
       }
@@ -84,11 +87,11 @@ public class AggregateUserQuizTypeDailySummaryStepConfig {
 
   @Bean
   @StepScope
-  public ItemWriter<List<UserQuizTypeDailySummary>> aggregateUserQuizTypeDailySummaryWriter() {
+  public ItemWriter<List<SolveTypeSummary>> aggregateSolveTypeSummaryWriter() {
     return items -> {
-      for (List<UserQuizTypeDailySummary> summaryList : items) {
-        if (summaryList != null && !summaryList.isEmpty()) {
-          quizTypeDailySummaryRepository.saveAll(summaryList);
+      for (List<SolveTypeSummary> solveTypeSummaryList : items) {
+        if (solveTypeSummaryList != null && !solveTypeSummaryList.isEmpty()) {
+          solveTypeSummaryRepository.saveAll(solveTypeSummaryList);
         }
       }
     };
