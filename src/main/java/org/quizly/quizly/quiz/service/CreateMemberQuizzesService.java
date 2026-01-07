@@ -2,7 +2,6 @@ package org.quizly.quizly.quiz.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -20,9 +19,11 @@ import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.domin.entity.SolveHistory;
 import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.account.service.ReadUserService;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.domin.repository.QuizRepository;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
-import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.core.util.AsyncTaskUtil;
@@ -46,7 +47,7 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
   private final CreateQuizService createQuizService;
   private final CreateTopicService createTopicService;
   private final QuizRepository quizRepository;
-  private final UserRepository userRepository;
+  private final ReadUserService readUserService;
   private final SolveHistoryRepository solveHistoryRepository;
 
   private static final int DEFAULT_QUIZ_COUNT = 10;
@@ -63,23 +64,19 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
           .build();
     }
 
-    String providerId = request.getUserPrincipal().getProviderId();
-    if (providerId == null || providerId.isEmpty()) {
-      return CreateMemberQuizzesResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberQuizzesErrorCode.NOT_EXIST_PROVIDER_ID)
-          .build();
-    }
+    ReadUserResponse readUserResponse = readUserService.execute(
+        ReadUserRequest.builder()
+            .userPrincipal(request.getUserPrincipal())
+            .build()
+    );
 
-    Optional<User> userOptional = userRepository.findByProviderId(providerId);
-    if (userOptional.isEmpty()) {
-      log.error("[CreateMemberQuizzesService] User not found for providerId: {}", providerId);
+    if (!readUserResponse.isSuccess()) {
       return CreateMemberQuizzesResponse.builder()
           .success(false)
           .errorCode(CreateMemberQuizzesErrorCode.NOT_FOUND_USER)
           .build();
     }
-    User user = userOptional.get();
+    User user = readUserResponse.getUser();
 
     CreateTopicResponse createTopicResponse = createTopicService.execute(
         CreateTopicRequest.builder()
@@ -183,7 +180,6 @@ public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizz
   public enum CreateMemberQuizzesErrorCode implements BaseErrorCode<DomainException> {
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
     FAILED_CREATE_TOPIC(HttpStatus.INTERNAL_SERVER_ERROR, "주제 생성에 실패하였습니다."),
     FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "텍스트 청크 생성에 실패하였습니다."),
