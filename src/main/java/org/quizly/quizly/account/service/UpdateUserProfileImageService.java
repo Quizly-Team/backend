@@ -1,6 +1,5 @@
 package org.quizly.quizly.account.service;
 
-import java.util.Optional;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
@@ -8,6 +7,8 @@ import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
@@ -18,8 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-
 @Log4j2
 @Service
 @RequiredArgsConstructor
@@ -28,6 +27,7 @@ public class UpdateUserProfileImageService implements BaseService<
         UpdateUserProfileImageService.UpdateUserProfileImageRequest,
         UpdateUserProfileImageService.UpdateUserProfileImageResponse> {
 
+    private final ReadUserService readUserService;
     private final UserRepository userRepository;
     private final ProfileImageService profileImageService;
 
@@ -39,22 +39,19 @@ public class UpdateUserProfileImageService implements BaseService<
                     .errorCode(UpdateUserProfileImageErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
                     .build();
         }
-        String providerId = request.getUserPrincipal().getProviderId();
-        if (providerId == null || providerId.isEmpty()) {
-            return UpdateUserProfileImageResponse.builder()
-                    .success(false)
-                    .errorCode(UpdateUserProfileImageErrorCode.NOT_EXIST_PROVIDER_ID)
-                    .build();
-        }
-        Optional<User> userOptional = userRepository.findByProviderId(providerId);
-        if (userOptional.isEmpty()) {
-            log.error("[UpdateUserProfileImageService] User not found for providerId: {}", providerId);
+        ReadUserResponse readUserResponse = readUserService.execute(
+            ReadUserRequest.builder()
+                .userPrincipal(request.getUserPrincipal())
+                .build()
+        );
+
+        if (!readUserResponse.isSuccess()) {
             return UpdateUserProfileImageResponse.builder()
                     .success(false)
                     .errorCode(UpdateUserProfileImageErrorCode.NOT_FOUND_USER)
                     .build();
         }
-        User user = userOptional.get();
+        User user = readUserResponse.getUser();
 
         try {
             ProfileImageService.UploadProfileImageRequest uploadRequest =
@@ -97,7 +94,6 @@ public class UpdateUserProfileImageService implements BaseService<
     @RequiredArgsConstructor
     public enum UpdateUserProfileImageErrorCode implements BaseErrorCode<DomainException> {
         NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-        NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
         NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
         UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드에 실패했습니다.");
 

@@ -1,6 +1,5 @@
 package org.quizly.quizly.account.service;
 
-import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,11 +11,12 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.account.service.ReadUserInfoService.ReadUserInfoRequest;
 import org.quizly.quizly.account.service.ReadUserInfoService.ReadUserInfoResponse;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ReadUserInfoService implements BaseService<ReadUserInfoRequest, ReadUserInfoResponse> {
 
-  private final UserRepository userRepository;
+  private final ReadUserService readUserService;
 
   @Override
   public ReadUserInfoResponse execute(ReadUserInfoRequest request) {
@@ -41,22 +41,19 @@ public class ReadUserInfoService implements BaseService<ReadUserInfoRequest, Rea
           .build();
     }
 
-    String providerId = request.getUserPrincipal().getProviderId();
-    if (providerId == null || providerId.isBlank()) {
-      return ReadUserInfoResponse.builder()
-          .success(false)
-          .errorCode(ReadUserInfoErrorCode.NOT_EXIST_PROVIDER_ID)
-          .build();
-    }
-    Optional<User> userOptional = userRepository.findByProviderId(providerId);
-    if (userOptional.isEmpty()) {
-      log.error("[ReadUserInfoService] User not found for providerId: {}", providerId);
+    ReadUserResponse readUserResponse = readUserService.execute(
+        ReadUserRequest.builder()
+            .userPrincipal(request.getUserPrincipal())
+            .build()
+    );
+
+    if (!readUserResponse.isSuccess()) {
       return ReadUserInfoResponse.builder()
           .success(false)
           .errorCode(ReadUserInfoErrorCode.NOT_FOUND_USER)
           .build();
     }
-    User user = userOptional.get();
+    User user = readUserResponse.getUser();
 
     return ReadUserInfoResponse.builder()
         .name(user.getName())
@@ -72,7 +69,6 @@ public class ReadUserInfoService implements BaseService<ReadUserInfoRequest, Rea
   public enum ReadUserInfoErrorCode implements BaseErrorCode<DomainException> {
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;

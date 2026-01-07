@@ -17,9 +17,11 @@ import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.domin.entity.SolveHistory;
 import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.account.service.ReadUserService;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.domin.repository.QuizRepository;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
-import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
@@ -39,7 +41,7 @@ public class GradeMemberWrongQuizzesService implements
     BaseService<GradeMemberWrongQuizzesRequest, GradeMemberWrongQuizzesResponse> {
 
   private final QuizRepository quizRepository;
-  private final UserRepository userRepository;
+  private final ReadUserService readUserService;
   private final SolveHistoryRepository solveHistoryRepository;
   private final GraderQuizService graderQuizService;
 
@@ -52,22 +54,19 @@ public class GradeMemberWrongQuizzesService implements
           .build();
     }
 
-    String providerId = request.getUserPrincipal().getProviderId();
-    if (providerId == null || providerId.isBlank()) {
-      return GradeMemberWrongQuizzesResponse.builder()
-          .success(false)
-          .errorCode(GradeMemberWrongQuizzesErrorCode.NOT_EXIST_PROVIDER_ID)
-          .build();
-    }
-    Optional<User> userOptional = userRepository.findByProviderId(providerId);
-    if (userOptional.isEmpty()) {
-      log.error("[GradeMemberWrongQuizzesService] User not found for providerId: {}", providerId);
+    ReadUserResponse readUserResponse = readUserService.execute(
+        ReadUserRequest.builder()
+            .userPrincipal(request.getUserPrincipal())
+            .build()
+    );
+
+    if (!readUserResponse.isSuccess()) {
       return GradeMemberWrongQuizzesResponse.builder()
           .success(false)
           .errorCode(GradeMemberWrongQuizzesErrorCode.NOT_FOUND_USER)
           .build();
     }
-    User user = userOptional.get();
+    User user = readUserResponse.getUser();
 
     Optional<Quiz> optionalQuiz = quizRepository.findById(request.getQuizId());
     if (optionalQuiz.isEmpty()) {
@@ -134,7 +133,6 @@ public class GradeMemberWrongQuizzesService implements
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
-    NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
     CANNOT_SOLVE_OTHER_QUIZ(HttpStatus.FORBIDDEN, "다른 유저가 만든 퀴즈는 풀 수 없습니다."),
     GRADE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채점에 실패하였습니다.");
