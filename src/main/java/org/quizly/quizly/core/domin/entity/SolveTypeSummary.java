@@ -17,8 +17,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @SuperBuilder
 @Entity
-@Table(name = "user_quiz_type_daily_summary", uniqueConstraints = { @UniqueConstraint(columnNames = {"user_id", "quiz_type", "summary_date"}) })
-public class UserQuizTypeDailySummary extends BaseEntity {
+@Table(name = "solve_type_summary", uniqueConstraints = { @UniqueConstraint(columnNames = {"user_id", "quiz_type", "date"}) })
+public class SolveTypeSummary extends BaseEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
@@ -28,7 +28,7 @@ public class UserQuizTypeDailySummary extends BaseEntity {
   @Column(nullable = false)
   private QuizType quizType;
 
-  @Column(name = "summary_date", nullable = false)
+  @Column(name = "date", nullable = false)
   private LocalDate date;
 
   @Column(nullable = false)
