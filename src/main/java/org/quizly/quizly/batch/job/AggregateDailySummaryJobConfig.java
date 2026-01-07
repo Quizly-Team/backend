@@ -18,10 +18,10 @@ public class AggregateDailySummaryJobConfig {
 
   @Bean
   public Job aggregateDailySummaryJob(
-      Step aggregateUserQuizTypeDailySummaryStep,
+      Step aggregateSolveTypeSummaryStep,
       Step aggregateSolveHourlySummaryStep) {
     return new JobBuilder("aggregateDailySummaryJob", jobRepository)
-        .start(aggregateUserQuizTypeDailySummaryStep)
+        .start(aggregateSolveTypeSummaryStep)
         .next(aggregateSolveHourlySummaryStep)
         .build();
   }
