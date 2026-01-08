@@ -17,6 +17,9 @@ import java.util.List;
 @Schema(description = "마이페이지 대시보드 응답")
 public class ReadDashboardResponse {
 
+  @Schema(description = "오늘의 학습 통계: 총 풀이 수, 정답 수, 오답 수(오늘)")
+  private TodaySummary todaySummary;
+
   @Schema(description = "이번 달 누적 학습 통계 (이번 달 1일 ~ 오늘)")
   private CumulativeSummary cumulativeSummary;
 
@@ -31,6 +34,15 @@ public class ReadDashboardResponse {
 
   @Schema(description = "시간대별 학습 패턴 (7개 시간대 모두 반환)")
   private List<HourlySummary> hourlySummaryList;
+
+  public record TodaySummary(
+      @Schema(description = "총 풀이 수", example = "10")
+      int solvedCount,
+      @Schema(description = "정답 수", example = "7")
+      int correctCount,
+      @Schema(description = "오답 수", example = "3")
+      int wrongCount
+  ){}
 
   public record CumulativeSummary(
       @Schema(description = "총 풀이 수", example = "100")

@@ -8,6 +8,7 @@ import org.quizly.quizly.account.dto.response.ReadDashboardResponse.CumulativeSu
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse.DailySummary;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse.QuizTypeSummary;
 import org.quizly.quizly.account.dto.response.ReadDashboardResponse.HourlySummary;
+import org.quizly.quizly.account.dto.response.ReadDashboardResponse.TodaySummary;
 import org.quizly.quizly.account.service.ReadDashboardService;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardErrorCode;
 import org.quizly.quizly.account.service.ReadDashboardService.ReadDashboardRequest;
@@ -34,6 +35,7 @@ public class ReadDashboardController {
   @Operation(
       summary = "마이페이지 대시보드 조회 API",
       description = "현재 로그인 유저의 학습 통계 대시보드 정보를 조회합니다.\n\n"
+          + "- 오늘의 학습 통계: 총 풀이 수, 정답 수, 오답 수(오늘)\n"
           + "- 이번 달 누적 학습 통계: 총 풀이 수, 정답 수, 오답 수(이번 달 1일 ~ 오늘)\n"
           + "- 문제 유형별 통계: 각 유형별 풀이 수, 정답 수, 오답 수(이번 달 1일 ~ 오늘)\n"
           + "- 주제 유형별 통계: 각 주제별 풀이 수, 정답 수, 오답 수(최근 6개 주제만 반환)\n"
@@ -66,6 +68,12 @@ public class ReadDashboardController {
   }
 
   private ReadDashboardResponse toResponse(ReadDashboardService.ReadDashboardServiceResponse serviceResponse) {
+    TodaySummary todaySummary = new TodaySummary(
+        serviceResponse.getTodaySummary().solvedCount(),
+        serviceResponse.getTodaySummary().correctCount(),
+        serviceResponse.getTodaySummary().wrongCount()
+    );
+
     CumulativeSummary cumulativeSummary = new CumulativeSummary(
         serviceResponse.getCumulativeSummary().solvedCount(),
         serviceResponse.getCumulativeSummary().correctCount(),
@@ -106,6 +114,7 @@ public class ReadDashboardController {
         .collect(Collectors.toList());
 
     return ReadDashboardResponse.builder()
+        .todaySummary(todaySummary)
         .quizTypeSummaryList(quizTypeSummaryList)
         .cumulativeSummary(cumulativeSummary)
         .topicSummaryList(topicSummaryList)
