@@ -11,6 +11,8 @@ import org.quizly.quizly.account.service.ReadHourlySummaryService.ReadHourlySumm
 import org.quizly.quizly.account.service.ReadHourlySummaryService.ReadHourlySummaryResponse;
 import org.quizly.quizly.account.service.ReadQuizTypeSummaryService.ReadQuizTypeSummaryRequest;
 import org.quizly.quizly.account.service.ReadQuizTypeSummaryService.ReadQuizTypeSummaryResponse;
+import org.quizly.quizly.account.service.ReadTodaySummaryService.ReadTodaySummaryRequest;
+import org.quizly.quizly.account.service.ReadTodaySummaryService.ReadTodaySummaryResponse;
 import org.quizly.quizly.account.service.ReadTopicSummaryService.ReadTopicSummaryRequest;
 import org.quizly.quizly.account.service.ReadTopicSummaryService.ReadTopicSummaryResponse;
 import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
@@ -40,6 +42,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
   private final ReadCumulativeSummaryService readCumulativeSummaryService;
   private final ReadDailySummaryService readDailySummaryService;
   private final ReadHourlySummaryService readHourlySummaryService;
+  private final ReadTodaySummaryService readTodaySummaryService;
 
   @Override
   public ReadDashboardServiceResponse execute(ReadDashboardRequest request) {
@@ -64,6 +67,19 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
           .build();
     }
     User user = readUserResponse.getUser();
+
+    ReadTodaySummaryResponse readTodaySummaryResponse = readTodaySummaryService.execute(
+        ReadTodaySummaryRequest.builder()
+            .user(user)
+            .build()
+    );
+
+    if (!readTodaySummaryResponse.isSuccess()) {
+      return ReadDashboardServiceResponse.builder()
+          .success(false)
+          .errorCode(ReadDashboardErrorCode.FAILED_TO_GET_TODAY_SUMMARY)
+          .build();
+    }
 
     ReadQuizTypeSummaryResponse quizTypeSummaryResponse = readQuizTypeSummaryService.execute(
         ReadQuizTypeSummaryRequest.builder()
@@ -131,6 +147,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     }
 
     return ReadDashboardServiceResponse.builder()
+        .todaySummary(readTodaySummaryResponse.getTodaySummary())
         .quizTypeSummaryList(quizTypeSummaryResponse.getQuizTypeSummaryList())
         .topicSummaryList(topicSummaryResponse.getTopicSummaryList())
         .cumulativeSummary(cumulativeSummaryResponse.getCumulativeSummary())
@@ -145,6 +162,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
+    FAILED_TO_GET_TODAY_SUMMARY(HttpStatus.INTERNAL_SERVER_ERROR, "오늘 학습 요약 조회에 실패했습니다."),
     FAILED_TO_GET_QUIZ_TYPE_SUMMARY(HttpStatus.INTERNAL_SERVER_ERROR, "퀴즈 타입 통계 조회에 실패했습니다."),
     FAILED_TO_GET_TOPIC_SUMMARY(HttpStatus.INTERNAL_SERVER_ERROR, "주제별 통계 조회에 실패했습니다."),
     FAILED_TO_GET_CUMULATIVE_SUMMARY(HttpStatus.INTERNAL_SERVER_ERROR, "누적 통계 조회에 실패했습니다."),
@@ -182,6 +200,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
   @AllArgsConstructor
   @ToString
   public static class ReadDashboardServiceResponse extends BaseResponse<ReadDashboardErrorCode> {
+    private ReadTodaySummaryResponse.TodaySummary todaySummary;
     private ReadCumulativeSummaryResponse.CumulativeSummary cumulativeSummary;
     private List<ReadQuizTypeSummaryResponse.QuizTypeSummary> quizTypeSummaryList;
     private List<ReadTopicSummaryResponse.TopicSummary> topicSummaryList;
