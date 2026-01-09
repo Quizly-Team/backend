@@ -40,7 +40,8 @@ public class ReadDashboardController {
           + "- 문제 유형별 통계: 각 유형별 풀이 수, 정답 수, 오답 수(이번 달 1일 ~ 오늘)\n"
           + "- 주제 유형별 통계: 각 주제별 풀이 수, 정답 수, 오답 수(최근 6개 주제만 반환)\n"
           + "- 월별 학습 문제 기록: GitHub 잔디처럼 날짜별 풀이 수 (문제를 푼 날짜만 반환)\n"
-          + "- 시간대별 학습 패턴: 7개 시간대(0, 6, 9, 12, 15, 18, 21시)별 풀이 수 (모든 시간대 반환)\n",
+          + "- 시간대별 학습 패턴: 7개 시간대(0, 6, 9, 12, 15, 18, 21시)별 풀이 수 (모든 시간대 반환)\n"
+          + "- AI 학습 분석: 오늘 풀이 수, 오늘 정답률, 연속 학습 일수, 가장 많이 푼 문제 유형, 가장 취약한 문제 유형에 따른 학습 분석 결과\n",
       operationId = "/account/dashboard"
   )
   @GetMapping("/account/dashboard")
@@ -113,6 +114,12 @@ public class ReadDashboardController {
         ))
         .collect(Collectors.toList());
 
+    ReadDashboardResponse.AiAnalysis aiAnalysis = serviceResponse.getAiAnalysisResult()!= null
+            ? new ReadDashboardResponse.AiAnalysis(
+            serviceResponse.getAiAnalysisResult()
+    )
+            : null;
+
     return ReadDashboardResponse.builder()
         .todaySummary(todaySummary)
         .quizTypeSummaryList(quizTypeSummaryList)
@@ -120,6 +127,7 @@ public class ReadDashboardController {
         .topicSummaryList(topicSummaryList)
         .dailySummaryList(dailySummaryList)
         .hourlySummaryList(hourlySummaryList)
+        .aiAnalysis(aiAnalysis)
         .build();
   }
 }
