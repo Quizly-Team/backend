@@ -14,7 +14,7 @@ public abstract class OkHttpRequest {
   private static final OkHttpClient client = new OkHttpClient.Builder()
       .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
       .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-      .readTimeout(600, java.util.concurrent.TimeUnit.SECONDS) // 응답 대기 시간
+      .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // 응답 대기 시간
       .build();
 
   public static Response createRequest(Request request) {
