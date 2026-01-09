@@ -35,6 +35,9 @@ public class ReadDashboardResponse {
   @Schema(description = "시간대별 학습 패턴 (7개 시간대 모두 반환)")
   private List<HourlySummary> hourlySummaryList;
 
+  @Schema(description = "AI 기반 학습 분석 결과")
+  private AiAnalysis aiAnalysis;
+
   public record TodaySummary(
       @Schema(description = "총 풀이 수", example = "10")
       int solvedCount,
@@ -88,5 +91,9 @@ public class ReadDashboardResponse {
       int startHour,
       @Schema(description = "해당 시간대에 푼 문제 수", example = "15")
       int solvedCount
+  ){}
+  public record AiAnalysis(
+          @Schema(description = "AI 학습 분석 결과")
+          String analysisText
   ){}
 }
