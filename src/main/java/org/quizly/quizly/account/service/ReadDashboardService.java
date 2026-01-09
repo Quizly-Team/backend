@@ -17,6 +17,7 @@ import org.quizly.quizly.account.service.ReadTopicSummaryService.ReadTopicSummar
 import org.quizly.quizly.account.service.ReadTopicSummaryService.ReadTopicSummaryResponse;
 import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
 import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
+import org.quizly.quizly.account.support.DashboardAiAnalysisInputBuilder;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
@@ -43,6 +44,9 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
   private final ReadDailySummaryService readDailySummaryService;
   private final ReadHourlySummaryService readHourlySummaryService;
   private final ReadTodaySummaryService readTodaySummaryService;
+  private final ReadAiAnalysisService readAiAnalysisService;
+  private final DashboardAiAnalysisInputBuilder dashboardAiAnalysisInputBuilder;
+
 
   @Override
   public ReadDashboardServiceResponse execute(ReadDashboardRequest request) {
@@ -145,6 +149,23 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
           .errorCode(ReadDashboardErrorCode.FAILED_TO_GET_HOURLY_SUMMARY)
           .build();
     }
+    String aiInput = dashboardAiAnalysisInputBuilder.build(
+            readTodaySummaryResponse.getTodaySummary(),
+            quizTypeSummaryResponse.getQuizTypeSummaryList(),
+            topicSummaryResponse.getTopicSummaryList()
+    );
+
+    ReadAiAnalysisService.ReadAiAnalysisResponse aiResponse =
+            readAiAnalysisService.execute(
+                    ReadAiAnalysisService.ReadAiAnalysisRequest.builder()
+                            .analysisTargetText(aiInput)
+                            .promptPath("prompt/account/dashboard_analysis.txt")
+                            .build()
+            );
+
+    String aiResult = aiResponse.isSuccess()
+            ? aiResponse.getAnalysisResult()
+            : null;
 
     return ReadDashboardServiceResponse.builder()
         .todaySummary(readTodaySummaryResponse.getTodaySummary())
@@ -153,8 +174,11 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
         .cumulativeSummary(cumulativeSummaryResponse.getCumulativeSummary())
         .dailySummaryList(dailySummaryResponse.getDailySummaryList())
         .hourlySummaryList(hourlySummaryResponse.getHourlySummaryList())
+        .aiAnalysisResult(aiResult)
         .build();
   }
+
+
 
   @Getter
   @RequiredArgsConstructor
@@ -206,5 +230,6 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     private List<ReadTopicSummaryResponse.TopicSummary> topicSummaryList;
     private List<ReadDailySummaryResponse.DailySummary> dailySummaryList;
     private List<ReadHourlySummaryResponse.HourlySummary> hourlySummaryList;
+    private String aiAnalysisResult;
   }
 }
