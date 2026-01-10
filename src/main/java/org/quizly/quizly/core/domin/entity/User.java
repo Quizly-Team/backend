@@ -2,11 +2,7 @@ package org.quizly.quizly.core.domin.entity;
 
 import jakarta.persistence.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.domin.shared.BaseEntity;
 
@@ -65,6 +61,16 @@ public class User extends BaseEntity {
 
   @Column(nullable = true)
   private String profileImageUrl;
+
+  @Column(nullable = true)
+  private String targetType;
+
+  @Column(nullable = true)
+  private String studyGoal;
+
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean onboardingCompleted = false;
 
   @PrePersist
   public void setDefaultProfileImage() {
