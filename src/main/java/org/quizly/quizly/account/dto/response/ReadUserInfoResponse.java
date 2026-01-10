@@ -27,4 +27,7 @@ public class ReadUserInfoResponse extends BaseResponse<GlobalErrorCode> {
   @Schema(description = "프로필 url", example = "https://kr.object.ncloudstorage.com/quizly-profile-images/defaults/default_profile.png")
   private String profileImageUrl;
 
+  @Schema(description = "온보딩 설문조사 여부", example = "true")
+  private boolean onboardingCompleted;
+
 }
