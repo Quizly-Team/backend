@@ -56,6 +56,7 @@ public class ReadUserInfoController {
         .nickName(serviceResponse.getNickName())
         .email(serviceResponse.getEmail())
         .profileImageUrl(serviceResponse.getProfileImageUrl())
+        .onboardingCompleted(serviceResponse.isOnboardingCompleted())
         .build();
   }
 }
