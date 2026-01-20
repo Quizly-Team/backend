@@ -94,6 +94,6 @@ public class ReadDashboardResponse {
   ){}
   public record AiAnalysis(
           @Schema(description = "AI 학습 분석 결과")
-          String analysisText
+          String result
   ){}
 }

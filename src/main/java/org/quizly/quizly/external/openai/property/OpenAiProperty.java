@@ -1,4 +1,4 @@
-package org.quizly.quizly.external.gemini.property;
+package org.quizly.quizly.external.openai.property;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -8,11 +8,9 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 @Component
-@ConfigurationProperties(prefix = "gemini.api")
-public class GeminiProperty {
-
+@ConfigurationProperties(prefix = "openai.api")
+public class OpenAiProperty {
     private String url;
     private String model;
     private String key;
-
 }
