@@ -114,11 +114,9 @@ public class ReadDashboardController {
         ))
         .collect(Collectors.toList());
 
-    ReadDashboardResponse.AiAnalysis aiAnalysis = serviceResponse.getAiAnalysisResult()!= null
-            ? new ReadDashboardResponse.AiAnalysis(
-            serviceResponse.getAiAnalysisResult()
-    )
-            : null;
+      ReadDashboardResponse.AiAnalysis aiAnalysis = serviceResponse.getAiAnalysis() != null
+          ? new ReadDashboardResponse.AiAnalysis(serviceResponse.getAiAnalysis())
+          : null;
 
     return ReadDashboardResponse.builder()
         .todaySummary(todaySummary)
