@@ -158,6 +158,8 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     ReadAiAnalysisService.ReadAiAnalysisResponse aiResponse =
             readAiAnalysisService.execute(
                     ReadAiAnalysisService.ReadAiAnalysisRequest.builder()
+                            .user(user)
+                            .solvedCount(cumulativeSummaryResponse.getCumulativeSummary().solvedCount())
                             .analysisTargetText(aiInput)
                             .promptPath("prompt/account/dashboard_analysis.txt")
                             .build()
@@ -174,7 +176,7 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
         .cumulativeSummary(cumulativeSummaryResponse.getCumulativeSummary())
         .dailySummaryList(dailySummaryResponse.getDailySummaryList())
         .hourlySummaryList(hourlySummaryResponse.getHourlySummaryList())
-        .aiAnalysisResult(aiResult)
+        .aiAnalysis(aiResult)
         .build();
   }
 
@@ -230,6 +232,6 @@ public class ReadDashboardService implements BaseService<ReadDashboardService.Re
     private List<ReadTopicSummaryResponse.TopicSummary> topicSummaryList;
     private List<ReadDailySummaryResponse.DailySummary> dailySummaryList;
     private List<ReadHourlySummaryResponse.HourlySummary> hourlySummaryList;
-    private String aiAnalysisResult;
+    private String aiAnalysis;
   }
 }
