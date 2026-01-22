@@ -61,7 +61,8 @@ public class SecurityConfig {
                 "/api-docs/**",
                 "/auth/reissue",
                 "/quizzes/guest/**",
-                "/quizzes/{quizId}/answer/guest"
+                "/quizzes/{quizId}/answer/guest",
+                "/actuator/health"
             ).permitAll()
             .anyRequest().authenticated());
 

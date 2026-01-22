@@ -57,11 +57,16 @@ dependencies {
 	//batch
 	implementation 'org.springframework.boot:spring-boot-starter-batch'
 	testImplementation 'org.springframework.batch:spring-batch-test'
+
 	// Apache PDF Box
 	implementation group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.0.31'
 
 	// Open AI
 	implementation("com.openai:openai-java:4.15.0")
+
+	// Actuator
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
 
 
 }
