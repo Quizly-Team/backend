@@ -11,15 +11,15 @@ HyperCLOVA X 기반 서비스 소개 ([네이버 클라우드 블로그](https:/
 
 - 서비스 아키텍쳐
 
-  <img width="75%" alt="Image" src="https://github.com/user-attachments/assets/59e9f89c-7b45-4d04-bc76-db9b1521f9b8" />
+  <img width="75%" alt="Image" src="https://github.com/user-attachments/assets/7022c7ad-4240-4027-af4c-260feb4888f1" />
 
 - ERD
 
-  <img width="75%" alt="Image" src="https://github.com/user-attachments/assets/1a05ea97-0930-4622-835f-d4c08548233c" />
+  <img width="75%" alt="Image" src="https://github.com/user-attachments/assets/01c5aaff-9db3-4e2f-b814-6c124a9779b9" />
 
 ## API 명세서
 
-<img width="75%" alt="Image" src="https://github.com/user-attachments/assets/941b6e71-cacd-45cb-9759-01b113a3d906" />
+<img width="75%" alt="Image" src="https://github.com/user-attachments/assets/1fee6f75-d033-4e9a-b4b2-61d798676b34" />
 <img width="75%" alt="Image" src="https://github.com/user-attachments/assets/e03651a4-9a55-4085-9afc-89dc2a279067" />
 
 
@@ -35,12 +35,12 @@ Merge 방식, Git 브랜치 및 커밋 규칙 - [Notion 문서 링크](https://w
 - **Database**
   - <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=MySQL&logoColor=white">
 - **Deploy**
-  - <img src="https://img.shields.io/badge/NAVER%20Cloud%20Platform%20(NCP)-03C75A?style=for-the-badge&logo=naver&logoColor=white"/> <img src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white"> ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white) <img src="https://img.shields.io/badge/WATCHTOWER-416271?style=for-the-badge&logo=watchtower&logoColor=white"/>
+  - <img src="https://img.shields.io/badge/NAVER%20Cloud%20Platform%20(NCP)-03C75A?style=for-the-badge&logo=naver&logoColor=white"/> <img src="https://img.shields.io/badge/nginx-%23009639.svg?style=for-the-badge&logo=nginx&logoColor=white"> <img src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white"> ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white) <img src="https://img.shields.io/badge/WATCHTOWER-416271?style=for-the-badge&logo=watchtower&logoColor=white"/>
 - **AI / API**
   - <img src="https://img.shields.io/badge/NAVER%20Clova%20Studio%20API%20(HCX--007)-03C75A?style=for-the-badge&logo=naver&logoColor=white"/> <img src="https://img.shields.io/badge/NAVER%20Clova%20OCR%20API-03C75A?style=for-the-badge&logo=naver&logoColor=white"/>
 
 - **Communication tool**
-  - ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white) ![Git](https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white), ![Notion](https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white) ![Slack](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white) ![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white) ![Figma](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white)
+  - ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white) ![Git](https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white) ![Notion](https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white) ![Slack](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white) ![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white) ![Figma](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white)
 
 ## 기술 블로그
 
@@ -49,6 +49,14 @@ Merge 방식, Git 브랜치 및 커밋 규칙 - [Notion 문서 링크](https://w
 - AI 최적화 - [Notion 문서 링크](https://chanyoung-kwon.notion.site/AI-291e5ea23d6b80c0b8e2dfb75237b92c)
 
 - AI 모의고사 응답 품질 테스트 - [Notion 문서 링크](https://chanyoung-kwon.notion.site/AI-29de5ea23d6b80a39f17f53d38bc1498?source=copy_link)
+
+- PDF 입력 텍스트 추출 전략 개선 및 비용 최적화 - [Notion 문서 링크](https://chanyoung-kwon.notion.site/PDF-2d1e5ea23d6b8040836ffc3ccfec5054?source=copy_link)
+
+- 대시 보드 설계 (Batch) - [Notion 문서 링크](https://chanyoung-kwon.notion.site/Batch-2e6e5ea23d6b8025a03ce3f51ce752ca?source=copy_link)
+
+- 실서버 배포 (Bule/Green) - [Notion 문서 링크](https://chanyoung-kwon.notion.site/Bule-Green-2eee5ea23d6b80c3ac30e0ff5b0838e1?source=copy_link)
+
+- 부하 테스트 (무중단 배포) - [Notion 문서 링크](https://chanyoung-kwon.notion.site/2eee5ea23d6b800ca942eb85361745a6?source=copy_link)
 
 
 ## 백엔드 팀원
