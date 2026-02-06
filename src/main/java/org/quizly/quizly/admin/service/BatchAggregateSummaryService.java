@@ -41,17 +41,17 @@ public class BatchAggregateSummaryService implements BaseService<BatchAggregateS
           .build();
     }
 
-    String providerId = request.getUserPrincipal().getProviderId();
-    if (providerId == null || providerId.isBlank()) {
+    Long userId = request.getUserPrincipal().getUserId();
+    if (userId == null) {
       return BatchAggregateSummaryResponse.builder()
           .success(false)
           .errorCode(BatchAggregateSummaryErrorCode.INVALID_PARAMETER)
           .build();
     }
 
-    var userOptional = userRepository.findByProviderId(providerId);
+    var userOptional = userRepository.findById(userId);
     if (userOptional.isEmpty()) {
-      log.error("[BatchAggregateSummaryService] User not found for providerId: {}", providerId);
+      log.error("[BatchAggregateSummaryService] User not found for userId: {}", userId);
       return BatchAggregateSummaryResponse.builder()
           .success(false)
           .errorCode(BatchAggregateSummaryErrorCode.NOT_FOUND_USER)

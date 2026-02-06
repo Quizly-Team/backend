@@ -34,17 +34,17 @@ public class ReadUserService implements BaseService<ReadUserService.ReadUserRequ
           .build();
     }
 
-    String providerId = request.getUserPrincipal().getProviderId();
-    if (providerId == null || providerId.isBlank()) {
+    Long userId = request.getUserPrincipal().getUserId();
+    if (userId == null) {
       return ReadUserResponse.builder()
           .success(false)
           .errorCode(ReadUserErrorCode.NOT_EXIST_PROVIDER_ID)
           .build();
     }
 
-    Optional<User> userOptional = userRepository.findByProviderId(providerId);
+    Optional<User> userOptional = userRepository.findById(userId);
     if (userOptional.isEmpty()) {
-      log.error("[ReadUserService] User not found for providerId: {}", providerId);
+      log.error("[ReadUserService] User not found for userId: {}", userId);
       return ReadUserResponse.builder()
           .success(false)
           .errorCode(ReadUserErrorCode.NOT_FOUND_USER)

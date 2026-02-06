@@ -7,7 +7,6 @@ import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.core.domin.entity.User.Role;
 import org.quizly.quizly.jwt.error.AuthErrorCode;
@@ -37,9 +36,9 @@ public class JwtProvider {
     this.secretKey = io.jsonwebtoken.security.Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
   }
 
-  public String getProviderId(String token) {
+  public Long getUserId(String token) {
     return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
-        .get("providerId", String.class);
+        .get("userId", Long.class);
   }
 
   public String getRole(String token) {
@@ -58,9 +57,9 @@ public class JwtProvider {
     }
   }
 
-  public String generateAccessToken(String providerId, String role) {
+  public String generateAccessToken(Long userId, String role) {
     return Jwts.builder()
-        .claim("providerId", providerId)
+        .claim("userId", userId)
         .claim("role", role)
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
@@ -68,9 +67,9 @@ public class JwtProvider {
         .compact();
   }
 
-  public String generateRefreshToken(String providerId) {
+  public String generateRefreshToken(Long userId) {
     return Jwts.builder()
-        .claim("providerId", providerId)
+        .claim("userId", userId)
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
         .signWith(secretKey)
@@ -78,11 +77,11 @@ public class JwtProvider {
   }
 
   public Authentication getAuthentication(String token) {
-    String providerId = getProviderId(token);
+    Long userId = getUserId(token);
     String roleString = getRole(token);
     Role role = Role.fromKey(roleString);
 
-    UserPrincipal userPrincipal = new UserPrincipal(providerId, role);
+    UserPrincipal userPrincipal = new UserPrincipal(userId, role);
     return new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
   }
 }

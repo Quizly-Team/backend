@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
@@ -19,6 +20,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Auth", description = "인증")
@@ -39,7 +41,7 @@ public class RevokeRefreshTokenController {
   ) {
 
     var serviceResponse = revokeRefreshTokenService.execute( RevokeRefreshTokenRequest.builder()
-        .providerId(userPrincipal.getProviderId())
+        .userId(userPrincipal.getUserId())
         .build());
 
     if (!serviceResponse.isSuccess()) {
@@ -49,6 +51,8 @@ public class RevokeRefreshTokenController {
             throw errorCode.toException();
           });
     }
+
+    log.info("[AUTH] Logout - userId: {}", userPrincipal.getUserId());
 
     ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
         .httpOnly(true)

@@ -37,17 +37,17 @@ public class CreateOnboardingService
                     .build();
         }
 
-        String providerId = request.getUserPrincipal().getProviderId();
-        if (providerId == null || providerId.isBlank()) {
+        Long userId = request.getUserPrincipal().getUserId();
+        if (userId == null) {
             return CreateOnboardingResponse.builder()
                     .success(false)
                     .errorCode(CreateOnboardingErrorCode.NOT_EXIST_PROVIDER_ID)
                     .build();
         }
 
-        Optional<User> userOptional = userRepository.findByProviderId(providerId);
+        Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isEmpty()) {
-            log.error("[CreateOnboardingService] User not found for providerId: {}", providerId);
+            log.error("[CreateOnboardingService] User not found for userId: {}", userId);
             return CreateOnboardingResponse.builder()
                     .success(false)
                     .errorCode(CreateOnboardingErrorCode.NOT_FOUND_USER)
