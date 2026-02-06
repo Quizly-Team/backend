@@ -38,10 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authentication);
       } else {
         request.setAttribute("exception", errorCode);
-        if (errorCode == AuthErrorCode.EXPIRED_ACCESS_TOKEN) {
-          log.warn("Expired JWT token: {}", token);
-        } else {
-          log.error("Invalid JWT token: {}", token);
+        if (errorCode != AuthErrorCode.EXPIRED_ACCESS_TOKEN) {
+          try {
+            Long userId = jwtProvider.getUserId(token);
+            log.warn("[Security] Invalid JWT token detected - userId: {}", userId);
+          } catch (Exception e) {
+            log.warn("[Security] Invalid JWT token detected - cannot parse userId");
+          }
         }
       }
     } else {
