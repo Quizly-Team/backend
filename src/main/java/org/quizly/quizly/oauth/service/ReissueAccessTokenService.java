@@ -21,8 +21,8 @@ import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.jwt.JwtProvider;
 import org.quizly.quizly.jwt.error.AuthErrorCode;
-import org.quizly.quizly.oauth.service.AccessTokenReissueService.AccessTokenReissueRequest;
-import org.quizly.quizly.oauth.service.AccessTokenReissueService.AccessTokenReissueResponse;
+import org.quizly.quizly.oauth.service.ReissueAccessTokenService.ReissueAccessTokenRequest;
+import org.quizly.quizly.oauth.service.ReissueAccessTokenService.ReissueAccessTokenResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,68 +31,71 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class AccessTokenReissueService implements BaseService<AccessTokenReissueRequest, AccessTokenReissueResponse> {
+public class ReissueAccessTokenService implements BaseService<ReissueAccessTokenRequest, ReissueAccessTokenResponse> {
 
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
     @Override
-    public AccessTokenReissueResponse execute(AccessTokenReissueRequest accessTokenReissueRequest) {
-        String refreshToken = accessTokenReissueRequest.getRefreshToken();
+    public ReissueAccessTokenResponse execute(ReissueAccessTokenRequest reissueAccessTokenRequest) {
+        String refreshToken = reissueAccessTokenRequest.getRefreshToken();
 
         AuthErrorCode errorCode = jwtProvider.validateToken(refreshToken);
 
         if (errorCode != null) {
             if (errorCode == AuthErrorCode.EXPIRED_ACCESS_TOKEN) {
-                return AccessTokenReissueResponse.builder()
+                return ReissueAccessTokenResponse.builder()
                     .success(false)
-                    .errorCode(AccessTokenReissueErrorCode.REFRESH_TOKEN_EXPIRED)
+                    .errorCode(ReissueAccessTokenErrorCode.REFRESH_TOKEN_EXPIRED)
                     .build();
             } else {
-                return AccessTokenReissueResponse.builder()
+                return ReissueAccessTokenResponse.builder()
                     .success(false)
-                    .errorCode(AccessTokenReissueErrorCode.REFRESH_TOKEN_INVALID)
+                    .errorCode(ReissueAccessTokenErrorCode.REFRESH_TOKEN_INVALID)
                     .build();
             }
         }
 
-        String providerId = jwtProvider.getProviderId(refreshToken);
+        Long userId = jwtProvider.getUserId(refreshToken);
 
-        Optional<User> userOptional = userRepository.findByProviderId(providerId);
-        if (userOptional.isEmpty()) {
-            log.warn("[AccessTokenReissueService] User not found for providerId derived from a refresh token. ProviderId: {}", providerId);
-            return AccessTokenReissueResponse.builder()
-                .success(false)
-                .errorCode(AccessTokenReissueErrorCode.USER_NOT_FOUND)
-                .build();
-        }
-        User user = userOptional.get();
-
-        String role = user.getRole().getKey();
-
-        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByProviderId(providerId);
+        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByUserId(userId);
         if (refreshTokenOptional.isEmpty()) {
-            return AccessTokenReissueResponse.builder()
+            return ReissueAccessTokenResponse.builder()
                 .success(false)
-                .errorCode(AccessTokenReissueErrorCode.REFRESH_TOKEN_NOT_FOUND)
+                .errorCode(ReissueAccessTokenErrorCode.REFRESH_TOKEN_NOT_FOUND)
                 .build();
         }
         RefreshToken savedRefreshToken = refreshTokenOptional.get();
 
         if (!savedRefreshToken.getToken().equals(refreshToken)) {
-            log.warn("Refresh Token Mismatch Detected. ProviderId: {}", providerId);
-            return AccessTokenReissueResponse.builder()
+            log.warn("[ReissueAccessTokenService] Token mismatch detected - userId: {}", userId);
+            return ReissueAccessTokenResponse.builder()
                 .success(false)
-                .errorCode(AccessTokenReissueErrorCode.REFRESH_TOKEN_INVALID)
+                .errorCode(ReissueAccessTokenErrorCode.REFRESH_TOKEN_INVALID)
                 .build();
         }
-        String newAccessToken = jwtProvider.generateAccessToken(providerId, role);
-        String newRefreshToken = jwtProvider.generateRefreshToken(providerId);
+
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            log.warn("[ReissueAccessTokenService] User Not  - userId: {}", userId);
+            return ReissueAccessTokenResponse.builder()
+                .success(false)
+                .errorCode(ReissueAccessTokenErrorCode.USER_NOT_FOUND)
+                .build();
+        }
+        User user = userOptional.get();
+
+        String role = user.getRole().name();
+
+        String newAccessToken = jwtProvider.generateAccessToken(userId, role);
+        String newRefreshToken = jwtProvider.generateRefreshToken(userId);
 
         savedRefreshToken.setToken(newRefreshToken);
 
-        return AccessTokenReissueResponse.builder()
+        log.info("[ReissueAccessTokenService] Token reissued - userId: {}", userId);
+
+        return ReissueAccessTokenResponse.builder()
             .accessToken(newAccessToken)
             .refreshToken(newRefreshToken)
             .build();
@@ -100,11 +103,11 @@ public class AccessTokenReissueService implements BaseService<AccessTokenReissue
 
     @Getter
     @RequiredArgsConstructor
-    public enum AccessTokenReissueErrorCode implements BaseErrorCode<DomainException> {
+    public enum ReissueAccessTokenErrorCode implements BaseErrorCode<DomainException> {
         REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 만료되었습니다."),
         REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "리프레시 토큰을 찾을 수 없습니다."),
-        USER_NOT_FOUND(HttpStatus.NOT_FOUND, "토큰에 해당하는 사용자를 찾을 수 없습니다."),
-        REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다.");
+        REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다."),
+        USER_NOT_FOUND(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다.");
 
         private final HttpStatus httpStatus;
         private final String message;
@@ -121,7 +124,7 @@ public class AccessTokenReissueService implements BaseService<AccessTokenReissue
     @NoArgsConstructor
     @AllArgsConstructor
     @ToString
-    public static class AccessTokenReissueRequest implements BaseRequest {
+    public static class ReissueAccessTokenRequest implements BaseRequest {
         private String refreshToken;
 
         @Override
@@ -136,7 +139,7 @@ public class AccessTokenReissueService implements BaseService<AccessTokenReissue
     @NoArgsConstructor
     @AllArgsConstructor
     @ToString
-    public static class AccessTokenReissueResponse extends BaseResponse<AccessTokenReissueErrorCode> {
+    public static class ReissueAccessTokenResponse extends BaseResponse<ReissueAccessTokenErrorCode> {
         private String accessToken;
         private String refreshToken;
     }

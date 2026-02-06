@@ -17,7 +17,7 @@ import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 @AllArgsConstructor
 @ToString
 @Schema(description = "액세스 토큰 재발급 응답")
-public class AccessTokenReissueResponse extends BaseResponse<GlobalErrorCode> {
+public class ReissueAccessTokenResponse extends BaseResponse<GlobalErrorCode> {
 
   @Schema(description = "새로 발급된 액세스 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
   private String accessToken;
