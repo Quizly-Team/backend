@@ -1,35 +1,21 @@
 package org.quizly.quizly.oauth;
 
-import jakarta.persistence.Column;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.entity.User.Provider;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 @Getter
 public class UserPrincipal implements OAuth2User {
 
-  private final Provider provider;
-  private final String providerId;
-  private final String name;
+  private final Long userId;
   private final User.Role role;
 
-  public UserPrincipal(Provider provider, String providerId, String name, User.Role role) {
-    this.provider = provider;
-    this.providerId = providerId;
-    this.name = name;
-    this.role = role;
-  }
-
-  public UserPrincipal(String providerId, User.Role role) {
-    this.provider = null;
-    this.providerId = providerId;
-    this.name = null;
+  public UserPrincipal(Long userId, User.Role role) {
+    this.userId = userId;
     this.role = role;
   }
 
@@ -52,7 +38,7 @@ public class UserPrincipal implements OAuth2User {
 
   @Override
   public String getName() {
-    return name;
+    return String.valueOf(userId);
   }
 
 }

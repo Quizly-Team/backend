@@ -28,9 +28,9 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
   public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 
     OAuth2User oAuth2User = super.loadUser(userRequest);
-    log.info("oAuth2User: {}", oAuth2User);
 
     String registrationId = userRequest.getClientRegistration().getRegistrationId();
+    log.info("[OAuth2LoginUserService] OAuth2 user loading - provider: {}", registrationId);
     OAuth2UserInfo oAuth2UserInfo = getOAuth2UserInfo(registrationId, oAuth2User);
     if (oAuth2UserInfo == null) {
       return null;
@@ -38,7 +38,7 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
 
     User user = processUser(oAuth2UserInfo);
 
-    return new UserPrincipal(user.getProvider(), user.getProviderId(), user.getName(), user.getRole());
+    return new UserPrincipal(user.getId(), user.getRole());
   }
 
   private OAuth2UserInfo getOAuth2UserInfo(String registrationId, OAuth2User oAuth2User) {

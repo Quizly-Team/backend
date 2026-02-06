@@ -20,10 +20,7 @@ import org.quizly.quizly.core.domin.shared.BaseEntity;
 public class RefreshToken extends BaseEntity {
 
   @Column(nullable = false, unique = true)
-  private String providerId;
-
-  @Column(nullable = false)
-  private String name;
+  private Long userId;
 
   @Column(nullable = false)
   private String token;

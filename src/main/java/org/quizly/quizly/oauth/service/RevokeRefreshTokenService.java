@@ -31,16 +31,16 @@ public class RevokeRefreshTokenService implements BaseService<RevokeRefreshToken
 
     @Override
     public RevokeRefreshTokenResponse execute(RevokeRefreshTokenRequest revokeRefreshTokenRequest) {
-        String providerId = revokeRefreshTokenRequest.getProviderId();
+        Long userId = revokeRefreshTokenRequest.getUserId();
 
         if (!revokeRefreshTokenRequest.isValid()) {
             return RevokeRefreshTokenResponse.builder()
                 .success(false)
-                .errorCode(RevokeRefreshTokenErrorCode.PROVIDER_ID_MISSING)
+                .errorCode(RevokeRefreshTokenErrorCode.USER_ID_MISSING)
                 .build();
         }
 
-        refreshTokenRepository.deleteByProviderId(providerId);
+        refreshTokenRepository.deleteByUserId(userId);
 
         return RevokeRefreshTokenResponse.builder()
             .success(true)
@@ -50,7 +50,7 @@ public class RevokeRefreshTokenService implements BaseService<RevokeRefreshToken
     @Getter
     @RequiredArgsConstructor
     public enum RevokeRefreshTokenErrorCode implements BaseErrorCode<DomainException> {
-        PROVIDER_ID_MISSING(HttpStatus.BAD_REQUEST, "사용자 인증 정보가 제공되지 않았습니다.");
+        USER_ID_MISSING(HttpStatus.BAD_REQUEST, "사용자 인증 정보가 제공되지 않았습니다.");
 
         private final HttpStatus httpStatus;
         private final String message;
@@ -68,11 +68,11 @@ public class RevokeRefreshTokenService implements BaseService<RevokeRefreshToken
     @AllArgsConstructor
     @ToString
     public static class RevokeRefreshTokenRequest implements BaseRequest {
-        private String providerId;
+        private Long userId;
 
         @Override
         public boolean isValid() {
-            return providerId != null && !providerId.isEmpty();
+            return userId != null;
         }
     }
 
