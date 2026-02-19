@@ -1,6 +1,5 @@
 package org.quizly.quizly.quiz.service;
 
-import java.util.Collections;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +19,6 @@ import org.quizly.quizly.core.domin.entity.User;
 import org.quizly.quizly.account.service.ReadUserService;
 import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
 import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
-import org.quizly.quizly.core.domin.repository.QuizRepository;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
@@ -36,7 +34,6 @@ import org.springframework.stereotype.Service;
 public class ReadQuizzesService implements BaseService<ReadQuizzesRequest, ReadQuizzesResponse> {
 
   private final ReadUserService readUserService;
-  private final QuizRepository quizRepository;
   private final SolveHistoryRepository solveHistoryRepository;
 
   @Override
@@ -62,16 +59,11 @@ public class ReadQuizzesService implements BaseService<ReadQuizzesRequest, ReadQ
     }
     User user = readUserResponse.getUser();
 
-    List<Quiz> quizList = quizRepository.findAllByUserWithOptions(user);
-    if (quizList.isEmpty()) {
-      return ReadQuizzesResponse.builder()
-          .success(true)
-          .quizList(quizList)
-          .solveHistoryList(Collections.emptyList())
-          .build();
-    }
-    List<SolveHistory> latestSolveHistoryList = solveHistoryRepository.findLatestSolveHistoriesByUser(
-        user);
+    List<SolveHistory> latestSolveHistoryList = solveHistoryRepository.findLatestSolveHistoriesByUser(user);
+
+    List<Quiz> quizList = latestSolveHistoryList.stream()
+        .map(SolveHistory::getQuiz)
+        .toList();
 
     return ReadQuizzesResponse.builder()
         .quizList(quizList)
