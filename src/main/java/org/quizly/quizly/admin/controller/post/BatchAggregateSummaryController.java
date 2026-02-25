@@ -1,4 +1,4 @@
-package org.quizly.quizly.admin.controller;
+package org.quizly.quizly.admin.controller.post;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
