@@ -42,4 +42,8 @@ public class Faq extends BaseEntity {
 
   @Column(columnDefinition = "TEXT", nullable = false)
   private String answer;
+
+  public void softDelete() {
+    setDeleted(true);
+  }
 }
