@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background-color: #f8faf8;">
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 40px rgba(48, 161, 14, 0.1);">
+
+    <tr>
+        <td style="height: 8px; background-color: #30A10E;"></td>
+    </tr>
+
+    <tr>
+        <td style="padding: 40px 40px 10px 40px;">
+            <div style="color: #30A10E; font-size: 24px; font-weight: 900; letter-spacing: -1px;">Quizly</div>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding: 0 40px 40px 40px;">
+            <h2 th:text="${title}" style="margin: 20px 0 30px 0; color: #111111; font-size: 20px; line-height: 1.5; font-weight: 700;">
+                사용자님, 문의하신 내용에 답변이 완료되었습니다.
+            </h2>
+
+            <div style="margin-bottom: 25px;">
+                <div style="font-size: 13px; font-weight: 700; color: #888; margin-bottom: 8px; letter-spacing: 0.5px;">내 문의</div>
+                <div style="padding: 20px; background-color: #f8f8f8; border-radius: 10px; border: 1px solid #eee;">
+                    <div th:text="${inquiryTitle}" style="font-weight: 700; color: #333; font-size: 15px; margin-bottom: 6px;">문의 제목</div>
+                    <div th:text="${inquiryContent}" style="color: #666; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">문의 내용 본문</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 40px;">
+                <div style="font-size: 13px; font-weight: 700; color: #30A10E; margin-bottom: 8px; letter-spacing: 0.5px;">문의 답변 내용 </div>
+                <div style="padding: 24px; background-color: #f4f9f3; border-radius: 10px; border: 1px solid #e1eee0; border-left: 5px solid #30A10E;">
+                    <div th:text="${replyContent}" style="color: #2d2d2d; font-size: 15px; line-height: 1.8; white-space: pre-wrap;">관리자 답변 내용</div>
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="https://quizly.co.kr" style="display: inline-block; padding: 16px 0; width: 100%; background-color: #30A10E; color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px;">
+                    Quizly 바로가기
+                </a>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding: 30px 40px; background-color: #fafafa; border-top: 1px solid #f0f0f0; text-align: left;">
+            <p style="margin: 0; color: #999; font-size: 12px; line-height: 1.6;">
+                본 메일은 발신 전용 메일입니다. 추가 문의는 **고객센터**를 이용해 주세요.<br>
+                &copy; 2026 Quizly-Team. All rights reserved.
+            </p>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
