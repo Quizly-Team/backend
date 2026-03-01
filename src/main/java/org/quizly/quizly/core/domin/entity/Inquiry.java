@@ -15,10 +15,10 @@ import java.time.LocalDateTime;
 @Table(name = "inquiry")
 public class Inquiry extends BaseEntity {
 
-    @Column(nullable = false)
+    @Column(name = "inquiry_title", nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(name = "inquiry_content", nullable = false)
     private String content;
     @Getter
     @RequiredArgsConstructor
@@ -41,5 +41,12 @@ public class Inquiry extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    public void reply(String reply){
+        this.reply = reply;
+        this.status = Status.COMPLETED;
+        this.repliedAt = LocalDateTime.now();
+
+    }
 
 }
