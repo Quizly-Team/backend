@@ -5,8 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.core.domin.entity.User;
 import org.quizly.quizly.core.domin.entity.SolveTypeSummary;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository.QuizTypeSummary;
+import org.quizly.quizly.core.domin.repository.SolveHistoryStatisticsRepository;
+import org.quizly.quizly.core.domin.repository.SolveHistoryStatisticsRepository.QuizTypeSummary;
 import org.quizly.quizly.core.domin.repository.SolveTypeSummaryRepository;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -31,7 +31,7 @@ public class AggregateSolveTypeSummaryStepConfig {
 
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
-  private final SolveHistoryRepository solveHistoryRepository;
+  private final SolveHistoryStatisticsRepository solveHistoryStatisticsRepository;
   private final SolveTypeSummaryRepository solveTypeSummaryRepository;
 
   @Bean
@@ -56,7 +56,7 @@ public class AggregateSolveTypeSummaryStepConfig {
         LocalDate targetDate = LocalDate.parse(targetDateStr);
 
         List<QuizTypeSummary> typeSummaryList =
-            solveHistoryRepository.findFirstAttemptsByQuizTypeAndDate(user, targetDate);
+            solveHistoryStatisticsRepository.findFirstAttemptsByQuizTypeAndDate(user, targetDate);
 
         List<SolveTypeSummary> solveTypeSummaryList = new ArrayList<>();
         for (QuizTypeSummary typeSummary : typeSummaryList) {
