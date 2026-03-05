@@ -4,7 +4,7 @@
 CREATE INDEX idx_solve_history_user_quiz_created
     ON solve_history(user_id, quiz_id, created_at DESC);
 
-# 사용처 : findLatestWrongSolveHistoriesByUser
+# 사용처 : findLatestWrongSolveHistoriesByUserAndDates, findLatestWrongSolveHistoriesByUserAndTopics
 CREATE INDEX idx_solve_history_user_correct_quiz_created
     ON solve_history(user_id, is_correct, quiz_id, created_at DESC);
 
