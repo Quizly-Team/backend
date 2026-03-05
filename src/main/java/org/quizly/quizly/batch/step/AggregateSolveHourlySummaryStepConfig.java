@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.core.domin.entity.User;
 import org.quizly.quizly.core.domin.entity.SolveHourlySummary;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository.HourlySummary;
+import org.quizly.quizly.core.domin.repository.SolveHistoryStatisticsRepository;
+import org.quizly.quizly.core.domin.repository.SolveHistoryStatisticsRepository.HourlySummary;
 import org.quizly.quizly.core.domin.repository.SolveHourlySummaryRepository;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -33,7 +33,7 @@ public class AggregateSolveHourlySummaryStepConfig {
 
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
-  private final SolveHistoryRepository solveHistoryRepository;
+  private final SolveHistoryStatisticsRepository solveHistoryStatisticsRepository;
   private final SolveHourlySummaryRepository solveHourlySummaryRepository;
 
   @Bean
@@ -58,7 +58,7 @@ public class AggregateSolveHourlySummaryStepConfig {
         LocalDate targetDate = LocalDate.parse(targetDateStr);
 
         List<HourlySummary> hourlySummaryList =
-            solveHistoryRepository.findHourlySummaryByUserAndDate(user, targetDate);
+            solveHistoryStatisticsRepository.findHourlySummaryByUserAndDate(user, targetDate);
 
         List<SolveHourlySummary> existSolveHourlySummaryList =
             solveHourlySummaryRepository.findByUserAndDate(user, targetDate);

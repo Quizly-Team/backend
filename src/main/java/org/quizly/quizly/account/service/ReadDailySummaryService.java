@@ -7,7 +7,7 @@ import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
+import org.quizly.quizly.core.domin.repository.SolveHistoryStatisticsRepository;
 import org.quizly.quizly.core.domin.repository.SolveHourlySummaryRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
@@ -27,7 +27,7 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class ReadDailySummaryService implements BaseService<ReadDailySummaryService.ReadDailySummaryRequest, ReadDailySummaryService.ReadDailySummaryResponse> {
 
-  private final SolveHistoryRepository solveHistoryRepository;
+  private final SolveHistoryStatisticsRepository solveHistoryStatisticsRepository;
   private final SolveHourlySummaryRepository solveHourlySummaryRepository;
 
   @Override
@@ -77,7 +77,7 @@ public class ReadDailySummaryService implements BaseService<ReadDailySummaryServ
   }
 
   private List<ReadDailySummaryResponse.DailySummary> getTodayDailySummary(User user, LocalDate today) {
-    return solveHistoryRepository
+    return solveHistoryStatisticsRepository
         .findDailySummaryByUserAndDate(user, today)
         .stream()
         .map(summary -> new ReadDailySummaryResponse.DailySummary(
