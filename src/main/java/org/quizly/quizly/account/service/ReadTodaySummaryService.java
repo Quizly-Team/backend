@@ -20,7 +20,7 @@ import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
+import org.quizly.quizly.core.domin.repository.SolveHistoryStatisticsRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.springframework.http.HttpStatus;
@@ -33,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ReadTodaySummaryService  implements BaseService<ReadTodaySummaryRequest, ReadTodaySummaryResponse> {
 
-  private final SolveHistoryRepository solveHistoryRepository;
+  private final SolveHistoryStatisticsRepository solveHistoryStatisticsRepository;
 
   @Override
   public ReadTodaySummaryResponse execute(ReadTodaySummaryRequest request) {
@@ -54,13 +54,13 @@ public class ReadTodaySummaryService  implements BaseService<ReadTodaySummaryReq
   }
 
   private TodaySummary getTodaySummary(User user, LocalDate today) {
-    List<SolveHistoryRepository.QuizTypeSummary> quizTypeSummaryList =
-        solveHistoryRepository.findFirstAttemptsByQuizTypeAndDate(user, today);
+    List<SolveHistoryStatisticsRepository.QuizTypeSummary> quizTypeSummaryList =
+        solveHistoryStatisticsRepository.findFirstAttemptsByQuizTypeAndDate(user, today);
 
     int totalSolved = 0;
     int totalCorrect = 0;
 
-    for (SolveHistoryRepository.QuizTypeSummary quizTypeSummary : quizTypeSummaryList) {
+    for (SolveHistoryStatisticsRepository.QuizTypeSummary quizTypeSummary : quizTypeSummaryList) {
       totalSolved += Optional.ofNullable(quizTypeSummary.getTotalCount()).map(Long::intValue).orElse(0);
       totalCorrect += Optional.ofNullable(quizTypeSummary.getCorrectCount()).map(Long::intValue).orElse(0);
     }

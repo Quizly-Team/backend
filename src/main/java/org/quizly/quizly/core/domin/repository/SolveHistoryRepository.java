@@ -1,13 +1,12 @@
 package org.quizly.quizly.core.domin.repository;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.quizly.quizly.core.domin.entity.Quiz;
-import org.quizly.quizly.core.domin.entity.Quiz.QuizType;
 import org.quizly.quizly.core.domin.entity.SolveHistory;
 import org.quizly.quizly.core.domin.entity.User;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,126 +19,165 @@ public interface SolveHistoryRepository extends JpaRepository<SolveHistory, Long
       Quiz quiz
   );
 
-  @Query("SELECT DISTINCT sh FROM SolveHistory sh LEFT JOIN FETCH sh.quiz q LEFT JOIN FETCH q.options WHERE sh.user = :user AND (sh.quiz.id, sh.createdAt) IN (SELECT sh2.quiz.id, MAX(sh2.createdAt) FROM SolveHistory sh2 WHERE sh2.user = :user GROUP BY sh2.quiz.id)")
-  List<SolveHistory> findLatestSolveHistoriesByUser(@Param("user") User user);
-
-  @Query("SELECT sh FROM SolveHistory sh LEFT JOIN FETCH sh.quiz WHERE sh.user = :user AND sh.isCorrect = FALSE AND (sh.quiz.id, sh.createdAt) IN (SELECT sh2.quiz.id, MAX(sh2.createdAt) FROM SolveHistory sh2 WHERE sh2.user = :user GROUP BY sh2.quiz.id)")
-  List<SolveHistory> findLatestWrongSolveHistoriesByUser(@Param("user") User user);
-
-  @Query("SELECT q.quizType as quizType, " +
-      "COUNT(sh) as totalCount, " +
-      "SUM(CASE WHEN sh.isCorrect = true THEN 1 ELSE 0 END) as correctCount " +
-      "FROM SolveHistory sh " +
-      "JOIN sh.quiz q " +
-      "WHERE sh.user = :user " +
-      "AND sh.submittedAt >= :startDateTime " +
-      "AND sh.submittedAt < :endDateTime " +
-      "AND (sh.quiz.id, sh.createdAt) IN (" +
-      "  SELECT sh2.quiz.id, MIN(sh2.createdAt) " +
-      "  FROM SolveHistory sh2 " +
-      "  WHERE sh2.user = :user " +
-      "  AND sh2.submittedAt >= :startDateTime " +
-      "  AND sh2.submittedAt < :endDateTime " +
-      "  GROUP BY sh2.quiz.id" +
-      ") " +
-      "GROUP BY q.quizType")
-  List<QuizTypeSummary> findFirstAttemptsByQuizTypeAndDateTimeRange(
-      @Param("user") User user,
-      @Param("startDateTime") LocalDateTime startDateTime,
-      @Param("endDateTime") LocalDateTime endDateTime
-  );
-
-  default List<QuizTypeSummary> findFirstAttemptsByQuizTypeAndDate(User user, LocalDate targetDate) {
-    LocalDateTime startDateTime = targetDate.atStartOfDay();
-    LocalDateTime endDateTime = targetDate.plusDays(1).atStartOfDay();
-    return findFirstAttemptsByQuizTypeAndDateTimeRange(user, startDateTime, endDateTime);
-  }
-
-  interface QuizTypeSummary {
-    QuizType getQuizType();
-    Long getTotalCount();
-    Long getCorrectCount();
-  }
-
-  @Query("""
-    SELECT q.topic as topic,
-           COUNT(sh) as totalCount,
-           SUM(CASE WHEN sh.isCorrect = true THEN 1 ELSE 0 END) as correctCount
+  @Query(value = """
+    SELECT DISTINCT CAST(q.createdAt AS LocalDate)
     FROM SolveHistory sh
     JOIN sh.quiz q
     WHERE sh.user = :user
-      AND sh.submittedAt >= :startDateTime
-      AND sh.submittedAt < :endDateTime
-      AND (sh.quiz.id, sh.createdAt) IN (
-        SELECT sh2.quiz.id, MIN(sh2.createdAt)
-        FROM SolveHistory sh2
-        WHERE sh2.user = :user
-          AND sh2.submittedAt >= :startDateTime
-          AND sh2.submittedAt < :endDateTime
-        GROUP BY sh2.quiz.id
-      )
-    GROUP BY q.topic
-  """)
-  List<TopicSummary> findMonthlyTopicSummary(
-          @Param("user") User user,
-          @Param("startDateTime") LocalDateTime startDateTime,
-          @Param("endDateTime") LocalDateTime endDateTime,
-          Pageable pageable
-  );
+    AND sh.isCorrect = FALSE
+    AND (sh.quiz.id, sh.createdAt) IN (
+      SELECT sh2.quiz.id, MAX(sh2.createdAt)
+      FROM SolveHistory sh2
+      WHERE sh2.user = :user
+      GROUP BY sh2.quiz.id
+    )
+    ORDER BY CAST(q.createdAt AS LocalDate) DESC
+    """,
+    countQuery = """
+    SELECT COUNT(DISTINCT CAST(q.createdAt AS LocalDate))
+    FROM SolveHistory sh
+    JOIN sh.quiz q
+    WHERE sh.user = :user
+    AND sh.isCorrect = FALSE
+    AND (sh.quiz.id, sh.createdAt) IN (
+      SELECT sh2.quiz.id, MAX(sh2.createdAt)
+      FROM SolveHistory sh2
+      WHERE sh2.user = :user
+      GROUP BY sh2.quiz.id
+    )
+    """)
+  Page<LocalDate> findDistinctWrongQuizDatesByUser(@Param("user") User user, Pageable pageable);
 
-  interface TopicSummary {
-    String getTopic();
-    Long getTotalCount();
-    Long getCorrectCount();
-  }
+  @Query(value = """
+    SELECT DISTINCT q.topic
+    FROM SolveHistory sh
+    JOIN sh.quiz q
+    WHERE sh.user = :user
+    AND sh.isCorrect = FALSE
+    AND (sh.quiz.id, sh.createdAt) IN (
+      SELECT sh2.quiz.id, MAX(sh2.createdAt)
+      FROM SolveHistory sh2
+      WHERE sh2.user = :user
+      GROUP BY sh2.quiz.id
+    )
+    ORDER BY q.topic ASC
+    """,
+    countQuery = """
+    SELECT COUNT(DISTINCT q.topic)
+    FROM SolveHistory sh
+    JOIN sh.quiz q
+    WHERE sh.user = :user
+    AND sh.isCorrect = FALSE
+    AND (sh.quiz.id, sh.createdAt) IN (
+      SELECT sh2.quiz.id, MAX(sh2.createdAt)
+      FROM SolveHistory sh2
+      WHERE sh2.user = :user
+      GROUP BY sh2.quiz.id
+    )
+    """)
+  Page<String> findDistinctWrongQuizTopicsByUser(@Param("user") User user, Pageable pageable);
 
-  @Query("SELECT CAST(sh.submittedAt AS LocalDate) as date, " +
-      "COUNT(sh) as solvedCount " +
-      "FROM SolveHistory sh " +
-      "WHERE sh.user = :user " +
-      "AND sh.submittedAt >= :startDateTime " +
-      "AND sh.submittedAt < :endDateTime " +
-      "GROUP BY CAST(sh.submittedAt AS LocalDate) " +
-      "ORDER BY CAST(sh.submittedAt AS LocalDate)")
-  List<DailySummary> findDailySummaryByUserAndDateTimeRange(
+  @Query("""
+    SELECT DISTINCT sh FROM SolveHistory sh
+    LEFT JOIN FETCH sh.quiz q
+    LEFT JOIN FETCH q.options
+    WHERE sh.user = :user
+    AND sh.isCorrect = FALSE
+    AND CAST(q.createdAt AS LocalDate) IN :dates
+    AND (sh.quiz.id, sh.createdAt) IN (
+      SELECT sh2.quiz.id, MAX(sh2.createdAt)
+      FROM SolveHistory sh2
+      WHERE sh2.user = :user
+      GROUP BY sh2.quiz.id
+    )
+    """)
+  List<SolveHistory> findLatestWrongSolveHistoriesByUserAndDates(
       @Param("user") User user,
-      @Param("startDateTime") LocalDateTime startDateTime,
-      @Param("endDateTime") LocalDateTime endDateTime
+      @Param("dates") List<LocalDate> dates
   );
 
-  default List<DailySummary> findDailySummaryByUserAndDate(User user, LocalDate date) {
-    LocalDateTime startDateTime = date.atStartOfDay();
-    LocalDateTime endDateTime = date.plusDays(1).atStartOfDay();
-    return findDailySummaryByUserAndDateTimeRange(user, startDateTime, endDateTime);
-  }
-
-  @Query("SELECT FUNCTION('HOUR', sh.submittedAt) as hourOfDay, " +
-      "COUNT(sh) as solvedCount " +
-      "FROM SolveHistory sh " +
-      "WHERE sh.user = :user " +
-      "AND sh.submittedAt >= :startDateTime " +
-      "AND sh.submittedAt < :endDateTime " +
-      "GROUP BY FUNCTION('HOUR', sh.submittedAt)")
-  List<HourlySummary> findHourlySummaryByUserAndDateTimeRange(
+  @Query("""
+    SELECT DISTINCT sh FROM SolveHistory sh
+    LEFT JOIN FETCH sh.quiz q
+    LEFT JOIN FETCH q.options
+    WHERE sh.user = :user
+    AND sh.isCorrect = FALSE
+    AND q.topic IN :topics
+    AND (sh.quiz.id, sh.createdAt) IN (
+      SELECT sh2.quiz.id, MAX(sh2.createdAt)
+      FROM SolveHistory sh2
+      WHERE sh2.user = :user
+      GROUP BY sh2.quiz.id
+    )
+    """)
+  List<SolveHistory> findLatestWrongSolveHistoriesByUserAndTopics(
       @Param("user") User user,
-      @Param("startDateTime") LocalDateTime startDateTime,
-      @Param("endDateTime") LocalDateTime endDateTime
+      @Param("topics") List<String> topics
   );
 
-  default List<HourlySummary> findHourlySummaryByUserAndDate(User user, LocalDate date) {
-    LocalDateTime startDateTime = date.atStartOfDay();
-    LocalDateTime endDateTime = date.plusDays(1).atStartOfDay();
-    return findHourlySummaryByUserAndDateTimeRange(user, startDateTime, endDateTime);
-  }
+  @Query(value = """
+    SELECT DISTINCT CAST(q.createdAt AS LocalDate)
+    FROM SolveHistory sh
+    JOIN sh.quiz q
+    WHERE sh.user = :user
+    ORDER BY CAST(q.createdAt AS LocalDate) DESC
+    """,
+      countQuery = """
+    SELECT COUNT(DISTINCT CAST(q.createdAt AS LocalDate))
+    FROM SolveHistory sh
+    JOIN sh.quiz q
+    WHERE sh.user = :user
+    """)
+  Page<LocalDate> findDistinctQuizDatesByUser(@Param("user") User user, Pageable pageable);
 
-  interface DailySummary {
-    LocalDate getDate();
-    Long getSolvedCount();
-  }
+  @Query(value = """
+    SELECT DISTINCT q.topic
+    FROM SolveHistory sh
+    JOIN sh.quiz q
+    WHERE sh.user = :user
+    ORDER BY q.topic ASC
+    """,
+      countQuery = """
+    SELECT COUNT(DISTINCT q.topic)
+    FROM SolveHistory sh
+    JOIN sh.quiz q
+    WHERE sh.user = :user
+    """)
+  Page<String> findDistinctQuizTopicsByUser(@Param("user") User user, Pageable pageable);
 
-  interface HourlySummary {
-    Integer getHourOfDay();
-    Long getSolvedCount();
-  }
+  @Query("""
+    SELECT DISTINCT sh FROM SolveHistory sh
+    LEFT JOIN FETCH sh.quiz q
+    LEFT JOIN FETCH q.options
+    WHERE sh.user = :user
+    AND CAST(q.createdAt AS LocalDate) IN :dates
+    AND (sh.quiz.id, sh.createdAt) IN (
+      SELECT sh2.quiz.id, MAX(sh2.createdAt)
+      FROM SolveHistory sh2
+      WHERE sh2.user = :user
+      GROUP BY sh2.quiz.id
+    )
+    """)
+  List<SolveHistory> findLatestSolveHistoriesByUserAndDates(
+      @Param("user") User user,
+      @Param("dates") List<LocalDate> dates
+  );
 
+  @Query("""
+    SELECT DISTINCT sh FROM SolveHistory sh
+    LEFT JOIN FETCH sh.quiz q
+    LEFT JOIN FETCH q.options
+    WHERE sh.user = :user
+    AND q.topic IN :topics
+    AND (sh.quiz.id, sh.createdAt) IN (
+      SELECT sh2.quiz.id, MAX(sh2.createdAt)
+      FROM SolveHistory sh2
+      WHERE sh2.user = :user
+      GROUP BY sh2.quiz.id
+    )
+    """)
+  List<SolveHistory> findLatestSolveHistoriesByUserAndTopics(
+      @Param("user") User user,
+      @Param("topics") List<String> topics
+  );
 }
