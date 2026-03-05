@@ -8,6 +8,7 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
+import org.quizly.quizly.core.presentation.Pagination;
 
 @Getter
 @NoArgsConstructor
@@ -18,6 +19,9 @@ public class ReadQuizzesResponse extends BaseResponse<GlobalErrorCode> {
 
   @Schema(description = "그룹별 문제")
   private List<QuizGroup> quizGroupList;
+
+  @Schema(description = "페이지네이션 정보")
+  private Pagination pagination;
 
   @Getter
   @NoArgsConstructor
