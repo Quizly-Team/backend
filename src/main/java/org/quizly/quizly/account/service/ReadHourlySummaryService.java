@@ -8,7 +8,7 @@ import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.SolveHourlySummary;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
+import org.quizly.quizly.core.domin.repository.SolveHistoryStatisticsRepository;
 import org.quizly.quizly.core.domin.repository.SolveHourlySummaryRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
@@ -27,7 +27,7 @@ public class ReadHourlySummaryService implements BaseService<ReadHourlySummarySe
 
   private static final int[] TIME_SLOTS = {0, 6, 9, 12, 15, 18, 21};
 
-  private final SolveHistoryRepository solveHistoryRepository;
+  private final SolveHistoryStatisticsRepository solveHistoryStatisticsRepository;
   private final SolveHourlySummaryRepository solveHourlySummaryRepository;
 
   @Override
@@ -90,10 +90,10 @@ public class ReadHourlySummaryService implements BaseService<ReadHourlySummarySe
 
   private Map<Integer, Integer> getTodayHourlyDataMap(User user, LocalDate today) {
     Map<Integer, Integer> map = new HashMap<>();
-    List<SolveHistoryRepository.HourlySummary> todayHourlyData =
-        solveHistoryRepository.findHourlySummaryByUserAndDate(user, today);
+    List<SolveHistoryStatisticsRepository.HourlySummary> todayHourlyData =
+        solveHistoryStatisticsRepository.findHourlySummaryByUserAndDate(user, today);
 
-    for (SolveHistoryRepository.HourlySummary summary : todayHourlyData) {
+    for (SolveHistoryStatisticsRepository.HourlySummary summary : todayHourlyData) {
       Integer hour = summary.getHourOfDay();
       if (hour == null) {
         continue;

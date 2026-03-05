@@ -7,7 +7,7 @@ import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
+import org.quizly.quizly.core.domin.repository.SolveHistoryStatisticsRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.springframework.data.domain.PageRequest;
@@ -26,7 +26,7 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class ReadTopicSummaryService implements BaseService<ReadTopicSummaryService.ReadTopicSummaryRequest, ReadTopicSummaryService.ReadTopicSummaryResponse> {
 
-  private final SolveHistoryRepository solveHistoryRepository;
+  private final SolveHistoryStatisticsRepository solveHistoryStatisticsRepository;
 
   @Override
   public ReadTopicSummaryResponse execute(ReadTopicSummaryRequest request) {
@@ -50,8 +50,8 @@ public class ReadTopicSummaryService implements BaseService<ReadTopicSummaryServ
     LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
     LocalDateTime startOfNextMonth = startOfMonth.plusMonths(1);
 
-    List<SolveHistoryRepository.TopicSummary> summaries =
-        solveHistoryRepository.findMonthlyTopicSummary(
+    List<SolveHistoryStatisticsRepository.TopicSummary> summaries =
+        solveHistoryStatisticsRepository.findMonthlyTopicSummary(
             user,
             startOfMonth,
             startOfNextMonth,

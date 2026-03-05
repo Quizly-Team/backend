@@ -9,7 +9,7 @@ import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz.QuizType;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
+import org.quizly.quizly.core.domin.repository.SolveHistoryStatisticsRepository;
 import org.quizly.quizly.core.domin.repository.SolveTypeSummaryRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
@@ -27,7 +27,7 @@ import java.util.*;
 public class ReadQuizTypeSummaryService implements BaseService<ReadQuizTypeSummaryService.ReadQuizTypeSummaryRequest, ReadQuizTypeSummaryService.ReadQuizTypeSummaryResponse> {
 
   private final SolveTypeSummaryRepository solveTypeSummaryRepository;
-  private final SolveHistoryRepository solveHistoryRepository;
+  private final SolveHistoryStatisticsRepository solveHistoryStatisticsRepository;
 
   @Override
   public ReadQuizTypeSummaryResponse execute(ReadQuizTypeSummaryRequest request) {
@@ -92,7 +92,7 @@ public class ReadQuizTypeSummaryService implements BaseService<ReadQuizTypeSumma
   private Map<QuizType, QuizTypeCounts> getTodaySummaryMap(User user, LocalDate today) {
     Map<QuizType, QuizTypeCounts> map = new EnumMap<>(QuizType.class);
 
-    solveHistoryRepository
+    solveHistoryStatisticsRepository
         .findFirstAttemptsByQuizTypeAndDate(user, today)
         .forEach(summary -> {
           int solved = Optional.ofNullable(summary.getTotalCount()).map(Long::intValue).orElse(0);
