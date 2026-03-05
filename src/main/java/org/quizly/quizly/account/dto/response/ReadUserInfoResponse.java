@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.application.BaseResponse;
+import org.quizly.quizly.core.domin.entity.User;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 
 @Getter
@@ -29,5 +30,8 @@ public class ReadUserInfoResponse extends BaseResponse<GlobalErrorCode> {
 
   @Schema(description = "온보딩 설문조사 여부", example = "true")
   private boolean onboardingCompleted;
+
+  @Schema(description = "역할", example = "USER")
+  private User.Role role;
 
 }

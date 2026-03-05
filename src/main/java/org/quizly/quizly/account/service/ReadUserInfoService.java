@@ -61,6 +61,7 @@ public class ReadUserInfoService implements BaseService<ReadUserInfoRequest, Rea
         .email(user.getEmail())
         .profileImageUrl(user.getProfileImageUrl())
         .onboardingCompleted(user.isOnboardingCompleted())
+        .role(user.getRole())
         .success(true)
         .build();
   }
@@ -109,6 +110,7 @@ public class ReadUserInfoService implements BaseService<ReadUserInfoRequest, Rea
     private String email;
     private String profileImageUrl;
     private boolean onboardingCompleted;
+    private User.Role role;
   }
 
 }
