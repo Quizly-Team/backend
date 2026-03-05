@@ -1,6 +1,6 @@
 -- solve_history
 
-# 사용처 : findLatestSolveHistoriesByUser
+# 사용처 : findLatestSolveHistoriesByUserAndDates, findLatestSolveHistoriesByUserAndTopics
 CREATE INDEX idx_solve_history_user_quiz_created
     ON solve_history(user_id, quiz_id, created_at DESC);
 
