@@ -1,5 +1,7 @@
 package org.quizly.quizly.quiz.service;
 
+import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,9 +24,12 @@ import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
+import org.quizly.quizly.core.presentation.Pagination;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.quiz.service.ReadQuizzesService.ReadQuizzesRequest;
 import org.quizly.quizly.quiz.service.ReadQuizzesService.ReadQuizzesResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -59,15 +64,41 @@ public class ReadQuizzesService implements BaseService<ReadQuizzesRequest, ReadQ
     }
     User user = readUserResponse.getUser();
 
-    List<SolveHistory> latestSolveHistoryList = solveHistoryRepository.findLatestSolveHistoriesByUser(user);
+    PageRequest pageRequest = request.getPageRequest();
 
-    List<Quiz> quizList = latestSolveHistoryList.stream()
+    List<SolveHistory> solveHistoryList;
+    Pagination pagination;
+
+    if ("topic".equalsIgnoreCase(request.getGroupType())) {
+      Page<String> topicPage = solveHistoryRepository.findDistinctQuizTopicsByUser(user, pageRequest);
+      pagination = Pagination.getPaginationFromPage(topicPage);
+
+      if (topicPage.hasContent()) {
+        solveHistoryList = solveHistoryRepository.findLatestSolveHistoriesByUserAndTopics(
+            user, topicPage.getContent());
+      } else {
+        solveHistoryList = Collections.emptyList();
+      }
+    } else {
+      Page<LocalDate> datePage = solveHistoryRepository.findDistinctQuizDatesByUser(user, pageRequest);
+      pagination = Pagination.getPaginationFromPage(datePage);
+
+      if (datePage.hasContent()) {
+        solveHistoryList = solveHistoryRepository.findLatestSolveHistoriesByUserAndDates(
+            user, datePage.getContent());
+      } else {
+        solveHistoryList = Collections.emptyList();
+      }
+    }
+
+    List<Quiz> quizList = solveHistoryList.stream()
         .map(SolveHistory::getQuiz)
         .toList();
 
     return ReadQuizzesResponse.builder()
         .quizList(quizList)
-        .solveHistoryList(latestSolveHistoryList)
+        .solveHistoryList(solveHistoryList)
+        .pagination(pagination)
         .build();
   }
 
@@ -97,10 +128,11 @@ public class ReadQuizzesService implements BaseService<ReadQuizzesRequest, ReadQ
 
     private String groupType;
     private UserPrincipal userPrincipal;
+    private PageRequest pageRequest;
 
     @Override
     public boolean isValid() {
-      return groupType != null && userPrincipal != null;
+      return groupType != null && userPrincipal != null && pageRequest != null;
     }
   }
 
@@ -113,7 +145,7 @@ public class ReadQuizzesService implements BaseService<ReadQuizzesRequest, ReadQ
   public static class ReadQuizzesResponse extends BaseResponse<ReadQuizzesErrorCode> {
 
     private List<Quiz> quizList;
-
     private List<SolveHistory> solveHistoryList;
+    private Pagination pagination;
   }
 }
