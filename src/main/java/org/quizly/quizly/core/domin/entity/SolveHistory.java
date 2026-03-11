@@ -6,7 +6,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -44,5 +46,9 @@ public class SolveHistory extends BaseEntity {
   @Column(nullable = true)
   private LocalDateTime submittedAt;
 
+  @Column(nullable = false)
+  @Builder.Default
+  @Setter(AccessLevel.NONE)
+  private boolean isFirst = true;
 
 }

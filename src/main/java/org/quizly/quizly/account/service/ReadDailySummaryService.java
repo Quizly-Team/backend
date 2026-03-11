@@ -78,7 +78,7 @@ public class ReadDailySummaryService implements BaseService<ReadDailySummaryServ
 
   private List<ReadDailySummaryResponse.DailySummary> getTodayDailySummary(User user, LocalDate today) {
     return solveHistoryStatisticsRepository
-        .findDailySummaryByUserAndDate(user, today)
+        .findFirstAttemptsDailySummaryByUserAndDate(user, today)
         .stream()
         .map(summary -> new ReadDailySummaryResponse.DailySummary(
             summary.getDate(),

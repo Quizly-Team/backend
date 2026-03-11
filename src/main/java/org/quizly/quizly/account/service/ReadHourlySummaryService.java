@@ -91,7 +91,7 @@ public class ReadHourlySummaryService implements BaseService<ReadHourlySummarySe
   private Map<Integer, Integer> getTodayHourlyDataMap(User user, LocalDate today) {
     Map<Integer, Integer> map = new HashMap<>();
     List<SolveHistoryStatisticsRepository.HourlySummary> todayHourlyData =
-        solveHistoryStatisticsRepository.findHourlySummaryByUserAndDate(user, today);
+        solveHistoryStatisticsRepository.findFirstAttemptsHourlySummaryByUserAndDate(user, today);
 
     for (SolveHistoryStatisticsRepository.HourlySummary summary : todayHourlyData) {
       Integer hour = summary.getHourOfDay();
