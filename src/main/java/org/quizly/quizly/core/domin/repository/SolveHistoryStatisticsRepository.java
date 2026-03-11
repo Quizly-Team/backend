@@ -15,20 +15,13 @@ public interface SolveHistoryStatisticsRepository extends JpaRepository<SolveHis
 
   @Query("SELECT q.quizType as quizType, " +
       "COUNT(sh) as totalCount, " +
-      "SUM(CASE WHEN sh.isCorrect = true THEN 1 ELSE 0 END) as correctCount " +
+      "SUM(CASE WHEN sh.isCorrect = TRUE THEN 1 ELSE 0 END) as correctCount " +
       "FROM SolveHistory sh " +
       "JOIN sh.quiz q " +
       "WHERE sh.user = :user " +
       "AND sh.submittedAt >= :startDateTime " +
       "AND sh.submittedAt < :endDateTime " +
-      "AND (sh.quiz.id, sh.createdAt) IN (" +
-      "  SELECT sh2.quiz.id, MIN(sh2.createdAt) " +
-      "  FROM SolveHistory sh2 " +
-      "  WHERE sh2.user = :user " +
-      "  AND sh2.submittedAt >= :startDateTime " +
-      "  AND sh2.submittedAt < :endDateTime " +
-      "  GROUP BY sh2.quiz.id" +
-      ") " +
+      "AND sh.isFirst = TRUE " +
       "GROUP BY q.quizType")
   List<QuizTypeSummary> findFirstAttemptsByQuizTypeAndDateTimeRange(
       @Param("user") User user,
@@ -51,20 +44,13 @@ public interface SolveHistoryStatisticsRepository extends JpaRepository<SolveHis
   @Query("""
     SELECT q.topic as topic,
            COUNT(sh) as totalCount,
-           SUM(CASE WHEN sh.isCorrect = true THEN 1 ELSE 0 END) as correctCount
+           SUM(CASE WHEN sh.isCorrect = TRUE THEN 1 ELSE 0 END) as correctCount
     FROM SolveHistory sh
     JOIN sh.quiz q
     WHERE sh.user = :user
       AND sh.submittedAt >= :startDateTime
       AND sh.submittedAt < :endDateTime
-      AND (sh.quiz.id, sh.createdAt) IN (
-        SELECT sh2.quiz.id, MIN(sh2.createdAt)
-        FROM SolveHistory sh2
-        WHERE sh2.user = :user
-          AND sh2.submittedAt >= :startDateTime
-          AND sh2.submittedAt < :endDateTime
-        GROUP BY sh2.quiz.id
-      )
+      AND sh.isFirst = TRUE
     GROUP BY q.topic
   """)
   List<TopicSummary> findMonthlyTopicSummary(
@@ -86,18 +72,19 @@ public interface SolveHistoryStatisticsRepository extends JpaRepository<SolveHis
       "WHERE sh.user = :user " +
       "AND sh.submittedAt >= :startDateTime " +
       "AND sh.submittedAt < :endDateTime " +
+      "AND sh.isFirst = TRUE " +
       "GROUP BY CAST(sh.submittedAt AS LocalDate) " +
       "ORDER BY CAST(sh.submittedAt AS LocalDate)")
-  List<DailySummary> findDailySummaryByUserAndDateTimeRange(
+  List<DailySummary> findFirstAttemptsDailySummaryByUserAndDateTimeRange(
       @Param("user") User user,
       @Param("startDateTime") LocalDateTime startDateTime,
       @Param("endDateTime") LocalDateTime endDateTime
   );
 
-  default List<DailySummary> findDailySummaryByUserAndDate(User user, LocalDate date) {
+  default List<DailySummary> findFirstAttemptsDailySummaryByUserAndDate(User user, LocalDate date) {
     LocalDateTime startDateTime = date.atStartOfDay();
     LocalDateTime endDateTime = date.plusDays(1).atStartOfDay();
-    return findDailySummaryByUserAndDateTimeRange(user, startDateTime, endDateTime);
+    return findFirstAttemptsDailySummaryByUserAndDateTimeRange(user, startDateTime, endDateTime);
   }
 
   @Query("SELECT FUNCTION('HOUR', sh.submittedAt) as hourOfDay, " +
@@ -106,17 +93,18 @@ public interface SolveHistoryStatisticsRepository extends JpaRepository<SolveHis
       "WHERE sh.user = :user " +
       "AND sh.submittedAt >= :startDateTime " +
       "AND sh.submittedAt < :endDateTime " +
+      "AND sh.isFirst = TRUE " +
       "GROUP BY FUNCTION('HOUR', sh.submittedAt)")
-  List<HourlySummary> findHourlySummaryByUserAndDateTimeRange(
+  List<HourlySummary> findFirstAttemptsHourlySummaryByUserAndDateTimeRange(
       @Param("user") User user,
       @Param("startDateTime") LocalDateTime startDateTime,
       @Param("endDateTime") LocalDateTime endDateTime
   );
 
-  default List<HourlySummary> findHourlySummaryByUserAndDate(User user, LocalDate date) {
+  default List<HourlySummary> findFirstAttemptsHourlySummaryByUserAndDate(User user, LocalDate date) {
     LocalDateTime startDateTime = date.atStartOfDay();
     LocalDateTime endDateTime = date.plusDays(1).atStartOfDay();
-    return findHourlySummaryByUserAndDateTimeRange(user, startDateTime, endDateTime);
+    return findFirstAttemptsHourlySummaryByUserAndDateTimeRange(user, startDateTime, endDateTime);
   }
 
   interface DailySummary {

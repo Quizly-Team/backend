@@ -58,7 +58,7 @@ public class AggregateSolveHourlySummaryStepConfig {
         LocalDate targetDate = LocalDate.parse(targetDateStr);
 
         List<HourlySummary> hourlySummaryList =
-            solveHistoryStatisticsRepository.findHourlySummaryByUserAndDate(user, targetDate);
+            solveHistoryStatisticsRepository.findFirstAttemptsHourlySummaryByUserAndDate(user, targetDate);
 
         List<SolveHourlySummary> existSolveHourlySummaryList =
             solveHourlySummaryRepository.findByUserAndDate(user, targetDate);

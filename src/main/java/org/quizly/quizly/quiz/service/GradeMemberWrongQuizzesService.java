@@ -121,6 +121,7 @@ public class GradeMemberWrongQuizzesService implements
             .userAnswer(userAnswer)
             .solveTime(solveTime)
             .submittedAt(LocalDateTime.now())
+            .isFirst(false)
             .build();
 
     solveHistoryRepository.save(solveHistory);
