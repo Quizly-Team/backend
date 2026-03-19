@@ -4,16 +4,18 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import lombok.RequiredArgsConstructor;
+import org.quizly.quizly.admin.dto.request.AdminReadInquiriesRequest;
 import org.quizly.quizly.admin.dto.response.AdminReadInquiriesResponse;
 import org.quizly.quizly.admin.service.AdminReadInquiriesService;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.domin.entity.Inquiry;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
+import org.quizly.quizly.core.presentation.Pagination;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,18 +29,21 @@ public class AdminReadInquiriesController {
 
     @Operation(
         summary = "관리자 문의 전체 조회 API",
-        description = "사용자가 등록한 문의를 전체 조회합니다.\n\n",
+        description = "사용자가 등록한 문의를 전체 조회합니다.\n\n"
+            + "- `page`: 페이지 번호 (기본값 1)\n"
+            + "- `pageSize`: 그룹 단위 페이지 크기 (기본값 10)\n",
         operationId = "/admin/inquiries"
     )
     @GetMapping("/admin/inquiries")
     @PreAuthorize("hasRole('ADMIN')")
     @ApiErrorCode(errorCodes = {GlobalErrorCode.class, AdminReadInquiriesService.AdminReadInquiriesErrorCode.class})
     public ResponseEntity<AdminReadInquiriesResponse> adminReadInquiries(
-        @RequestParam(required = false) Inquiry.Status status
-        ){
+        @ModelAttribute AdminReadInquiriesRequest request)
+        {
         AdminReadInquiriesService.AdminReadInquiriesResponse serviceResponse = adminReadInquiriesService.execute(
             AdminReadInquiriesService.AdminReadInquiriesRequest.builder()
-                .status(status)
+                .status(request.getStatus())
+                .pageRequest(request.toPageRequest())
                 .build()
         );
         if (serviceResponse == null || !serviceResponse.isSuccess()) {
@@ -51,10 +56,12 @@ public class AdminReadInquiriesController {
                 });
         }
 
-        return ResponseEntity.ok(toResponse(serviceResponse.getInquiryList()));
+        return ResponseEntity.ok(toResponse(serviceResponse.getInquiryList(),serviceResponse.getPagination()));
     }
 
-    private AdminReadInquiriesResponse toResponse(List<Inquiry> inquiryList){
+    private AdminReadInquiriesResponse toResponse(
+        List<Inquiry> inquiryList,
+        Pagination pagination){
         List<AdminReadInquiriesResponse.AdminInquiryDetail> details = inquiryList.stream()
             .map(inquiry -> new AdminReadInquiriesResponse.AdminInquiryDetail(
                 inquiry.getId(),
@@ -71,6 +78,7 @@ public class AdminReadInquiriesController {
 
         return AdminReadInquiriesResponse.builder()
             .inquiryList(details)
+            .pagination(pagination)
             .build();
     }
 
