@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.domin.entity.Inquiry;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
+import org.quizly.quizly.core.presentation.Pagination;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +19,9 @@ import java.util.List;
 public class AdminReadInquiriesResponse extends BaseResponse<GlobalErrorCode> {
     @Schema(description = "전체 문의 목록")
     private List<AdminInquiryDetail> inquiryList;
+
+    @Schema(description = "페이지네이션 정보")
+    private Pagination pagination;
 
     @Schema(description = "전체 문의 목록 상세")
     public record AdminInquiryDetail(
