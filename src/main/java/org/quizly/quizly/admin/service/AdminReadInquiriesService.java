@@ -9,6 +9,10 @@ import org.quizly.quizly.core.domin.entity.Inquiry;
 import org.quizly.quizly.core.domin.repository.InquiryRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
+import org.quizly.quizly.core.presentation.Pagination;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,7 +25,7 @@ import java.util.List;
 public class AdminReadInquiriesService implements BaseService<AdminReadInquiriesService.AdminReadInquiriesRequest, AdminReadInquiriesService.AdminReadInquiriesResponse> {
 
     private final InquiryRepository inquiryRepository;
-
+    private static final String SORT_BY_LATEST = "createdAt";
     @Override
     public AdminReadInquiriesResponse execute(AdminReadInquiriesRequest request) {
 
@@ -31,20 +35,20 @@ public class AdminReadInquiriesService implements BaseService<AdminReadInquiries
                 .errorCode(AdminReadInquiriesErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
                 .build();
         }
+        Pageable pageRequest = request.getPageRequest().withSort(Sort.by(Sort.Direction.DESC, SORT_BY_LATEST));
 
-        Sort sort = Sort.by(Sort.Direction.DESC,"createdAt");
-
-        List<Inquiry>inquiryList;
+        Page<Inquiry> inquiryPage;
 
         if(request.getStatus() == null){
-            inquiryList = inquiryRepository.findAllWithUser(sort);
+            inquiryPage = inquiryRepository.findAllWithUser(pageRequest);
         }else{
-            inquiryList = inquiryRepository.findAllByStatusWithUser(request.getStatus(),sort);
+            inquiryPage = inquiryRepository.findAllByStatusWithUser(request.getStatus(),pageRequest);
         }
 
         return AdminReadInquiriesResponse.builder()
             .success(true)
-            .inquiryList(inquiryList)
+            .inquiryList(inquiryPage.getContent())
+            .pagination(Pagination.getPaginationFromPage(inquiryPage))
             .build();
 
     }
@@ -73,11 +77,12 @@ public class AdminReadInquiriesService implements BaseService<AdminReadInquiries
     public static class AdminReadInquiriesRequest implements BaseRequest {
 
         private Inquiry.Status status;
+        private PageRequest pageRequest;
 
 
         @Override
         public boolean isValid() {
-            return true;
+            return pageRequest != null;
         }
     }
 
@@ -90,6 +95,7 @@ public class AdminReadInquiriesService implements BaseService<AdminReadInquiries
     public static class AdminReadInquiriesResponse extends BaseResponse<AdminReadInquiriesService.AdminReadInquiriesErrorCode> {
 
         private List<Inquiry> inquiryList;
+        private Pagination pagination;
 
     }
 }
