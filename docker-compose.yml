@@ -6,7 +6,7 @@ services:
     container_name: quizly_mysql_db
     image: mysql:8.0
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
@@ -18,3 +18,10 @@ services:
       - --collation-server=utf8mb4_bin
     volumes:
       - ./docker/mysql/db:/var/lib/mysql
+
+  redis:
+    container_name: quizly_redis
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
