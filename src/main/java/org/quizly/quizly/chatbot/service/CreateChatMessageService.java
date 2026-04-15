@@ -1,38 +1,35 @@
 package org.quizly.quizly.chatbot.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.core.application.BaseRequest;
-import org.quizly.quizly.core.application.BaseResponse;
-import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
+import org.quizly.quizly.core.util.SsePublisher;
 import org.quizly.quizly.core.util.TextResourceReaderUtil;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class CreateChatMessageService implements
-    BaseService<CreateChatMessageService.ChatMessageRequest,
-        CreateChatMessageService.ChatMessageResponse> {
+public class CreateChatMessageService {
 
     private static final String PROMPT_PATH = "prompt/chatbot/quiz_chatbot_system.txt";
     private static final int MAX_MESSAGES = 20;
@@ -40,17 +37,16 @@ public class CreateChatMessageService implements
     private final ChatClient chatClient;
     private final ChatMemoryRepository chatMemoryRepository;
     private final TextResourceReaderUtil textResourceReaderUtil;
-    private final ObjectMapper objectMapper;
+    private final SsePublisher ssePublisher;
 
-    @Override
-    public ChatMessageResponse execute(ChatMessageRequest request) {
-        if (request == null || !request.isValid()) {
-            return ChatMessageResponse.builder()
-                .success(false)
-                .errorCode(ChatbotErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-                .build();
+    public SseEmitter execute(ChatMessageRequest request){
+        if(request == null || !request.isValid()){
+            SseEmitter errorEmitter = new SseEmitter();
+            errorEmitter.completeWithError(ChatbotErrorCode.NOT_EXIST_REQUIRED_PARAMETER.toException());
+            return errorEmitter;
         }
 
+        SseEmitter emitter = new SseEmitter(180 * 1000L);
         String internalConversationId = request.getUserId() + ":" + request.getConversationId();
 
         String systemPrompt = textResourceReaderUtil.load(PROMPT_PATH)
@@ -58,66 +54,123 @@ public class CreateChatMessageService implements
 
         List<Message> history = chatMemoryRepository.findByConversationId(internalConversationId);
 
-        try {
-            ChatResponse chatResponse = chatClient.prompt()
-                .system(systemPrompt)
-                .messages(history)
-                .user(request.getUserMessage())
-                .options(OpenAiChatOptions.builder()
-                    .responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
-                    .build())
-                .call()
-                .chatResponse();
+        StringBuilder fullAnswer = new StringBuilder();
+        AtomicBoolean isKeywordSection = new AtomicBoolean(false);
 
-            if (chatResponse == null || chatResponse.getResult() == null) {
-                return ChatMessageResponse.builder()
-                    .success(false)
-                    .errorCode(ChatbotErrorCode.CHATBOT_AI_FAILED)
-                    .build();
-            }
+        StringBuilder buffer = new StringBuilder();
+        String target = "|KEYWORDS|";
 
-            String content = chatResponse.getResult().getOutput().getText();
-            KeywordChatResponse aiResponse = objectMapper.readValue(content, KeywordChatResponse.class);
+        var disposable = chatClient.prompt()
+            .system(systemPrompt)
+            .messages(history)
+            .user(request.getUserMessage())
+            .options(OpenAiChatOptions.builder()
+                .build())
+            .stream()
+            .content()
+            .subscribe(
+                chunk -> {
+                    fullAnswer.append(chunk);
 
-            if (aiResponse == null) {
-                return ChatMessageResponse.builder()
-                    .success(false)
-                    .errorCode(ChatbotErrorCode.CHATBOT_AI_FAILED)
-                    .build();
-            }
+                    if(isKeywordSection.get()) return;
 
-            List<String> keywords = aiResponse.keywords() != null ? aiResponse.keywords() : List.of();
+                    buffer.append(chunk);
+                    String currentBuffer = buffer.toString();
 
-            List<Message> updated = new ArrayList<>(history);
-            updated.add(new UserMessage(request.getUserMessage()));
-            updated.add(new AssistantMessage(String.join(", ", keywords)));
+                    if (currentBuffer.contains(target)) {
+                        isKeywordSection.set(true);
+                        String validPart = currentBuffer.split(Pattern.quote(target))[0];
+                        ssePublisher.sendChunk(emitter, validPart);
+                        buffer.setLength(0);
+                        return;
+                    }
 
-            if (updated.size() > MAX_MESSAGES) {
-                updated = new ArrayList<>(updated.subList(updated.size() - MAX_MESSAGES, updated.size()));
-            }
+                    int overlapIndex = 0;
+                    int maxOverlap = Math.min(currentBuffer.length(),target.length());
 
-            chatMemoryRepository.saveAll(internalConversationId, updated);
+                    for(int i = maxOverlap; i>0; i--){
+                        if(currentBuffer.endsWith(target.substring(0,i))){
+                            overlapIndex = i;
+                            break;
+                        }
+                    }
 
-            return ChatMessageResponse.builder()
-                .success(true)
-                .conversationId(request.getConversationId())
-                .assistantMessage(aiResponse.answer())
-                .build();
+                    if(overlapIndex > 0){
+                        String toSend = currentBuffer.substring(0, currentBuffer.length()-overlapIndex);
+                        if(!toSend.isEmpty()){
+                            ssePublisher.sendChunk(emitter, toSend);
+                        }
+                        buffer.setLength(0);
+                        buffer.append(target.substring(0, overlapIndex));
+                    }else{
+                        ssePublisher.sendChunk(emitter,currentBuffer);
+                        buffer.setLength(0);
+                    }
+                },
+                error -> {
+                    if(buffer.length()>0 && !isKeywordSection.get()){
+                        ssePublisher.sendChunk(emitter,buffer.toString());
+                    }
+                    log.error("[CreateChatMessageService] Stream error", error);
+                    emitter.completeWithError(ChatbotErrorCode.CHATBOT_AI_FAILED.toException());
+                },
+                () -> {
+                    try {
+                        if (buffer.length() > 0 && !isKeywordSection.get()) {
+                            ssePublisher.sendChunk(emitter, buffer.toString());
+                        }
+                        String totalContent = fullAnswer.toString();
+                        String messageForHistory;
 
-        } catch (Exception e) {
-            log.error("[CreateChatMessageService] AI call failed", e);
-            return ChatMessageResponse.builder()
-                .success(false)
-                .errorCode(ChatbotErrorCode.CHATBOT_AI_FAILED)
-                .build();
+                        if(totalContent.contains(target)){
+                            String[] parts = totalContent.split(Pattern.quote(target));
+                            messageForHistory = (parts.length > 1) ? parts[1].trim() : totalContent;
+                        }else{
+                            messageForHistory = totalContent;
+                        }
+
+                        saveHistory(internalConversationId,history,request.getUserMessage(),messageForHistory);
+
+                        emitter.complete();
+                    } catch (Exception e) {
+                        log.error("[CreateChatMessageService] Stream error", e);
+                        emitter.completeWithError(ChatbotErrorCode.CHATBOT_AI_FAILED.toException());
+                    }
+                }
+            );
+        emitter.onCompletion(() -> {
+            log.info("[SSE] Connection completed for user: {}", request.getUserId());
+            disposable.dispose();
+        });
+
+        emitter.onTimeout(() -> {
+            log.warn("[SSE] Connection timeout for user: {}", request.getUserId());
+            disposable.dispose();
+        });
+
+        emitter.onError((e) -> {
+            log.error("[SSE] Connection error for user: {}", request.getUserId(), e);
+            disposable.dispose();
+        });
+        return emitter;
+
+    }
+
+    private void saveHistory(String conversationId, List<Message> history, String userMsg, String assistantMsg){
+        ArrayList<Message> updated = new ArrayList<>(history);
+        updated.add(new UserMessage(userMsg));
+        updated.add(new AssistantMessage(assistantMsg));
+
+        if(updated.size() > MAX_MESSAGES){
+            updated = new ArrayList<>(updated.subList(updated.size() - MAX_MESSAGES,updated.size()));
+
         }
+        chatMemoryRepository.saveAll(conversationId,updated);
     }
 
     private String buildQuizContext(ChatMessageRequest request) {
         return "문제: " + request.getQuestion() + "\n정답: " + request.getAnswer();
     }
-
-    record KeywordChatResponse(String answer, List<String> keywords) {}
 
     @Getter
     @RequiredArgsConstructor
@@ -155,15 +208,5 @@ public class CreateChatMessageService implements
                 && userMessage != null && !userMessage.isBlank()
                 && userId != null;
         }
-    }
-
-    @Getter
-    @SuperBuilder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ChatMessageResponse extends BaseResponse<ChatbotErrorCode> {
-
-        private String conversationId;
-        private String assistantMessage;
     }
 }
