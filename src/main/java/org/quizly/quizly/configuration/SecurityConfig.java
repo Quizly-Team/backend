@@ -1,5 +1,6 @@
 package org.quizly.quizly.configuration;
 
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.jwt.JwtAuthenticationFilter;
 import org.quizly.quizly.jwt.error.JwtAuthenticationEntryPoint;
@@ -65,6 +66,7 @@ public class SecurityConfig {
                 "/quizzes/{quizId}/answer/guest",
                 "/actuator/health"
             ).permitAll()
+            .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
             .anyRequest().authenticated());
 
     return http.build();
