@@ -1,22 +1,18 @@
 package org.quizly.quizly.chatbot.controller.post;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.Optional;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.chatbot.dto.request.CreateChatMessageRequest;
-import org.quizly.quizly.chatbot.dto.response.CreateChatMessageResponse;
 import org.quizly.quizly.chatbot.service.CreateChatMessageService;
-import org.quizly.quizly.chatbot.service.CreateChatMessageService.ChatbotErrorCode;
-import org.quizly.quizly.configuration.swagger.ApiErrorCode;
-import org.quizly.quizly.core.application.BaseResponse;
-import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,41 +22,27 @@ public class CreateChatMessageController {
     private final CreateChatMessageService createChatMessageService;
 
     @Operation(
-        summary = "챗봇 메시지 전송 API",
-        description = "모아보기 페이지에서 퀴즈 관련 질문을 AI 챗봇에게 전달합니다.\n\n"
-            + "동일한 conversationId로 요청하면 멀티턴 대화가 가능합니다.",
-        operationId = "/chatbot/messages"
+        summary = "챗봇 메시지 스트리밍 API",
+        description = "SSE를 통해 챗봇 답변을 실시간 스트리밍으로 전달합니다.",
+        operationId = "/chatbot/messages/stream"
     )
-    @PostMapping("/chatbot/messages")
-    @ApiErrorCode(errorCodes = {GlobalErrorCode.class, ChatbotErrorCode.class})
-    public ResponseEntity<CreateChatMessageResponse> createChatMessage(
-        @RequestBody CreateChatMessageRequest request,
+    @ApiResponse(
+        responseCode = "200",
+        description = "스트리밍 응답 성공",
+        content = @Content(mediaType = MediaType.TEXT_EVENT_STREAM_VALUE)
+    )
+    @PostMapping(value = "/chatbot/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamChatMessage(
+        @Valid @RequestBody CreateChatMessageRequest request,
         @AuthenticationPrincipal UserPrincipal userPrincipal
-    ) {
-        CreateChatMessageService.ChatMessageResponse serviceResponse = createChatMessageService.execute(
+    ){
+        return createChatMessageService.execute(
             CreateChatMessageService.ChatMessageRequest.builder()
                 .conversationId(request.getConversationId())
                 .question(request.getQuestion())
                 .answer(request.getAnswer())
                 .userMessage(request.getUserMessage())
                 .userId(userPrincipal.getUserId())
-                .build()
-        );
-
-        if (serviceResponse == null || !serviceResponse.isSuccess()) {
-            Optional.ofNullable(serviceResponse)
-                .map(BaseResponse::getErrorCode)
-                .ifPresentOrElse(errorCode -> {
-                    throw errorCode.toException();
-                }, () -> {
-                    throw GlobalErrorCode.INTERNAL_ERROR.toException();
-                });
-        }
-
-        return ResponseEntity.ok(
-            CreateChatMessageResponse.builder()
-                .conversationId(serviceResponse.getConversationId())
-                .assistantMessage(serviceResponse.getAssistantMessage())
                 .build()
         );
     }
