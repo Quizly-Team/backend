@@ -19,7 +19,7 @@ import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.core.util.AsyncTaskUtil;
 import org.quizly.quizly.core.util.TextProcessingUtil;
-import org.quizly.quizly.external.clova.dto.Response.Hcx007QuizResponse;
+import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
 import org.quizly.quizly.quiz.service.CreateGuestQuizzesService.CreateGuestQuizzesRequest;
 import org.quizly.quizly.quiz.service.CreateGuestQuizzesService.CreateGuestQuizzesResponse;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizRequest;
@@ -79,37 +79,37 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
     );
 
     CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-    List<Hcx007QuizResponse> hcx007QuizResponseList = AsyncTaskUtil.joinAsyncTasks(futures, response -> {
+    List<GeneratedQuizResponse> generatedQuizResponseList = AsyncTaskUtil.joinAsyncTasks(futures, response -> {
       if (response.isSuccess()) {
-        return response.getHcx007QuizResponseList();
+        return response.getGeneratedQuizResponseList();
       }
       return null;
     });
 
-    if (hcx007QuizResponseList.isEmpty() || hcx007QuizResponseList.size() < DEFAULT_QUIZ_COUNT) {
-      log.info("[CreateGuestQuizzesService] No quizzes were generated from Clova Studio.");
+    if (generatedQuizResponseList.isEmpty() || generatedQuizResponseList.size() < DEFAULT_QUIZ_COUNT) {
+      log.info("[CreateGuestQuizzesService] No quizzes were generated from OpenAi.");
       return CreateGuestQuizzesResponse.builder()
           .success(false)
-          .errorCode(CreateGuestQuizzesErrorCode.CLOVA_QUIZ_GENERATION_FAILED)
+          .errorCode(CreateGuestQuizzesErrorCode.OPENAI_QUIZ_GENERATION_FAILED)
           .build();
     }
 
     List<Quiz> quizList = saveQuiz(
-        hcx007QuizResponseList.stream()
+        generatedQuizResponseList.stream()
             .limit(DEFAULT_QUIZ_COUNT)
             .collect(Collectors.toList()));
 
     return CreateGuestQuizzesResponse.builder().quizList(quizList).build();
   }
 
-  private List<Quiz> saveQuiz(List<Hcx007QuizResponse> hcx007QuizResponseList) {
-    List<Quiz> quizList = hcx007QuizResponseList.stream()
-        .map(hcx007QuizResponse -> Quiz.builder()
-            .quizText(hcx007QuizResponse.getQuiz())
-            .answer(hcx007QuizResponse.getAnswer())
-            .quizType(hcx007QuizResponse.getType())
-            .explanation(hcx007QuizResponse.getExplanation())
-            .options(hcx007QuizResponse.getOptions())
+  private List<Quiz> saveQuiz(List<GeneratedQuizResponse> generatedQuizResponseList) {
+    List<Quiz> quizList = generatedQuizResponseList.stream()
+        .map(generatedQuizResponse -> Quiz.builder()
+            .quizText(generatedQuizResponse.getQuiz())
+            .answer(generatedQuizResponse.getAnswer())
+            .quizType(generatedQuizResponse.getType())
+            .explanation(generatedQuizResponse.getExplanation())
+            .options(generatedQuizResponse.getOptions())
             .topic(GUEST_TOPIC)
             .user(null)
             .guest(true)
@@ -124,9 +124,9 @@ public class CreateGuestQuizzesService implements BaseService<CreateGuestQuizzes
   public enum CreateGuestQuizzesErrorCode implements BaseErrorCode<DomainException> {
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    FAILED_CREATE_CLOVA_REQUEST(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버 요청 생성에 실패하였습니다."),
+    FAILED_CREATE_OPENAI_REQUEST(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버 요청 생성에 실패하였습니다."),
     FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "텍스트 청크 생성에 실패하였습니다."),
-    CLOVA_QUIZ_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버에서 퀴즈 생성에 실패하였습니다.");
+    OPENAI_QUIZ_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버에서 퀴즈 생성에 실패하였습니다.");
 
     private final HttpStatus httpStatus;
 
