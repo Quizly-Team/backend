@@ -17,12 +17,12 @@ import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.domin.entity.Quiz.QuizType;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
-import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.ResponseFormat;
-import org.quizly.quizly.external.clova.dto.Response.Hcx007QuizResponse;
-import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService;
-import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService.CreateQuizClovaStudioRequest;
-import org.quizly.quizly.external.clova.service.CreateQuizClovaStudioService.CreateQuizClovaStudioResponse;
-import org.quizly.quizly.external.clova.util.ResponseFormatUtil;
+import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest.ResponseFormat;
+import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService;
+import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiRequest;
+import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiResponse;
+import org.quizly.quizly.external.openai.util.OpenAiResponseFormatUtil;
+import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizRequest;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizResponse;
 import org.springframework.http.HttpStatus;
@@ -34,7 +34,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, CreateQuizResponse> {
 
-  private final CreateQuizClovaStudioService createQuizClovaStudioService;
+  private final CreateQuizOpenAiService createQuizOpenAiService;
 
   @Async("quizTaskExecutor")
   @Override
@@ -56,34 +56,35 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
 
     ResponseFormat responseFormat = createResponseFormat(request);
 
-    CreateQuizClovaStudioResponse clovaResponse = createQuizClovaStudioService.execute(
-        CreateQuizClovaStudioRequest.builder()
+    CreateQuizOpenAiResponse openAiResponse = createQuizOpenAiService.execute(
+        CreateQuizOpenAiRequest.builder()
             .plainText(request.getPlainText())
             .promptPath(promptPath)
             .responseFormat(responseFormat)
             .build());
 
-    if (clovaResponse != null && clovaResponse.isSuccess()) {
+    if (openAiResponse != null && openAiResponse.isSuccess()) {
       return CompletableFuture.completedFuture(CreateQuizResponse.builder()
           .success(true)
-          .hcx007QuizResponseList(clovaResponse.getHcx007QuizResponseList())
+          .generatedQuizResponseList(openAiResponse.getGeneratedQuizResponseList())
           .build());
     }
 
-    log.error("[CreateQuizService] Thread: {}. Failed to create quiz from Clova Studio.", Thread.currentThread().getName());
+    log.error("[CreateQuizService] Thread: {}. Failed to create quiz from OpenAi.", Thread.currentThread().getName());
     return CompletableFuture.completedFuture(CreateQuizResponse.builder()
         .success(false)
-        .errorCode(CreateQuizErrorCode.ASYNC_FAILED_CLOVA_QUIZ_GENERATION)
+        .errorCode(CreateQuizErrorCode.ASYNC_FAILED_OPENAI_QUIZ_GENERATION)
         .build());
   }
 
   private ResponseFormat createResponseFormat(CreateQuizRequest request) {
     int quizCount = request.getQuizCount();
+    String quizType = request.getType().name();
 
     if (request.getType().equals(QuizType.TRUE_FALSE)) {
-      return ResponseFormatUtil.createDescriptiveQuizResponseFormat(quizCount);
+      return OpenAiResponseFormatUtil.createDescriptiveQuizResponseFormat(quizCount, quizType);
     } else {
-      return ResponseFormatUtil.createSelectionQuizResponseFormat(quizCount);
+      return OpenAiResponseFormatUtil.createSelectionQuizResponseFormat(quizCount, quizType);
     }
   }
 
@@ -93,7 +94,7 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     NOT_EXIST_PROMPT_PATH(HttpStatus.INTERNAL_SERVER_ERROR, "요청 유형의 프롬프트 주소가 존재하지 않습니다."),
-    ASYNC_FAILED_CLOVA_QUIZ_GENERATION(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버의 비동기 퀴즈 생성 중 실패하였습니다.");
+    ASYNC_FAILED_OPENAI_QUIZ_GENERATION(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버의 비동기 퀴즈 생성 중 실패하였습니다.");
 
     private final HttpStatus httpStatus;
 
@@ -127,6 +128,6 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
   @AllArgsConstructor
   @ToString
   public static class CreateQuizResponse extends BaseResponse<CreateQuizErrorCode> {
-    private List<Hcx007QuizResponse> hcx007QuizResponseList;
+    private List<GeneratedQuizResponse> generatedQuizResponseList;
   }
 }
