@@ -14,9 +14,9 @@ import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
-import org.quizly.quizly.external.clova.service.CreateTopicClovaStudioService;
-import org.quizly.quizly.external.clova.service.CreateTopicClovaStudioService.CreateTopicClovaStudioRequest;
-import org.quizly.quizly.external.clova.service.CreateTopicClovaStudioService.CreateTopicClovaStudioResponse;
+import org.quizly.quizly.external.openai.service.CreateTopicOpenAiService;
+import org.quizly.quizly.external.openai.service.CreateTopicOpenAiService.CreateTopicOpenAiRequest;
+import org.quizly.quizly.external.openai.service.CreateTopicOpenAiService.CreateTopicOpenAiResponse;
 import org.quizly.quizly.quiz.service.CreateTopicService.CreateTopicRequest;
 import org.quizly.quizly.quiz.service.CreateTopicService.CreateTopicResponse;
 import org.springframework.http.HttpStatus;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CreateTopicService implements BaseService<CreateTopicRequest, CreateTopicResponse> {
 
-  private final CreateTopicClovaStudioService createTopicClovaStudioService;
+  private final CreateTopicOpenAiService createTopicOpenAiService;
 
   private static final String TOPIC_PROMPT_PATH = "prompt/basic_quiz/topic.txt";
 
@@ -40,24 +40,24 @@ public class CreateTopicService implements BaseService<CreateTopicRequest, Creat
           .build();
     }
 
-    CreateTopicClovaStudioResponse clovaResponse = createTopicClovaStudioService.execute(
-        CreateTopicClovaStudioRequest.builder()
+    CreateTopicOpenAiResponse openAiResponse = createTopicOpenAiService.execute(
+        CreateTopicOpenAiRequest.builder()
             .plainText(request.getPlainText())
             .promptPath(TOPIC_PROMPT_PATH)
             .build()
     );
 
-    if (clovaResponse == null || !clovaResponse.isSuccess()) {
-      log.error("[CreateTopicService] Failed to create topic from Clova Studio. Response: {}", clovaResponse);
+    if (openAiResponse == null || !openAiResponse.isSuccess()) {
+      log.error("[CreateTopicService] Failed to create topic from OpenAi. Response: {}", openAiResponse);
       return CreateTopicResponse.builder()
           .success(false)
           .errorCode(CreateTopicErrorCode.FAILED_CREATE_TOPIC)
           .build();
     }
 
-    String topic = clovaResponse.getTopic();
+    String topic = openAiResponse.getTopic();
     if (topic == null || topic.isBlank()) {
-      log.error("[CreateTopicService] Topic is empty from Clova response");
+      log.error("[CreateTopicService] Topic is empty from OpenAi response");
       return CreateTopicResponse.builder()
           .success(false)
           .errorCode(CreateTopicErrorCode.EMPTY_TOPIC)
