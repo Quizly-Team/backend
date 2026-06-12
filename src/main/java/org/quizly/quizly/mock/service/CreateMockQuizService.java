@@ -15,14 +15,14 @@ import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
-import org.quizly.quizly.external.clova.dto.Request.Hcx007Request.ResponseFormat;
-import org.quizly.quizly.external.clova.dto.Response.Hcx007MockExamResponse;
-import org.quizly.quizly.external.clova.service.CreateMockExamClovaStudioService;
-import org.quizly.quizly.external.clova.service.CreateMockExamClovaStudioService.CreateMockExamClovaStudioRequest;
-import org.quizly.quizly.external.clova.service.CreateMockExamClovaStudioService.CreateMockExamClovaStudioResponse;
-import org.quizly.quizly.external.clova.util.ResponseFormatUtil;
+import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest.ResponseFormat;
+import org.quizly.quizly.external.openai.service.CreateMockExamOpenAiService;
+import org.quizly.quizly.external.openai.service.CreateMockExamOpenAiService.CreateMockExamOpenAiRequest;
+import org.quizly.quizly.external.openai.service.CreateMockExamOpenAiService.CreateMockExamOpenAiResponse;
+import org.quizly.quizly.external.openai.util.OpenAiResponseFormatUtil;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType.TypeCategory;
+import org.quizly.quizly.mock.dto.response.GeneratedMockExamResponse;
 import org.quizly.quizly.mock.service.CreateMockQuizService.CreateMockQuizRequest;
 import org.quizly.quizly.mock.service.CreateMockQuizService.CreateMockQuizResponse;
 import org.springframework.http.HttpStatus;
@@ -34,7 +34,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CreateMockQuizService implements BaseAsyncService<CreateMockQuizRequest, CreateMockQuizResponse> {
 
-  private final CreateMockExamClovaStudioService createMockExamClovaStudioService;
+  private final CreateMockExamOpenAiService createMockExamOpenAiService;
 
   @Async("mockExamTaskExecutor")
   @Override
@@ -57,35 +57,36 @@ public class CreateMockQuizService implements BaseAsyncService<CreateMockQuizReq
 
     ResponseFormat responseFormat = createResponseFormat(request);
 
-    CreateMockExamClovaStudioResponse clovaResponse = createMockExamClovaStudioService.execute(
-        CreateMockExamClovaStudioRequest.builder()
+    CreateMockExamOpenAiResponse openAiResponse = createMockExamOpenAiService.execute(
+        CreateMockExamOpenAiRequest.builder()
             .plainText(request.getPlainText())
             .promptPath(promptPath)
             .responseFormat(responseFormat)
             .build());
 
-    if (clovaResponse != null && clovaResponse.isSuccess()) {
+    if (openAiResponse != null && openAiResponse.isSuccess()) {
       return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
           .success(true)
-          .hcx007MockExamResponseList(clovaResponse.getHcx007MockExamResponse())
+          .generatedMockExamResponseList(openAiResponse.getGeneratedMockExamResponseList())
           .build());
     }
 
-    log.error("[CreateMockQuizService] Thread: {}. Failed to create mock exam from Clova Studio.", Thread.currentThread().getName());
+    log.error("[CreateMockQuizService] Thread: {}. Failed to create mock exam from OpenAi.", Thread.currentThread().getName());
     return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
         .success(false)
-        .errorCode(CreateMockQuizErrorCode.ASYNC_FAILED_CLOVA_MOCK_EXAM_GENERATION)
+        .errorCode(CreateMockQuizErrorCode.ASYNC_FAILED_OPENAI_MOCK_EXAM_GENERATION)
         .build());
   }
 
   private ResponseFormat createResponseFormat(CreateMockQuizRequest request) {
     int quizCount = request.getQuizCount();
+    String quizType = request.getType().name();
     TypeCategory category = request.getType().getTypeCategory();
 
     if (category == TypeCategory.DESCRIPTIVE) {
-      return ResponseFormatUtil.createDescriptiveQuizResponseFormat(quizCount);
+      return OpenAiResponseFormatUtil.createDescriptiveQuizResponseFormat(quizCount, quizType);
     } else {
-      return ResponseFormatUtil.createSelectionQuizResponseFormat(quizCount);
+      return OpenAiResponseFormatUtil.createSelectionQuizResponseFormat(quizCount, quizType);
     }
   }
 
@@ -95,7 +96,7 @@ public class CreateMockQuizService implements BaseAsyncService<CreateMockQuizReq
 
     NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
     NOT_EXIST_PROMPT_PATH(HttpStatus.INTERNAL_SERVER_ERROR, "요청 유형의 프롬프트 주소가 존재하지 않습니다."),
-    ASYNC_FAILED_CLOVA_MOCK_EXAM_GENERATION(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버의 비동기 모의고사 생성 중 실패하였습니다.");
+    ASYNC_FAILED_OPENAI_MOCK_EXAM_GENERATION(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버의 비동기 모의고사 생성 중 실패하였습니다.");
 
     private final HttpStatus httpStatus;
 
@@ -129,6 +130,6 @@ public class CreateMockQuizService implements BaseAsyncService<CreateMockQuizReq
   @AllArgsConstructor
   @ToString
   public static class CreateMockQuizResponse extends BaseResponse<CreateMockQuizErrorCode>  {
-    private List<Hcx007MockExamResponse> hcx007MockExamResponseList;
+    private List<GeneratedMockExamResponse> generatedMockExamResponseList;
   }
 }
