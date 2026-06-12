@@ -1,4 +1,4 @@
-package org.quizly.quizly.external.clova.dto.Response;
+package org.quizly.quizly.quiz.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Hcx007TopicResponse {
+public class GeneratedTopicResponse {
   private String topic;
 }
