@@ -30,8 +30,11 @@ public class OpenAiResponseFormatUtil {
     }
 
     public static ResponseFormat createTopicResponseFormat() {
+        Map<String, Object> topicProperty = stringProperty("텍스트 내용 전체를 관통하는 핵심 주제 (5단어 이내)");
+        topicProperty.put("minLength", 1);
+
         Map<String, Object> properties = new LinkedHashMap<>();
-        properties.put("topic", stringProperty("텍스트 내용 전체를 관통하는 핵심 주제 (5단어 이내)"));
+        properties.put("topic", topicProperty);
 
         Map<String, Object> schema = objectSchema(properties, List.of("topic"));
 
