@@ -94,6 +94,7 @@ public class CreateMemberMockExamService implements
     }
 
     postProcessingFindMatch(generatedMockExamResponseList);
+    postProcessingFindCorrectAndIncorrect(generatedMockExamResponseList);
 
     return CreateMemberMockExamResponse.builder()
         .quizList(generatedMockExamResponseList)
@@ -153,6 +154,7 @@ public class CreateMemberMockExamService implements
 
   private void postProcessingFindMatch(List<GeneratedMockExamResponse> responseList) {
     responseList.stream()
+        .filter(quiz -> quiz.getType() == MockExamType.FIND_MATCH)
         .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
         .forEach(quiz -> {
           if (quiz.getOptions().isEmpty()) {
@@ -163,18 +165,40 @@ public class CreateMemberMockExamService implements
           }
         });
 
-    responseList.forEach(quiz -> {
-      if (quiz.getOptions() != null) {
-        quiz.getOptions().sort((o1, o2) -> {
-          int count1 = countItems(o1);
-          int count2 = countItems(o2);
-          if (count1 != count2) {
-            return Integer.compare(count1, count2);
+    responseList.stream()
+        .filter(quiz -> quiz.getType() == MockExamType.FIND_MATCH)
+        .forEach(quiz -> {
+          if (quiz.getOptions() != null) {
+            quiz.getOptions().sort((o1, o2) -> {
+              int count1 = countItems(o1);
+              int count2 = countItems(o2);
+              if (count1 != count2) {
+                return Integer.compare(count1, count2);
+              }
+              return o1.compareTo(o2);
+            });
           }
-          return o1.compareTo(o2);
         });
-      }
-    });
+  }
+
+  private void postProcessingFindCorrectAndIncorrect(List<GeneratedMockExamResponse> responseList) {
+    responseList.stream()
+        .filter(quiz -> quiz.getType() == MockExamType.FIND_CORRECT
+            || quiz.getType() == MockExamType.FIND_INCORRECT)
+        .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
+        .forEach(quiz -> {
+          if (quiz.getOptions().isEmpty()) {
+            quiz.getOptions().add(quiz.getAnswer());
+          } else {
+            quiz.getOptions().set(0, quiz.getAnswer());
+          }
+        });
+
+    responseList.stream()
+        .filter(quiz -> quiz.getType() == MockExamType.FIND_CORRECT
+            || quiz.getType() == MockExamType.FIND_INCORRECT)
+        .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().isEmpty())
+        .forEach(quiz -> Collections.shuffle(quiz.getOptions()));
   }
 
   private int countItems(String option) {
