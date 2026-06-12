@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +25,7 @@ import okhttp3.ResponseBody;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
+import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.util.TextResourceReaderUtil;
 import org.quizly.quizly.core.util.okhttp.OkHttpJsonRequest;
 import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest;
@@ -112,6 +114,8 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
                 List<GeneratedQuizResponse> generatedQuizResponseList = objectMapper.convertValue(
                     quizzesNode, new TypeReference<List<GeneratedQuizResponse>>() {});
 
+                shuffleMultipleChoiceOptions(generatedQuizResponseList);
+
                 return CreateQuizOpenAiResponse.builder()
                     .generatedQuizResponseList(generatedQuizResponseList)
                     .success(true)
@@ -154,6 +158,24 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
             throw OpenAiErrorCode.PROMPT_FILE_NOT_FOUND.toException();
         }
         return prompt;
+    }
+
+    private void shuffleMultipleChoiceOptions(List<GeneratedQuizResponse> responseList) {
+        responseList.stream()
+            .filter(quiz -> quiz.getType() == Quiz.QuizType.MULTIPLE_CHOICE)
+            .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
+            .forEach(quiz -> {
+                if (quiz.getOptions().isEmpty()) {
+                    quiz.getOptions().add(quiz.getAnswer());
+                } else {
+                    quiz.getOptions().set(0, quiz.getAnswer());
+                }
+            });
+
+        responseList.stream()
+            .filter(quiz -> quiz.getType() == Quiz.QuizType.MULTIPLE_CHOICE)
+            .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().isEmpty())
+            .forEach(quiz -> Collections.shuffle(quiz.getOptions()));
     }
 
     @Getter
