@@ -60,6 +60,8 @@ public class OpenAiResponseFormatUtil {
         quizzesArray.put("type", "array");
         quizzesArray.put("description", String.format("정확히 %d개의 문제를 생성한다.", quizCount));
         quizzesArray.put("items", quizItemSchema);
+        quizzesArray.put("minItems", quizCount);
+        quizzesArray.put("maxItems", quizCount);
 
         Map<String, Object> rootProperties = new LinkedHashMap<>();
         rootProperties.put("quizzes", quizzesArray);

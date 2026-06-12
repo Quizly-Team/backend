@@ -1,4 +1,4 @@
-package org.quizly.quizly.external.clova.dto.Response;
+package org.quizly.quizly.mock.dto.response;
 
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -9,7 +9,7 @@ import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamTy
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Hcx007MockExamResponse {
+public class GeneratedMockExamResponse {
   private String quiz;
   private MockExamType type;
   private List<String> options;

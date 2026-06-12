@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
-import org.quizly.quizly.external.clova.dto.Response.Hcx007MockExamResponse;
+import org.quizly.quizly.mock.dto.response.GeneratedMockExamResponse;
 import org.quizly.quizly.external.ocr.service.AsyncOcrService;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService.CreateMemberMockExamRequest;
@@ -67,8 +67,8 @@ public class CreateMemberOcrMockExamController {
 
 
     private CreateMemberMockExamResponse toResponse(CreateMemberMockExamService.CreateMemberMockExamResponse serviceResponse) {
-        List<Hcx007MockExamResponse> hcx007MockExamResponseList = serviceResponse.getQuizList();
-        List<CreateMemberMockExamResponse.MockExamDetail> mockExamDetailList =  hcx007MockExamResponseList.stream()
+        List<GeneratedMockExamResponse> generatedMockExamResponseList = serviceResponse.getQuizList();
+        List<CreateMemberMockExamResponse.MockExamDetail> mockExamDetailList =  generatedMockExamResponseList.stream()
                 .map(mock -> new CreateMemberMockExamResponse.MockExamDetail(
                         mock.getQuiz(),
                         mock.getType().toString(),
