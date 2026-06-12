@@ -19,7 +19,7 @@ import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.core.util.AsyncTaskUtil;
 import org.quizly.quizly.core.util.TextProcessingUtil;
-import org.quizly.quizly.external.clova.dto.Response.Hcx007MockExamResponse;
+import org.quizly.quizly.mock.dto.response.GeneratedMockExamResponse;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService.CreateMemberMockExamRequest;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService.CreateMemberMockExamResponse;
@@ -77,26 +77,26 @@ public class CreateMemberMockExamService implements
         chunkList, request.getMockExamTypeList(), quizCount
     );
     CompletableFuture.allOf(createMockQuizResponseFutureList.toArray(new CompletableFuture[0])).join();
-    List<Hcx007MockExamResponse> hcx007MockExamResponseList = AsyncTaskUtil.joinAsyncTasks(
+    List<GeneratedMockExamResponse> generatedMockExamResponseList = AsyncTaskUtil.joinAsyncTasks(
         createMockQuizResponseFutureList, response -> {
           if (response.isSuccess()) {
-            return response.getHcx007MockExamResponseList();
+            return response.getGeneratedMockExamResponseList();
           }
           return null;
         });
 
-    if (hcx007MockExamResponseList.isEmpty() || hcx007MockExamResponseList.size() < quizCount) {
-      log.error("[CreateMemberMockExamService] Failed to generate any mock exams from Clova Studio after all async.");
+    if (generatedMockExamResponseList.isEmpty() || generatedMockExamResponseList.size() < quizCount) {
+      log.error("[CreateMemberMockExamService] Failed to generate any mock exams from OpenAi after all async.");
       return CreateMemberMockExamResponse.builder()
           .success(false)
-          .errorCode(CreateMemberMockExamErrorCode.CLOVA_MOCK_EXAM_GENERATION_FAILED)
+          .errorCode(CreateMemberMockExamErrorCode.OPENAI_MOCK_EXAM_GENERATION_FAILED)
           .build();
     }
 
-    postProcessingFindMatch(hcx007MockExamResponseList);
+    postProcessingFindMatch(generatedMockExamResponseList);
 
     return CreateMemberMockExamResponse.builder()
-        .quizList(hcx007MockExamResponseList)
+        .quizList(generatedMockExamResponseList)
         .success(true)
         .build();
   }
@@ -151,7 +151,7 @@ public class CreateMemberMockExamService implements
   }
 
 
-  private void postProcessingFindMatch(List<Hcx007MockExamResponse> responseList) {
+  private void postProcessingFindMatch(List<GeneratedMockExamResponse> responseList) {
     responseList.stream()
         .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
         .forEach(quiz -> {
@@ -200,7 +200,7 @@ public class CreateMemberMockExamService implements
     NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     INVALID_QUIZ_COUNT_RANGE(HttpStatus.BAD_REQUEST, "모의고사 문제 개수는 10개 이상 30개 이하여야 합니다."),
     FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 입력을 chunk 단위 분리에 실패하였습니다."),
-    CLOVA_MOCK_EXAM_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CLOVA 서버에서 모의고사 생성에 실패하였습니다.");
+    OPENAI_MOCK_EXAM_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버에서 모의고사 생성에 실패하였습니다.");
 
     private final HttpStatus httpStatus;
 
@@ -243,6 +243,6 @@ public class CreateMemberMockExamService implements
   public static class CreateMemberMockExamResponse extends
       BaseResponse<CreateMemberMockExamErrorCode> {
 
-    private List<Hcx007MockExamResponse> quizList;
+    private List<GeneratedMockExamResponse> quizList;
   }
 }

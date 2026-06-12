@@ -8,8 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
-import org.quizly.quizly.core.util.TextProcessingUtil;
-import org.quizly.quizly.external.clova.dto.Response.Hcx007MockExamResponse;
+import org.quizly.quizly.mock.dto.response.GeneratedMockExamResponse;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest;
 import org.quizly.quizly.mock.dto.response.CreateMemberMockExamResponse;
 import org.quizly.quizly.mock.dto.response.CreateMemberMockExamResponse.MockExamDetail;
@@ -63,8 +62,8 @@ public class CreateMemberMockExamController {
   }
 
   private CreateMemberMockExamResponse toResponse(CreateMemberMockExamService.CreateMemberMockExamResponse serviceResponse) {
-    List<Hcx007MockExamResponse> hcx007MockExamResponseList = serviceResponse.getQuizList();
-    List<MockExamDetail> mockExamDetailList =  hcx007MockExamResponseList.stream()
+    List<GeneratedMockExamResponse> generatedMockExamResponseList = serviceResponse.getQuizList();
+    List<MockExamDetail> mockExamDetailList =  generatedMockExamResponseList.stream()
         .map(mock -> new MockExamDetail(
             mock.getQuiz(),
             mock.getType().toString(),
