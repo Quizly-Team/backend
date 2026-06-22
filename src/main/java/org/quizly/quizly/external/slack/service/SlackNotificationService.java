@@ -11,6 +11,7 @@ import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
+import org.quizly.quizly.core.notification.NotificationChannel;
 import org.quizly.quizly.core.notification.NotificationMessage;
 import org.quizly.quizly.core.notification.NotificationProvider;
 import org.quizly.quizly.external.slack.dto.Request.SlackRequest;
@@ -27,8 +28,11 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 public class SlackNotificationService implements NotificationProvider, BaseService<SlackNotificationService.NotificationRequest, SlackNotificationService.NotificationResponse> {
 
-    @Value("${notification.slack.webhook-url}")
-    private String webhookUrl;
+    @Value("${notification.slack.batch.webhook-url}")
+    private String batchWebhookUrl;
+
+    @Value("${notification.slack.signup.webhook-url}")
+    private String signupWebhookUrl;
 
     private final RestTemplate restTemplate;
     private final Environment environment;
@@ -39,7 +43,16 @@ public class SlackNotificationService implements NotificationProvider, BaseServi
             return;
         }
         String text = format(message);
-        this.execute(new NotificationRequest(text));
+        String webhookUrl = getWebhookUrl(message.channel());
+        this.execute(new NotificationRequest(text,webhookUrl));
+    }
+
+    private String getWebhookUrl(NotificationChannel channel) {
+        return switch (channel) {
+            case SIGNUP -> signupWebhookUrl;
+            case BATCH -> batchWebhookUrl;
+            default -> throw new IllegalArgumentException("지원하지 않는 알림 채널입니다: " + channel);
+        };
     }
 
     private String format(NotificationMessage message) {
@@ -55,7 +68,7 @@ public class SlackNotificationService implements NotificationProvider, BaseServi
 
         try {
             SlackRequest slackRequest = new SlackRequest(request.getMessage());
-            restTemplate.postForEntity(webhookUrl, slackRequest, String.class);
+            restTemplate.postForEntity(request.getWebhookUrl(), slackRequest, String.class);
 
             return NotificationResponse.builder()
                 .success(true)
@@ -87,10 +100,13 @@ public class SlackNotificationService implements NotificationProvider, BaseServi
     @NoArgsConstructor
     public static class NotificationRequest implements BaseRequest {
         private String message;
+        private String webhookUrl;
 
         @Override
         public boolean isValid() {
-            return message != null && !message.isBlank();
+
+            return message != null && !message.isBlank()
+                && webhookUrl !=null && !webhookUrl.isBlank();
         }
     }
 
