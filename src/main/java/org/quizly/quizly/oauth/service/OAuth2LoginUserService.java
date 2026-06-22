@@ -7,10 +7,12 @@ import org.quizly.quizly.core.domin.entity.User;
 import org.quizly.quizly.core.domin.entity.User.Provider;
 import org.quizly.quizly.core.domin.entity.User.Role;
 import org.quizly.quizly.core.domin.repository.UserRepository;
+import org.quizly.quizly.core.notification.NotificationProvider;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.oauth.dto.response.KakaoUserInfo;
 import org.quizly.quizly.oauth.dto.response.NaverUserInfo;
 import org.quizly.quizly.oauth.dto.response.OAuth2UserInfo;
+import org.quizly.quizly.oauth.message.SignupNotificationMessage;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 public class OAuth2LoginUserService extends DefaultOAuth2UserService {
 
   private final UserRepository userRepository;
+  private final NotificationProvider notificationProvider;
 
   @Override
   public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -75,8 +78,14 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
     userEntity.setName(oAuth2UserInfo.getNickname());
     userEntity.setNickName(oAuth2UserInfo.getNickname());
     userEntity.setRole(Role.USER);
-    userRepository.save(userEntity);
-    return userEntity;
+    User savedUser = userRepository.save(userEntity);
+
+    try{
+      notificationProvider.send(new SignupNotificationMessage(savedUser));
+    }catch (Exception e) {
+      log.warn("[OAuth2LoginUserService] 회원가입 슬랙 알림 전송 실패. userId: {}", savedUser.getId(), e);
+    }
+    return savedUser;
   }
 
   private User updateUser(User user, OAuth2UserInfo oAuth2UserInfo) {
