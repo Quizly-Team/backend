@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,9 +15,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
+import org.quizly.quizly.account.service.ReadUserService;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
+import org.quizly.quizly.core.domin.entity.MockExam;
+import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.core.domin.repository.MockExamRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.core.util.AsyncTaskUtil;
@@ -28,7 +35,6 @@ import org.quizly.quizly.mock.service.CreateMockQuizService.CreateMockQuizRespon
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
 @Log4j2
 @Service
 @RequiredArgsConstructor
@@ -36,6 +42,9 @@ public class CreateMemberMockExamService implements
     BaseService<CreateMemberMockExamRequest, CreateMemberMockExamResponse> {
 
   private final CreateMockQuizService createMockQuizService;
+  private final ReadUserService readUserService;
+  private final MockExamRepository mockExamRepository;
+  private final ObjectMapper objectMapper;
 
   private static final int MIN_QUIZ_COUNT = 10;
   private static final int MAX_QUIZ_COUNT = 30;
@@ -53,6 +62,19 @@ public class CreateMemberMockExamService implements
               .errorCode(CreateMemberMockExamErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
               .build();
     }
+    ReadUserService.ReadUserResponse readUserResponse = readUserService.execute(
+        ReadUserService.ReadUserRequest.builder()
+            .userPrincipal(request.getUserPrincipal())
+            .build()
+    );
+
+    if (!readUserResponse.isSuccess()) {
+      return CreateMemberMockExamResponse.builder()
+          .success(false)
+          .errorCode(CreateMemberMockExamErrorCode.NOT_FOUND_USER)
+          .build();
+    }
+    User user = readUserResponse.getUser();
 
     String plainText = request.getPlainText();
     List<String> chunkList = TextProcessingUtil.createChunkList(
@@ -96,12 +118,43 @@ public class CreateMemberMockExamService implements
     postProcessingFindMatch(generatedMockExamResponseList);
     postProcessingFindCorrectAndIncorrect(generatedMockExamResponseList);
 
+    saveMockExam(generatedMockExamResponseList,user);
+
     return CreateMemberMockExamResponse.builder()
         .quizList(generatedMockExamResponseList)
         .success(true)
         .build();
   }
+  private void saveMockExam(
+      List<GeneratedMockExamResponse> generatedMockExamResponseList,
+      User user
+  ) {
+    try {
+      String content = objectMapper.writeValueAsString(generatedMockExamResponseList);
 
+      MockExam mockExam = MockExam.builder()
+          .content(content)
+          .user(user)
+          .build();
+
+      mockExamRepository.saveAndFlush(mockExam);
+
+    } catch (JsonProcessingException e) {
+      log.warn(
+          "[CreateMemberMockExamService] Failed to serialize mock exam result. userId={}, generatedQuizCount={}",
+          user.getId(),
+          generatedMockExamResponseList.size(),
+          e
+      );
+    } catch (Exception e) {
+      log.warn(
+          "[CreateMemberMockExamService] Failed to save mock exam. userId={}, generatedQuizCount={}",
+          user.getId(),
+          generatedMockExamResponseList.size(),
+          e
+      );
+    }
+  }
   private void postProcessingChunkList(List<String> chunkList) {
     if (chunkList.size() <= 1) {
       return;
@@ -224,7 +277,8 @@ public class CreateMemberMockExamService implements
     NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
     INVALID_QUIZ_COUNT_RANGE(HttpStatus.BAD_REQUEST, "모의고사 문제 개수는 10개 이상 30개 이하여야 합니다."),
     FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 입력을 chunk 단위 분리에 실패하였습니다."),
-    OPENAI_MOCK_EXAM_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버에서 모의고사 생성에 실패하였습니다.");
+    OPENAI_MOCK_EXAM_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버에서 모의고사 생성에 실패하였습니다."),
+    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
 

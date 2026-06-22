@@ -14,7 +14,6 @@ import org.quizly.quizly.mock.dto.response.CreateMemberMockExamResponse;
 import org.quizly.quizly.mock.dto.response.CreateMemberMockExamResponse.MockExamDetail;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService;
 import org.quizly.quizly.oauth.UserPrincipal;
-import org.quizly.quizly.quiz.service.CreateMemberQuizzesService.CreateMemberQuizzesErrorCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +33,7 @@ public class CreateMemberMockExamController {
       operationId = "/mock/member"
   )
   @PostMapping("/mock/member")
-  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, CreateMemberQuizzesErrorCode.class})
+  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, CreateMemberMockExamService.CreateMemberMockExamErrorCode.class})
   public ResponseEntity<CreateMemberMockExamResponse> createMemberMockExam(
       @RequestBody CreateMemberMockExamRequest request,
       @AuthenticationPrincipal UserPrincipal userPrincipal) {
