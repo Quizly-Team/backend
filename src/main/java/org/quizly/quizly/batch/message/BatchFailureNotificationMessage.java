@@ -1,5 +1,6 @@
 package org.quizly.quizly.batch.message;
 
+import org.quizly.quizly.core.notification.NotificationChannel;
 import org.quizly.quizly.core.notification.NotificationMessage;
 
 public class BatchFailureNotificationMessage implements NotificationMessage {
@@ -26,5 +27,10 @@ public class BatchFailureNotificationMessage implements NotificationMessage {
     @Override
     public String body() {
         return "job=" + jobName + "\nreason=" + reason + "\nstep=" + step + "\nparameters=" + parameters;
+    }
+
+    @Override
+    public NotificationChannel channel() {
+        return NotificationChannel.BATCH;
     }
 }
