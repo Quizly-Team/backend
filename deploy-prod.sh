@@ -29,8 +29,9 @@ echo "> 타겟 포트: $TARGET_PORT"
 docker pull $FULL_IMAGE_NAME
 docker rm -f "$TARGET_NAME" 2>/dev/null || true
 
-docker run -d --name "$TARGET_NAME" -p "${TARGET_PORT}:8080" \
-  -v /root/quizly-server/application.yml:/application.yml \
+docker run -d --name "$TARGET_NAME" \
+  --network host \
+  -e SERVER_PORT=${TARGET_PORT} \
   -v "$LOG_DIR":/logs \
   --memory="1280m" \
   "$FULL_IMAGE_NAME"
