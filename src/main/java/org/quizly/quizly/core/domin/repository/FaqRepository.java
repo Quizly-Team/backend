@@ -8,9 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FaqRepository extends JpaRepository<Faq, Long> {
 
-  List<Faq> findAllByDeletedFalseOrderByCreatedAt();
+    List<Faq> findAllByDeletedFalseOrderByCreatedAt();
 
-  List<Faq> findByCategoryAndDeletedFalseOrderByCreatedAt(FaqCategory category);
+    List<Faq> findByCategoryAndDeletedFalseOrderByCreatedAt(FaqCategory category);
 
-  Optional<Faq> findByIdAndDeletedFalse(Long id);
+    Optional<Faq> findByIdAndDeletedFalse(Long id);
 }

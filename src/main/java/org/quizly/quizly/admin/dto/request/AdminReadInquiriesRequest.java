@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.quizly.quizly.core.domin.entity.Inquiry;
 import org.quizly.quizly.core.presentation.BasePaginationRequest;
+
 @Getter
 @Setter
 @Schema(description = "관리자 문의 조회 요청")

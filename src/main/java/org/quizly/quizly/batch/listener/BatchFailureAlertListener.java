@@ -1,5 +1,6 @@
 package org.quizly.quizly.batch.listener;
 
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quizly.quizly.batch.message.BatchFailureNotificationMessage;
@@ -8,8 +9,6 @@ import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.stereotype.Component;
-
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -29,10 +28,9 @@ public class BatchFailureAlertListener implements JobExecutionListener {
                 : jobExecution.getAllFailureExceptions().get(0).getMessage();
 
             String step = jobExecution.getStepExecutions().stream()
-                    .filter(se -> se.getStatus() == BatchStatus.FAILED)
-                    .map(se -> se.getStepName() + " (" + se.getExitStatus().getExitCode() + ")")
-                    .collect(Collectors.joining(", "));
-
+                .filter(se -> se.getStatus() == BatchStatus.FAILED)
+                .map(se -> se.getStepName() + " (" + se.getExitStatus().getExitCode() + ")")
+                .collect(Collectors.joining(", "));
 
             String parameters = formatJobParameters(jobExecution);
 
@@ -42,7 +40,7 @@ public class BatchFailureAlertListener implements JobExecutionListener {
         }
     }
 
-    private String formatJobParameters(JobExecution jobExecution){
+    private String formatJobParameters(JobExecution jobExecution) {
         return jobExecution.getJobParameters()
             .getParameters()
             .entrySet()

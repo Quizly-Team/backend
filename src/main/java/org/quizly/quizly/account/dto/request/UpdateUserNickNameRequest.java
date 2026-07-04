@@ -16,12 +16,12 @@ import org.quizly.quizly.core.application.BaseRequest;
 @Schema(description = "유저 닉네임 변경 요청")
 public class UpdateUserNickNameRequest implements BaseRequest {
 
-  @Schema(description = "변경할 닉네임", example = "퀴즐리")
-  private String nickName;
+    @Schema(description = "변경할 닉네임", example = "퀴즐리")
+    private String nickName;
 
-  @Override
-  public boolean isValid() {
-    return nickName != null && !nickName.isBlank();
-  }
+    @Override
+    public boolean isValid() {
+        return nickName != null && !nickName.isBlank();
+    }
 
 }

@@ -1,6 +1,13 @@
 package org.quizly.quizly.account.service;
 
-import lombok.*;
+import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.core.application.BaseRequest;
@@ -15,14 +22,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 @Log4j2
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class CreateOnboardingService
-        implements BaseService<
+    implements BaseService<
     CreateOnboardingService.CreateOnboardingRequest,
     CreateOnboardingService.CreateOnboardingResponse> {
 
@@ -32,26 +37,26 @@ public class CreateOnboardingService
     public CreateOnboardingResponse execute(CreateOnboardingRequest request) {
         if (request == null || !request.isValid()) {
             return CreateOnboardingResponse.builder()
-                    .success(false)
-                    .errorCode(CreateOnboardingErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-                    .build();
+                .success(false)
+                .errorCode(CreateOnboardingErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+                .build();
         }
 
         Long userId = request.getUserPrincipal().getUserId();
         if (userId == null) {
             return CreateOnboardingResponse.builder()
-                    .success(false)
-                    .errorCode(CreateOnboardingErrorCode.NOT_EXIST_PROVIDER_ID)
-                    .build();
+                .success(false)
+                .errorCode(CreateOnboardingErrorCode.NOT_EXIST_PROVIDER_ID)
+                .build();
         }
 
         Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isEmpty()) {
             log.error("[CreateOnboardingService] User not found for userId: {}", userId);
             return CreateOnboardingResponse.builder()
-                    .success(false)
-                    .errorCode(CreateOnboardingErrorCode.NOT_FOUND_USER)
-                    .build();
+                .success(false)
+                .errorCode(CreateOnboardingErrorCode.NOT_FOUND_USER)
+                .build();
         }
 
         User user = userOptional.get();
@@ -87,6 +92,7 @@ public class CreateOnboardingService
     @AllArgsConstructor
     @ToString
     public static class CreateOnboardingRequest implements BaseRequest {
+
         private UserPrincipal userPrincipal;
         private String targetType;
         private String studyGoal;
@@ -94,10 +100,10 @@ public class CreateOnboardingService
         @Override
         public boolean isValid() {
             return userPrincipal != null
-                    && targetType != null
-                    && !targetType.isBlank()
-                    && studyGoal != null
-                    && !studyGoal.isBlank();
+                && targetType != null
+                && !targetType.isBlank()
+                && studyGoal != null
+                && !studyGoal.isBlank();
         }
     }
 
@@ -108,7 +114,8 @@ public class CreateOnboardingService
     @NoArgsConstructor
     @ToString
     public static class CreateOnboardingResponse
-            extends BaseResponse<CreateOnboardingErrorCode> {
+        extends BaseResponse<CreateOnboardingErrorCode> {
+
         private boolean onboardingCompleted;
     }
 

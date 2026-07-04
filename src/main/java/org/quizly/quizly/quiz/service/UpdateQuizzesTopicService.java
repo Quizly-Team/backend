@@ -10,14 +10,14 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
+import org.quizly.quizly.account.service.ReadUserService;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.account.service.ReadUserService;
-import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
-import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.domin.repository.QuizRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
@@ -35,106 +35,107 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateQuizzesTopicService implements
     BaseService<UpdateQuizzesTopicRequest, UpdateQuizzesTopicResponse> {
 
-  private final QuizRepository quizRepository;
-  private final ReadUserService readUserService;
+    private final QuizRepository quizRepository;
+    private final ReadUserService readUserService;
 
-  @Override
-  public UpdateQuizzesTopicResponse execute(UpdateQuizzesTopicRequest request) {
-    if (request == null || !request.isValid()) {
-      return UpdateQuizzesTopicResponse.builder()
-          .success(false)
-          .errorCode(UpdateQuizzesTopicErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-          .build();
-    }
+    @Override
+    public UpdateQuizzesTopicResponse execute(UpdateQuizzesTopicRequest request) {
+        if (request == null || !request.isValid()) {
+            return UpdateQuizzesTopicResponse.builder()
+                .success(false)
+                .errorCode(UpdateQuizzesTopicErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+                .build();
+        }
 
-    ReadUserResponse readUserResponse = readUserService.execute(
-        ReadUserRequest.builder()
-            .userPrincipal(request.getUserPrincipal())
-            .build()
-    );
-
-    if (!readUserResponse.isSuccess()) {
-      return UpdateQuizzesTopicResponse.builder()
-          .success(false)
-          .errorCode(UpdateQuizzesTopicErrorCode.NOT_FOUND_USER)
-          .build();
-    }
-    User user = readUserResponse.getUser();
-
-    List<Quiz> quizList = quizRepository.findAllById(request.getQuizIdList());
-
-    if (quizList.size() != request.getQuizIdList().size()) {
-      return UpdateQuizzesTopicResponse.builder()
-          .success(false)
-          .errorCode(UpdateQuizzesTopicErrorCode.NOT_FOUND_QUIZ)
-          .build();
-    }
-
-    if (!checkUserOwnsQuizList(quizList, user)) {
-      return UpdateQuizzesTopicResponse.builder()
-          .success(false)
-          .errorCode(UpdateQuizzesTopicErrorCode.NOT_QUIZ_OWNER)
-          .build();
-    }
-    quizList.forEach(quiz -> quiz.setTopic(request.getTopic()));
-
-    return UpdateQuizzesTopicResponse.builder().build();
-  }
-
-  private boolean checkUserOwnsQuizList(List<Quiz> quizList, User user) {
-    return quizList.stream()
-        .allMatch(quiz ->
-            quiz.getUser() != null && quiz.getUser().getId().equals(user.getId())
+        ReadUserResponse readUserResponse = readUserService.execute(
+            ReadUserRequest.builder()
+                .userPrincipal(request.getUserPrincipal())
+                .build()
         );
-  }
 
-  @Getter
-  @RequiredArgsConstructor
-  public enum UpdateQuizzesTopicErrorCode implements BaseErrorCode<DomainException> {
+        if (!readUserResponse.isSuccess()) {
+            return UpdateQuizzesTopicResponse.builder()
+                .success(false)
+                .errorCode(UpdateQuizzesTopicErrorCode.NOT_FOUND_USER)
+                .build();
+        }
+        User user = readUserResponse.getUser();
 
-    NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
-    NOT_FOUND_QUIZ(HttpStatus.NOT_FOUND, "문제를 찾을 수 없습니다."),
-    NOT_QUIZ_OWNER(HttpStatus.FORBIDDEN, "문제를 수정할 권한이 없습니다.");
+        List<Quiz> quizList = quizRepository.findAllById(request.getQuizIdList());
 
-    private final HttpStatus httpStatus;
+        if (quizList.size() != request.getQuizIdList().size()) {
+            return UpdateQuizzesTopicResponse.builder()
+                .success(false)
+                .errorCode(UpdateQuizzesTopicErrorCode.NOT_FOUND_QUIZ)
+                .build();
+        }
 
-    private final String message;
+        if (!checkUserOwnsQuizList(quizList, user)) {
+            return UpdateQuizzesTopicResponse.builder()
+                .success(false)
+                .errorCode(UpdateQuizzesTopicErrorCode.NOT_QUIZ_OWNER)
+                .build();
+        }
+        quizList.forEach(quiz -> quiz.setTopic(request.getTopic()));
 
-    @Override
-    public DomainException toException() {
-      return new DomainException(httpStatus, this);
+        return UpdateQuizzesTopicResponse.builder().build();
     }
-  }
 
-
-  @Getter
-  @Setter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class UpdateQuizzesTopicRequest implements BaseRequest {
-
-    private String topic;
-
-    private List<Long> quizIdList;
-
-    private UserPrincipal userPrincipal;
-
-    @Override
-    public boolean isValid() {
-      return quizIdList != null && !quizIdList.isEmpty() && userPrincipal != null;
+    private boolean checkUserOwnsQuizList(List<Quiz> quizList, User user) {
+        return quizList.stream()
+            .allMatch(quiz ->
+                quiz.getUser() != null && quiz.getUser().getId().equals(user.getId())
+            );
     }
-  }
 
-  @Getter
-  @Setter
-  @SuperBuilder
-  @NoArgsConstructor
-  @ToString
-  public static class UpdateQuizzesTopicResponse extends BaseResponse<UpdateQuizzesTopicErrorCode> {
+    @Getter
+    @RequiredArgsConstructor
+    public enum UpdateQuizzesTopicErrorCode implements BaseErrorCode<DomainException> {
 
-  }
+        NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
+        NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
+        NOT_FOUND_QUIZ(HttpStatus.NOT_FOUND, "문제를 찾을 수 없습니다."),
+        NOT_QUIZ_OWNER(HttpStatus.FORBIDDEN, "문제를 수정할 권한이 없습니다.");
+
+        private final HttpStatus httpStatus;
+
+        private final String message;
+
+        @Override
+        public DomainException toException() {
+            return new DomainException(httpStatus, this);
+        }
+    }
+
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class UpdateQuizzesTopicRequest implements BaseRequest {
+
+        private String topic;
+
+        private List<Long> quizIdList;
+
+        private UserPrincipal userPrincipal;
+
+        @Override
+        public boolean isValid() {
+            return quizIdList != null && !quizIdList.isEmpty() && userPrincipal != null;
+        }
+    }
+
+    @Getter
+    @Setter
+    @SuperBuilder
+    @NoArgsConstructor
+    @ToString
+    public static class UpdateQuizzesTopicResponse extends
+        BaseResponse<UpdateQuizzesTopicErrorCode> {
+
+    }
 
 }

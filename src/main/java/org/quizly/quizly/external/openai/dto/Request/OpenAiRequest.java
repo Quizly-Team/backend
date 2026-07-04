@@ -71,6 +71,7 @@ public record OpenAiRequest(
         String type,
         String text
     ) {
+
         public static Content text(String text) {
             return new Content("text", text);
         }
@@ -80,6 +81,7 @@ public record OpenAiRequest(
         String type,
         @JsonProperty("json_schema") JsonSchema jsonSchema
     ) {
+
         public static ResponseFormat jsonSchema(JsonSchema jsonSchema) {
             return new ResponseFormat("json_schema", jsonSchema);
         }
@@ -90,6 +92,7 @@ public record OpenAiRequest(
         Object schema,
         boolean strict
     ) {
+
         public static JsonSchema of(String name, Object schema) {
             return new JsonSchema(name, schema, true);
         }

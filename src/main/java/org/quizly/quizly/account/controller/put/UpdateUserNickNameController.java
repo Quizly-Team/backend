@@ -23,37 +23,37 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Account", description = "계정")
 public class UpdateUserNickNameController {
 
-  private final UpdateUserNickNameService updateUserNickNameService;
+    private final UpdateUserNickNameService updateUserNickNameService;
 
-  @Operation(
-      summary = "유저 닉네임 변경 API",
-      description = "회원 전용 API로 현재 로그인 유저의 닉네임을 변경합니다.\n\n회원 API로 요청 시 토큰이 필요합니다.",
-      operationId = "/account/nickname"
-  )
-  @PutMapping("/account/nickname")
-  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, UpdateUserNickNameErrorCode.class})
-  public ResponseEntity<UpdateUserNickNameResponse> updateUserNickName (
-      @RequestBody UpdateUserNickNameRequest request,
-      @AuthenticationPrincipal UserPrincipal userPrincipal
-  ) {
+    @Operation(
+        summary = "유저 닉네임 변경 API",
+        description = "회원 전용 API로 현재 로그인 유저의 닉네임을 변경합니다.\n\n회원 API로 요청 시 토큰이 필요합니다.",
+        operationId = "/account/nickname"
+    )
+    @PutMapping("/account/nickname")
+    @ApiErrorCode(errorCodes = {GlobalErrorCode.class, UpdateUserNickNameErrorCode.class})
+    public ResponseEntity<UpdateUserNickNameResponse> updateUserNickName(
+        @RequestBody UpdateUserNickNameRequest request,
+        @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
 
-    UpdateUserNickNameService.UpdateUserNickNameResponse serviceResponse = updateUserNickNameService.execute(
-        UpdateUserNickNameService.UpdateUserNickNameRequest.builder()
-            .nickName(request.getNickName())
-            .userPrincipal(userPrincipal)
-            .build());
+        UpdateUserNickNameService.UpdateUserNickNameResponse serviceResponse = updateUserNickNameService.execute(
+            UpdateUserNickNameService.UpdateUserNickNameRequest.builder()
+                .nickName(request.getNickName())
+                .userPrincipal(userPrincipal)
+                .build());
 
-    if (serviceResponse == null || !serviceResponse.isSuccess()) {
-      Optional.ofNullable(serviceResponse)
-          .map(BaseResponse::getErrorCode)
-          .ifPresentOrElse(errorCode -> {
-            throw errorCode.toException();
-          }, () -> {
-            throw GlobalErrorCode.INTERNAL_ERROR.toException();
-          });
+        if (serviceResponse == null || !serviceResponse.isSuccess()) {
+            Optional.ofNullable(serviceResponse)
+                .map(BaseResponse::getErrorCode)
+                .ifPresentOrElse(errorCode -> {
+                    throw errorCode.toException();
+                }, () -> {
+                    throw GlobalErrorCode.INTERNAL_ERROR.toException();
+                });
+        }
+
+        return ResponseEntity.ok(UpdateUserNickNameResponse.builder().build());
     }
-
-    return ResponseEntity.ok(UpdateUserNickNameResponse.builder().build());
-  }
 
 }

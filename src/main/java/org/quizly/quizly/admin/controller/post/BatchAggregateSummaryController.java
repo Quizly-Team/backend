@@ -27,39 +27,39 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Admin", description = "관리자")
 public class BatchAggregateSummaryController {
 
-  private final BatchAggregateSummaryService batchAggregateSummaryService;
+    private final BatchAggregateSummaryService batchAggregateSummaryService;
 
-  @Operation(
-      summary = "일별 통계 배치 수동 실행 API",
-      description = "지정한 날짜의 일별 유저 통계를 수동으로 집계합니다.\n\n"
-          + "- 미래 날짜는 처리 불가 (당일 이전까지 가능)\n"
-          + "- 해당 날짜의 통계만 집계",
-      operationId = "/admin/batch/aggregate-summary"
-  )
-  @PostMapping("/admin/batch/aggregate-summary")
-  @PreAuthorize("hasRole('ADMIN')")
-  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, BatchAggregateSummaryErrorCode.class})
-  public ResponseEntity<BatchAggregateSummaryResponse> batchAggregateSummary(
-      @AuthenticationPrincipal UserPrincipal userPrincipal,
-      @Valid @RequestBody BatchAggregateSummaryRequest request
-  ) {
-    BatchAggregateSummaryService.BatchAggregateSummaryResponse serviceResponse = batchAggregateSummaryService.execute(
-        BatchAggregateSummaryService.BatchAggregateSummaryRequest.builder()
-            .userPrincipal(userPrincipal)
-            .targetDate(request.getTargetDate())
-            .build()
-    );
+    @Operation(
+        summary = "일별 통계 배치 수동 실행 API",
+        description = "지정한 날짜의 일별 유저 통계를 수동으로 집계합니다.\n\n"
+            + "- 미래 날짜는 처리 불가 (당일 이전까지 가능)\n"
+            + "- 해당 날짜의 통계만 집계",
+        operationId = "/admin/batch/aggregate-summary"
+    )
+    @PostMapping("/admin/batch/aggregate-summary")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ApiErrorCode(errorCodes = {GlobalErrorCode.class, BatchAggregateSummaryErrorCode.class})
+    public ResponseEntity<BatchAggregateSummaryResponse> batchAggregateSummary(
+        @AuthenticationPrincipal UserPrincipal userPrincipal,
+        @Valid @RequestBody BatchAggregateSummaryRequest request
+    ) {
+        BatchAggregateSummaryService.BatchAggregateSummaryResponse serviceResponse = batchAggregateSummaryService.execute(
+            BatchAggregateSummaryService.BatchAggregateSummaryRequest.builder()
+                .userPrincipal(userPrincipal)
+                .targetDate(request.getTargetDate())
+                .build()
+        );
 
-    if (serviceResponse == null || !serviceResponse.isSuccess()) {
-      Optional.ofNullable(serviceResponse)
-          .map(BaseResponse::getErrorCode)
-          .ifPresentOrElse(errorCode -> {
-            throw errorCode.toException();
-          }, () -> {
-            throw GlobalErrorCode.INTERNAL_ERROR.toException();
-          });
+        if (serviceResponse == null || !serviceResponse.isSuccess()) {
+            Optional.ofNullable(serviceResponse)
+                .map(BaseResponse::getErrorCode)
+                .ifPresentOrElse(errorCode -> {
+                    throw errorCode.toException();
+                }, () -> {
+                    throw GlobalErrorCode.INTERNAL_ERROR.toException();
+                });
+        }
+
+        return ResponseEntity.ok(BatchAggregateSummaryResponse.builder().build());
     }
-
-    return ResponseEntity.ok(BatchAggregateSummaryResponse.builder().build());
-  }
 }

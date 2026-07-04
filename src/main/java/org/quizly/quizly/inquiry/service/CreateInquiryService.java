@@ -1,8 +1,11 @@
 package org.quizly.quizly.inquiry.service;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.account.service.ReadUserService;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
@@ -20,14 +23,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class CreateInquiryService implements BaseService<CreateInquiryService.CreateInquiryRequest, CreateInquiryService.CreateInquiryResponse> {
+public class CreateInquiryService implements
+    BaseService<CreateInquiryService.CreateInquiryRequest, CreateInquiryService.CreateInquiryResponse> {
 
     private final ReadUserService readUserService;
     private final InquiryRepository inquiryRepository;
 
     @Override
     public CreateInquiryResponse execute(CreateInquiryRequest request) {
-        if(request == null || !request.isValid()){
+        if (request == null || !request.isValid()) {
             return CreateInquiryResponse.builder()
                 .success(false)
                 .errorCode(CreateInquiryErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
@@ -41,7 +45,7 @@ public class CreateInquiryService implements BaseService<CreateInquiryService.Cr
                 .build()
         );
 
-        if(!readUserResponse.isSuccess()){
+        if (!readUserResponse.isSuccess()) {
             return CreateInquiryResponse.builder()
                 .success(false)
                 .errorCode(CreateInquiryErrorCode.NOT_FOUND_USER)
@@ -57,7 +61,6 @@ public class CreateInquiryService implements BaseService<CreateInquiryService.Cr
             .user(user)
             .build();
 
-
         Inquiry savedInquiry = inquiryRepository.save(inquiry);
         return CreateInquiryResponse.builder()
             .success(true)
@@ -65,7 +68,6 @@ public class CreateInquiryService implements BaseService<CreateInquiryService.Cr
             .status(savedInquiry.getStatus())
             .build();
     }
-
 
 
     @Getter
@@ -84,19 +86,22 @@ public class CreateInquiryService implements BaseService<CreateInquiryService.Cr
             return new DomainException(httpStatus, this);
         }
     }
+
     @Getter
     @Setter
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CreateInquiryRequest implements BaseRequest{
+    public static class CreateInquiryRequest implements BaseRequest {
+
         private UserPrincipal userPrincipal;
         private String title;
         private String content;
 
         @Override
-        public boolean isValid(){
-            return userPrincipal != null && title != null && !title.isBlank() && content !=null && !content.isBlank();
+        public boolean isValid() {
+            return userPrincipal != null && title != null && !title.isBlank() && content != null
+                && !content.isBlank();
         }
     }
 
@@ -105,7 +110,8 @@ public class CreateInquiryService implements BaseService<CreateInquiryService.Cr
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CreateInquiryResponse extends BaseResponse<CreateInquiryErrorCode>{
+    public static class CreateInquiryResponse extends BaseResponse<CreateInquiryErrorCode> {
+
         private Long inquiryId;
         private Inquiry.Status status;
     }

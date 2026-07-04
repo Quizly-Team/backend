@@ -1,7 +1,6 @@
 package org.quizly.quizly.configuration;
 
 import java.util.List;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,28 +11,28 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 public class CorsMvcConfig {
 
-  @Value("${custom.oauth2.front-redirect-url}")
-  private String frontRedirectUrl;
+    @Value("${custom.oauth2.front-redirect-url}")
+    private String frontRedirectUrl;
 
-  @Value("${cors.allowed-origins}")
-  private List<String> corsAllowedOrigins;
+    @Value("${cors.allowed-origins}")
+    private List<String> corsAllowedOrigins;
 
 
-  @Bean
-  public CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration configuration = new CorsConfiguration();
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
 
-    List<String> allowedOrigins = new java.util.ArrayList<>(corsAllowedOrigins);
-    allowedOrigins.add(frontRedirectUrl);
+        List<String> allowedOrigins = new java.util.ArrayList<>(corsAllowedOrigins);
+        allowedOrigins.add(frontRedirectUrl);
 
-    configuration.setAllowedOrigins(allowedOrigins);
-    configuration.setAllowedMethods(List.of("*"));
-    configuration.setAllowedHeaders(List.of("*"));
-    configuration.setAllowCredentials(true);
-    configuration.setMaxAge(3600L);
+        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedMethods(List.of("*"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", configuration);
-    return source;
-  }
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }

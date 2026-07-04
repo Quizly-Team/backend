@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public class StorageException extends RuntimeException {
+
     private HttpStatus httpStatus;
 
     public StorageException(String message) {

@@ -1,14 +1,20 @@
 package org.quizly.quizly.account.service;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
-import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.domin.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
@@ -24,8 +30,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 @Transactional
 public class UpdateUserProfileImageService implements BaseService<
-        UpdateUserProfileImageService.UpdateUserProfileImageRequest,
-        UpdateUserProfileImageService.UpdateUserProfileImageResponse> {
+    UpdateUserProfileImageService.UpdateUserProfileImageRequest,
+    UpdateUserProfileImageService.UpdateUserProfileImageResponse> {
 
     private final ReadUserService readUserService;
     private final UserRepository userRepository;
@@ -35,9 +41,9 @@ public class UpdateUserProfileImageService implements BaseService<
     public UpdateUserProfileImageResponse execute(UpdateUserProfileImageRequest request) {
         if (request == null || !request.isValid()) {
             return UpdateUserProfileImageResponse.builder()
-                    .success(false)
-                    .errorCode(UpdateUserProfileImageErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-                    .build();
+                .success(false)
+                .errorCode(UpdateUserProfileImageErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+                .build();
         }
         ReadUserResponse readUserResponse = readUserService.execute(
             ReadUserRequest.builder()
@@ -47,27 +53,27 @@ public class UpdateUserProfileImageService implements BaseService<
 
         if (!readUserResponse.isSuccess()) {
             return UpdateUserProfileImageResponse.builder()
-                    .success(false)
-                    .errorCode(UpdateUserProfileImageErrorCode.NOT_FOUND_USER)
-                    .build();
+                .success(false)
+                .errorCode(UpdateUserProfileImageErrorCode.NOT_FOUND_USER)
+                .build();
         }
         User user = readUserResponse.getUser();
 
         try {
             ProfileImageService.UploadProfileImageRequest uploadRequest =
-                    ProfileImageService.UploadProfileImageRequest.builder()
-                            .file(request.getFile())
-                            .userId(user.getId())
-                            .existingUrl(user.getProfileImageUrl())
-                            .build();
+                ProfileImageService.UploadProfileImageRequest.builder()
+                    .file(request.getFile())
+                    .userId(user.getId())
+                    .existingUrl(user.getProfileImageUrl())
+                    .build();
             ProfileImageService.UploadProfileImageResponse uploadResponse =
-                    profileImageService.execute(uploadRequest);
+                profileImageService.execute(uploadRequest);
 
             if (!uploadResponse.isSuccess()) {
                 return UpdateUserProfileImageResponse.builder()
-                        .success(false)
-                        .errorCode(UpdateUserProfileImageErrorCode.UPLOAD_FAILED)
-                        .build();
+                    .success(false)
+                    .errorCode(UpdateUserProfileImageErrorCode.UPLOAD_FAILED)
+                    .build();
             }
 
             String newUrl = uploadResponse.getFileUrl();
@@ -75,16 +81,16 @@ public class UpdateUserProfileImageService implements BaseService<
             userRepository.save(user);
 
             return UpdateUserProfileImageResponse.builder()
-                    .profileImageUrl(newUrl)
-                    .success(true)
-                    .build();
+                .profileImageUrl(newUrl)
+                .success(true)
+                .build();
 
         } catch (Exception e) {
             log.error("[UpdateUserProfileImageService] 프로필 이미지 업로드 중 오류 발생", e);
             return UpdateUserProfileImageResponse.builder()
-                    .success(false)
-                    .errorCode(UpdateUserProfileImageErrorCode.UPLOAD_FAILED)
-                    .build();
+                .success(false)
+                .errorCode(UpdateUserProfileImageErrorCode.UPLOAD_FAILED)
+                .build();
         }
 
 
@@ -113,6 +119,7 @@ public class UpdateUserProfileImageService implements BaseService<
     @AllArgsConstructor
     @ToString
     public static class UpdateUserProfileImageRequest implements BaseRequest {
+
         private MultipartFile file;
         private UserPrincipal userPrincipal;
 
@@ -128,7 +135,8 @@ public class UpdateUserProfileImageService implements BaseService<
     @NoArgsConstructor
     @ToString
     public static class UpdateUserProfileImageResponse
-            extends BaseResponse<UpdateUserProfileImageErrorCode> {
+        extends BaseResponse<UpdateUserProfileImageErrorCode> {
+
         private String profileImageUrl;
     }
 }

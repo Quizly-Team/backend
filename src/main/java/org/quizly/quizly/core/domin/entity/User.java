@@ -1,8 +1,17 @@
 package org.quizly.quizly.core.domin.entity;
 
-import jakarta.persistence.*;
-
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.domin.shared.BaseEntity;
 
@@ -15,67 +24,67 @@ import org.quizly.quizly.core.domin.shared.BaseEntity;
 @Table(name = "user")
 public class User extends BaseEntity {
 
-  public enum Provider {
-    NAVER,
-    GOOGLE,
-    KAKAO
-  }
+    public enum Provider {
+        NAVER,
+        GOOGLE,
+        KAKAO
+    }
 
-  @Getter
-  @RequiredArgsConstructor
-  public enum Role {
-    USER("ROLE_USER"),
-    ADMIN("ROLE_ADMIN");
+    @Getter
+    @RequiredArgsConstructor
+    public enum Role {
+        USER("ROLE_USER"),
+        ADMIN("ROLE_ADMIN");
 
-    private final String key;
+        private final String key;
 
-    public static Role fromKey(String key) {
-      for (Role role : Role.values()) {
-        if (role.getKey().equals(key)) {
-          return role;
+        public static Role fromKey(String key) {
+            for (Role role : Role.values()) {
+                if (role.getKey().equals(key)) {
+                    return role;
+                }
+            }
+            throw new IllegalArgumentException("Invalid role key: " + key);
         }
-      }
-      throw new IllegalArgumentException("Invalid role key: " + key);
     }
-  }
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = true)
-  private Provider provider;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
+    private Provider provider;
 
-  @Column(nullable = true, unique = true)
-  private String providerId;
+    @Column(nullable = true, unique = true)
+    private String providerId;
 
-  @Column(nullable = false)
-  private String name;
+    @Column(nullable = false)
+    private String name;
 
-  @Column(nullable = false)
-  private String nickName;
+    @Column(nullable = false)
+    private String nickName;
 
-  @Column(nullable = false)
-  private String email;
+    @Column(nullable = false)
+    private String email;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private Role role;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
 
-  @Column(nullable = true)
-  private String profileImageUrl;
+    @Column(nullable = true)
+    private String profileImageUrl;
 
-  @Column(nullable = true)
-  private String targetType;
+    @Column(nullable = true)
+    private String targetType;
 
-  @Column(nullable = true)
-  private String studyGoal;
+    @Column(nullable = true)
+    private String studyGoal;
 
-  @Column(nullable = false)
-  @Builder.Default
-  private boolean onboardingCompleted = false;
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean onboardingCompleted = false;
 
-  @PrePersist
-  public void setDefaultProfileImage() {
-    if (this.profileImageUrl == null) {
-      this.profileImageUrl = "https://kr.object.ncloudstorage.com/quizly-profile-images/defaults/default_profile.png";
+    @PrePersist
+    public void setDefaultProfileImage() {
+        if (this.profileImageUrl == null) {
+            this.profileImageUrl = "https://kr.object.ncloudstorage.com/quizly-profile-images/defaults/default_profile.png";
+        }
     }
-  }
 }

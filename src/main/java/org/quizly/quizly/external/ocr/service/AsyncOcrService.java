@@ -1,10 +1,13 @@
 package org.quizly.quizly.external.ocr.service;
 
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
@@ -20,14 +23,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-
 @Log4j2
 @Component
 @RequiredArgsConstructor
-public class AsyncOcrService implements BaseService<AsyncOcrService.OcrExtractRequest, AsyncOcrService.OcrExtractResponse>{
+public class AsyncOcrService implements
+    BaseService<AsyncOcrService.OcrExtractRequest, AsyncOcrService.OcrExtractResponse> {
 
     private final ExtractTextFromOcrService extractTextService;
 
@@ -128,15 +128,16 @@ public class AsyncOcrService implements BaseService<AsyncOcrService.OcrExtractRe
 
     public CompletableFuture<ClovaOcrService.ClovaOcrResponse> callAsync(MultipartFile batch) {
         ClovaOcrService.ClovaOcrRequest request =
-                ClovaOcrService.ClovaOcrRequest.builder()
-                        .file(batch)
-                        .build();
+            ClovaOcrService.ClovaOcrRequest.builder()
+                .file(batch)
+                .build();
 
         return CompletableFuture.supplyAsync(
-                () -> extractTextService.execute(request),
-                ocrExecutor
+            () -> extractTextService.execute(request),
+            ocrExecutor
         );
     }
+
     private String getFileExtension(MultipartFile file) {
         String filename = file.getOriginalFilename();
         if (filename == null || !filename.contains(".")) {
@@ -152,6 +153,7 @@ public class AsyncOcrService implements BaseService<AsyncOcrService.OcrExtractRe
     @AllArgsConstructor
     @ToString
     public static class OcrExtractRequest implements BaseRequest {
+
         private MultipartFile file;
 
         @Override
@@ -165,7 +167,8 @@ public class AsyncOcrService implements BaseService<AsyncOcrService.OcrExtractRe
     @NoArgsConstructor
     @AllArgsConstructor
     @ToString
-    public static class OcrExtractResponse extends BaseResponse<OcrExtractErrorCode>  {
+    public static class OcrExtractResponse extends BaseResponse<OcrExtractErrorCode> {
+
         private String plainText;
     }
 

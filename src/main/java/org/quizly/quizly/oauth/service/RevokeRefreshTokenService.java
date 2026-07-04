@@ -25,7 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class RevokeRefreshTokenService implements BaseService<RevokeRefreshTokenRequest, RevokeRefreshTokenResponse> {
+public class RevokeRefreshTokenService implements
+    BaseService<RevokeRefreshTokenRequest, RevokeRefreshTokenResponse> {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
@@ -68,6 +69,7 @@ public class RevokeRefreshTokenService implements BaseService<RevokeRefreshToken
     @AllArgsConstructor
     @ToString
     public static class RevokeRefreshTokenRequest implements BaseRequest {
+
         private Long userId;
 
         @Override
@@ -81,6 +83,8 @@ public class RevokeRefreshTokenService implements BaseService<RevokeRefreshToken
     @SuperBuilder
     @NoArgsConstructor
     @ToString
-    public static class RevokeRefreshTokenResponse extends BaseResponse<RevokeRefreshTokenErrorCode> {
+    public static class RevokeRefreshTokenResponse extends
+        BaseResponse<RevokeRefreshTokenErrorCode> {
+
     }
 }

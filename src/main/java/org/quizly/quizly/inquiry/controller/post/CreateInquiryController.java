@@ -2,21 +2,20 @@ package org.quizly.quizly.inquiry.controller.post;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
-import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.inquiry.dto.request.CreateInquiryRequest;
 import org.quizly.quizly.inquiry.dto.response.CreateInquiryResponse;
 import org.quizly.quizly.inquiry.service.CreateInquiryService;
+import org.quizly.quizly.oauth.UserPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,9 +30,11 @@ public class CreateInquiryController {
         operationId = "/inquiries"
     )
     @PostMapping("/inquiries")
-    @ApiErrorCode(errorCodes = {GlobalErrorCode.class, CreateInquiryService.CreateInquiryErrorCode.class})
-    public ResponseEntity<CreateInquiryResponse> createInquiry(@AuthenticationPrincipal UserPrincipal userPrincipal,
-                                                                                    @RequestBody CreateInquiryRequest request){
+    @ApiErrorCode(errorCodes = {GlobalErrorCode.class,
+        CreateInquiryService.CreateInquiryErrorCode.class})
+    public ResponseEntity<CreateInquiryResponse> createInquiry(
+        @AuthenticationPrincipal UserPrincipal userPrincipal,
+        @RequestBody CreateInquiryRequest request) {
         CreateInquiryService.CreateInquiryResponse serviceResponse = createInquiryService.execute(
             CreateInquiryService.CreateInquiryRequest.builder()
                 .userPrincipal(userPrincipal)
@@ -55,7 +56,8 @@ public class CreateInquiryController {
         return ResponseEntity.ok(toResponse(serviceResponse));
     }
 
-    private CreateInquiryResponse toResponse(CreateInquiryService.CreateInquiryResponse serviceResponse){
+    private CreateInquiryResponse toResponse(
+        CreateInquiryService.CreateInquiryResponse serviceResponse) {
         return CreateInquiryResponse.builder()
             .inquiryId(serviceResponse.getInquiryId())
             .status(serviceResponse.getStatus())

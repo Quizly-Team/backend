@@ -14,7 +14,8 @@ public enum OcrErrorCode implements BaseErrorCode<OcrApiException> {
     EMPTY_OCR_RESPONSE_BODY(HttpStatus.INTERNAL_SERVER_ERROR, "OCR API로부터 비어있는 응답 본문을 받았습니다."),
     FAILED_READ_OCR_RESPONSE(HttpStatus.INTERNAL_SERVER_ERROR, "OCR 서버 응답 읽기에 실패하였습니다."),
     OCR_NETWORK_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "OCR API와 통신 중 네트워크 오류가 발생했습니다."),
-    FAILED_PARSE_OCR_RESPONSE(HttpStatus.INTERNAL_SERVER_ERROR, "OCR API 응답을 JSON으로 파싱하는 데 실패하였습니다."),
+    FAILED_PARSE_OCR_RESPONSE(HttpStatus.INTERNAL_SERVER_ERROR,
+        "OCR API 응답을 JSON으로 파싱하는 데 실패하였습니다."),
     OCR_RESPONSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "OCR 응답이 null이거나 처리에 실패했습니다."),
     EXTRACTED_TEXT_EMPTY(HttpStatus.BAD_REQUEST, "OCR로 추출된 텍스트가 비어 있습니다.");
 

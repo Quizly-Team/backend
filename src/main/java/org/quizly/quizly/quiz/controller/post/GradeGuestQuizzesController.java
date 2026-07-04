@@ -26,46 +26,46 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Quiz", description = "퀴즈")
 public class GradeGuestQuizzesController {
 
-  private final GradeGuestQuizzesService gradeGuestQuizzesService;
+    private final GradeGuestQuizzesService gradeGuestQuizzesService;
 
-  @Operation(
-      summary = "비회원 문제 채점 API",
-      description = "비회원 전용 API로 답변을 제출하면 문제를 채점합니다.\n\n비회원 API로 토큰 없이 호출합니다.\n\nuserAnswer : 객관식의 경우 TRUE/FALSE, 주관식의 경우 String 형식으로 답변을 입력받습니다.",
-      operationId = "/quizzes/{quizId}/answer/guest"
-  )
-  @PostMapping("/quizzes/{quizId}/answer/guest")
-  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, GradeGuestQuizzesErrorCode.class})
-  public ResponseEntity<GradeQuizzesResponse> gradeGuestQuizzes(
-      @PathVariable(name = "quizId") @Schema(description = "문제 ID", example = "1") Long quizId,
-      @RequestBody GradeQuizzesRequest request) {
-    GradeGuestQuizzesResponse serviceResponse = gradeGuestQuizzesService.execute(
-        GradeGuestQuizzesRequest.builder()
-            .quizId(quizId)
-            .userAnswer(request.getUserAnswer())
-            .build()
-    );
+    @Operation(
+        summary = "비회원 문제 채점 API",
+        description = "비회원 전용 API로 답변을 제출하면 문제를 채점합니다.\n\n비회원 API로 토큰 없이 호출합니다.\n\nuserAnswer : 객관식의 경우 TRUE/FALSE, 주관식의 경우 String 형식으로 답변을 입력받습니다.",
+        operationId = "/quizzes/{quizId}/answer/guest"
+    )
+    @PostMapping("/quizzes/{quizId}/answer/guest")
+    @ApiErrorCode(errorCodes = {GlobalErrorCode.class, GradeGuestQuizzesErrorCode.class})
+    public ResponseEntity<GradeQuizzesResponse> gradeGuestQuizzes(
+        @PathVariable(name = "quizId") @Schema(description = "문제 ID", example = "1") Long quizId,
+        @RequestBody GradeQuizzesRequest request) {
+        GradeGuestQuizzesResponse serviceResponse = gradeGuestQuizzesService.execute(
+            GradeGuestQuizzesRequest.builder()
+                .quizId(quizId)
+                .userAnswer(request.getUserAnswer())
+                .build()
+        );
 
-    if (serviceResponse == null || !serviceResponse.isSuccess()) {
-      Optional.ofNullable(serviceResponse)
-          .map(BaseResponse::getErrorCode)
-          .ifPresentOrElse(errorCode -> {
-            throw errorCode.toException();
-          }, () -> {
+        if (serviceResponse == null || !serviceResponse.isSuccess()) {
+            Optional.ofNullable(serviceResponse)
+                .map(BaseResponse::getErrorCode)
+                .ifPresentOrElse(errorCode -> {
+                    throw errorCode.toException();
+                }, () -> {
+                    throw GlobalErrorCode.INTERNAL_ERROR.toException();
+                });
+        }
+
+        Quiz quiz = serviceResponse.getQuiz();
+        if (quiz == null) {
             throw GlobalErrorCode.INTERNAL_ERROR.toException();
-          });
-    }
+        }
 
-    Quiz quiz = serviceResponse.getQuiz();
-    if (quiz == null) {
-      throw GlobalErrorCode.INTERNAL_ERROR.toException();
+        return ResponseEntity.ok(
+            GradeQuizzesResponse.builder()
+                .quizId(quiz.getId())
+                .isCorrect(serviceResponse.isCorrect())
+                .answer(quiz.getAnswer())
+                .explanation(quiz.getExplanation())
+                .build());
     }
-
-    return ResponseEntity.ok(
-        GradeQuizzesResponse.builder()
-            .quizId(quiz.getId())
-            .isCorrect(serviceResponse.isCorrect())
-            .answer(quiz.getAnswer())
-            .explanation(quiz.getExplanation())
-            .build());
-  }
 }
