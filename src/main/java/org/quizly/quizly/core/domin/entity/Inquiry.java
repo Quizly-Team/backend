@@ -1,11 +1,20 @@
 package org.quizly.quizly.core.domin.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.domin.shared.BaseEntity;
-
-import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -20,14 +29,16 @@ public class Inquiry extends BaseEntity {
 
     @Column(name = "inquiry_content", nullable = false)
     private String content;
+
     @Getter
     @RequiredArgsConstructor
-    public enum Status{
+    public enum Status {
         WAITING("답변 대기중"),
         COMPLETED("답변 완료");
 
         private final String description;
     }
+
     @Column(nullable = true)
     private String reply;
 
@@ -42,7 +53,7 @@ public class Inquiry extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    public void reply(String reply){
+    public void reply(String reply) {
         this.reply = reply;
         this.status = Status.COMPLETED;
         this.repliedAt = LocalDateTime.now();

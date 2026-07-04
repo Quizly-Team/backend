@@ -12,4 +12,5 @@ import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 @NoArgsConstructor
 @Schema(description = "일별 통계 집계 응답")
 public class BatchAggregateSummaryResponse extends BaseResponse<GlobalErrorCode> {
+
 }

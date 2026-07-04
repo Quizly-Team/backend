@@ -1,6 +1,8 @@
 package org.quizly.quizly.inquiry.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -8,9 +10,6 @@ import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.domin.entity.Inquiry;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @NoArgsConstructor
@@ -41,7 +40,10 @@ public class ReadInquiriesResponse extends BaseResponse<GlobalErrorCode> {
         @Schema(description = "수정 일자")
         LocalDateTime updatedAt
 
+    ) {
 
-    ){};
+    }
+
+    ;
 
 }

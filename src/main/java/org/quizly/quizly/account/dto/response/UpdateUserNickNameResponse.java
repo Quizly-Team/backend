@@ -15,6 +15,6 @@ import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 @NoArgsConstructor
 @ToString
 @Schema(description = "유저 닉네임 변경 응답")
-public class UpdateUserNickNameResponse  extends BaseResponse<GlobalErrorCode> {
+public class UpdateUserNickNameResponse extends BaseResponse<GlobalErrorCode> {
 
 }

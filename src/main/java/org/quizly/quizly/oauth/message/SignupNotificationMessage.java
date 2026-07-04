@@ -5,6 +5,7 @@ import org.quizly.quizly.core.notification.NotificationChannel;
 import org.quizly.quizly.core.notification.NotificationMessage;
 
 public class SignupNotificationMessage implements NotificationMessage {
+
     private final User user;
 
     public SignupNotificationMessage(User user) {

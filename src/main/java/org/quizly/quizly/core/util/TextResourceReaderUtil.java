@@ -12,13 +12,13 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor
 public class TextResourceReaderUtil {
 
-  public String load(String path) {
-    try {
-      ClassPathResource resource = new ClassPathResource(path);
-      InputStream inputStream = resource.getInputStream();
-      return StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
-    } catch (IOException e) {
-      return null;
+    public String load(String path) {
+        try {
+            ClassPathResource resource = new ClassPathResource(path);
+            InputStream inputStream = resource.getInputStream();
+            return StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return null;
+        }
     }
-  }
 }

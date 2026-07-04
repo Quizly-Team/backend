@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public class OkhttpException extends RuntimeException {
 
-  public OkhttpException(String message) {
-    super(message);
-  }
+    public OkhttpException(String message) {
+        super(message);
+    }
 }

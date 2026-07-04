@@ -22,7 +22,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         AuthErrorCode errorCode = (AuthErrorCode) request.getAttribute("exception");
 
         if (errorCode == null) {
-            errorCode = AuthErrorCode.INVALID_TOKEN; 
+            errorCode = AuthErrorCode.INVALID_TOKEN;
         }
 
         response.setStatus(errorCode.getHttpStatus().value());

@@ -8,5 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GeneratedTopicResponse {
-  private String topic;
+
+    private String topic;
 }

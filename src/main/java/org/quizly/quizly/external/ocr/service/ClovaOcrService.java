@@ -1,9 +1,22 @@
 package org.quizly.quizly.external.ocr.service;
 
+import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.*;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import okhttp3.*;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
@@ -14,15 +27,10 @@ import org.quizly.quizly.external.ocr.property.OcrProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
-
 @Service
 @RequiredArgsConstructor
-public class ClovaOcrService implements BaseService<ClovaOcrService.ClovaOcrRequest, ClovaOcrService.ClovaOcrResponse> {
+public class ClovaOcrService implements
+    BaseService<ClovaOcrService.ClovaOcrRequest, ClovaOcrService.ClovaOcrResponse> {
 
     private final OcrProperty ocrProperty;
     private final ObjectMapper objectMapper;
@@ -32,9 +40,9 @@ public class ClovaOcrService implements BaseService<ClovaOcrService.ClovaOcrRequ
     public ClovaOcrResponse execute(ClovaOcrRequest request) {
         if (request == null || !request.isValid()) {
             return ClovaOcrResponse.builder()
-                    .success(false)
-                    .errorCode(OcrErrorCode.NOT_EXIST_OCR_REQUIRED_PARAMETER)
-                    .build();
+                .success(false)
+                .errorCode(OcrErrorCode.NOT_EXIST_OCR_REQUIRED_PARAMETER)
+                .build();
         }
 
         try {
@@ -42,53 +50,56 @@ public class ClovaOcrService implements BaseService<ClovaOcrService.ClovaOcrRequ
             String fileExtension = getFileExtension(imageFile.getOriginalFilename());
 
             OcrRequestDto ocrRequest = new OcrRequestDto(
-                    Collections.singletonList(new OcrRequestDto.Image(fileExtension, "quiz-image")),
-                    UUID.randomUUID().toString(),
-                    "V2",
-                    System.currentTimeMillis()
+                Collections.singletonList(new OcrRequestDto.Image(fileExtension, "quiz-image")),
+                UUID.randomUUID().toString(),
+                "V2",
+                System.currentTimeMillis()
             );
 
             RequestBody requestBody = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("message", objectMapper.writeValueAsString(ocrRequest))
-                    .addFormDataPart("file", imageFile.getOriginalFilename(),
-                            RequestBody.create(imageFile.getBytes(), MediaType.parse(imageFile.getContentType())))
-                    .build();
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("message", objectMapper.writeValueAsString(ocrRequest))
+                .addFormDataPart("file", imageFile.getOriginalFilename(),
+                    RequestBody.create(imageFile.getBytes(),
+                        MediaType.parse(imageFile.getContentType())))
+                .build();
 
             Request httpRequest = new Request.Builder()
-                    .url(ocrProperty.getUrl())
-                    .header("X-OCR-SECRET", ocrProperty.getSecret())
-                    .post(requestBody)
-                    .build();
+                .url(ocrProperty.getUrl())
+                .header("X-OCR-SECRET", ocrProperty.getSecret())
+                .post(requestBody)
+                .build();
 
             try (Response response = createRequest(httpRequest)) {
                 if (!response.isSuccessful() || response.body() == null) {
                     return ClovaOcrResponse.builder()
-                            .success(false)
-                            .errorCode(OcrErrorCode.OCR_NETWORK_ERROR)
-                            .build();
+                        .success(false)
+                        .errorCode(OcrErrorCode.OCR_NETWORK_ERROR)
+                        .build();
                 }
 
                 String responseBody = response.body().string();
                 OcrResponseDto dto = objectMapper.readValue(responseBody, OcrResponseDto.class);
 
                 return ClovaOcrResponse.builder()
-                        .plainText(dto.getFullText())
-                        .rawResponse(dto)
-                        .success(true)
-                        .build();
+                    .plainText(dto.getFullText())
+                    .rawResponse(dto)
+                    .success(true)
+                    .build();
             }
 
         } catch (IOException e) {
             return ClovaOcrResponse.builder()
-                    .success(false)
-                    .errorCode(OcrErrorCode.FAILED_READ_OCR_RESPONSE)
-                    .build();
+                .success(false)
+                .errorCode(OcrErrorCode.FAILED_READ_OCR_RESPONSE)
+                .build();
         }
     }
 
     private String getFileExtension(String fileName) {
-        if (fileName == null || fileName.isEmpty()) return "";
+        if (fileName == null || fileName.isEmpty()) {
+            return "";
+        }
         int dotIndex = fileName.lastIndexOf('.');
         return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
     }
@@ -99,6 +110,7 @@ public class ClovaOcrService implements BaseService<ClovaOcrService.ClovaOcrRequ
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ClovaOcrRequest implements BaseRequest {
+
         private MultipartFile file;
 
         @Override
@@ -113,6 +125,7 @@ public class ClovaOcrService implements BaseService<ClovaOcrService.ClovaOcrRequ
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ClovaOcrResponse extends BaseResponse<OcrErrorCode> {
+
         private String plainText;
         private OcrResponseDto rawResponse;
     }

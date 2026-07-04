@@ -14,15 +14,15 @@ import org.springframework.context.annotation.Configuration;
 @Log4j2
 public class AggregateDailySummaryJobConfig {
 
-  private final JobRepository jobRepository;
+    private final JobRepository jobRepository;
 
-  @Bean
-  public Job aggregateDailySummaryJob(
-      Step aggregateSolveTypeSummaryStep,
-      Step aggregateSolveHourlySummaryStep) {
-    return new JobBuilder("aggregateDailySummaryJob", jobRepository)
-        .start(aggregateSolveTypeSummaryStep)
-        .next(aggregateSolveHourlySummaryStep)
-        .build();
-  }
+    @Bean
+    public Job aggregateDailySummaryJob(
+        Step aggregateSolveTypeSummaryStep,
+        Step aggregateSolveHourlySummaryStep) {
+        return new JobBuilder("aggregateDailySummaryJob", jobRepository)
+            .start(aggregateSolveTypeSummaryStep)
+            .next(aggregateSolveHourlySummaryStep)
+            .build();
+    }
 }

@@ -30,7 +30,8 @@ public class KakaoUserInfo implements OAuth2UserInfo {
         if (value == null) {
             throw new OAuth2AuthenticationException(
                 new OAuth2Error("invalid_response",
-                    "Missing required field in Kakao API response: " + childKey + " (필수 동의 항목)", null));
+                    "Missing required field in Kakao API response: " + childKey + " (필수 동의 항목)",
+                    null));
         }
         return value.toString();
     }

@@ -16,22 +16,22 @@ import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 @Schema(description = "유저 정보 조회 응답")
 public class ReadUserInfoResponse extends BaseResponse<GlobalErrorCode> {
 
-  @Schema(description = "이름", example = "퀴즐리")
-  private String name;
+    @Schema(description = "이름", example = "퀴즐리")
+    private String name;
 
-  @Schema(description = "닉네임", example = "에스F레소")
-  private String nickName;
+    @Schema(description = "닉네임", example = "에스F레소")
+    private String nickName;
 
-  @Schema(description = "이메일", example = "quizlystudy@gmail.com")
-  private String email;
+    @Schema(description = "이메일", example = "quizlystudy@gmail.com")
+    private String email;
 
-  @Schema(description = "프로필 url", example = "https://kr.object.ncloudstorage.com/quizly-profile-images/defaults/default_profile.png")
-  private String profileImageUrl;
+    @Schema(description = "프로필 url", example = "https://kr.object.ncloudstorage.com/quizly-profile-images/defaults/default_profile.png")
+    private String profileImageUrl;
 
-  @Schema(description = "온보딩 설문조사 여부", example = "true")
-  private boolean onboardingCompleted;
+    @Schema(description = "온보딩 설문조사 여부", example = "true")
+    private boolean onboardingCompleted;
 
-  @Schema(description = "역할", example = "USER")
-  private User.Role role;
+    @Schema(description = "역할", example = "USER")
+    private User.Role role;
 
 }

@@ -11,7 +11,9 @@ import org.quizly.quizly.chatbot.service.CreateChatMessageService;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
@@ -35,7 +37,7 @@ public class CreateChatMessageController {
     public SseEmitter streamChatMessage(
         @Valid @RequestBody CreateChatMessageRequest request,
         @AuthenticationPrincipal UserPrincipal userPrincipal
-    ){
+    ) {
         return createChatMessageService.execute(
             CreateChatMessageService.ChatMessageRequest.builder()
                 .conversationId(request.getConversationId())

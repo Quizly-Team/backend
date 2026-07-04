@@ -19,8 +19,6 @@ import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.quiz.service.GradeGuestQuizzesService.GradeGuestQuizzesRequest;
 import org.quizly.quizly.quiz.service.GradeGuestQuizzesService.GradeGuestQuizzesResponse;
-import org.quizly.quizly.quiz.service.GradeMemberQuizzesService.GradeMemberQuizzesErrorCode;
-import org.quizly.quizly.quiz.service.GradeMemberQuizzesService.GradeMemberQuizzesResponse;
 import org.quizly.quizly.quiz.service.GraderQuizService.GraderQuizRequest;
 import org.quizly.quizly.quiz.service.GraderQuizService.GraderQuizResponse;
 import org.springframework.http.HttpStatus;
@@ -29,95 +27,97 @@ import org.springframework.stereotype.Service;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class GradeGuestQuizzesService implements BaseService<GradeGuestQuizzesRequest, GradeGuestQuizzesResponse> {
+public class GradeGuestQuizzesService implements
+    BaseService<GradeGuestQuizzesRequest, GradeGuestQuizzesResponse> {
 
-  private final QuizRepository quizRepository;
-  private final GraderQuizService graderQuizService;
-
-  @Override
-  public GradeGuestQuizzesResponse execute(GradeGuestQuizzesRequest request) {
-    if (request == null || !request.isValid()) {
-      return GradeGuestQuizzesResponse.builder()
-          .success(false)
-          .errorCode(GradeGuestQuizzesErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-          .build();
-    }
-
-    Optional<Quiz> optionalQuiz = quizRepository.findById(request.getQuizId());
-    if (optionalQuiz.isEmpty()) {
-      return GradeGuestQuizzesResponse.builder()
-          .success(false)
-          .errorCode(GradeGuestQuizzesErrorCode.QUIZ_NOT_FOUND)
-          .build();
-    }
-
-    Quiz quiz = optionalQuiz.get();
-
-    GraderQuizResponse graderQuizResponse = graderQuizService.execute(
-        GraderQuizRequest.builder()
-            .answer(quiz.getAnswer())
-            .userAnswer(request.getUserAnswer())
-            .build());
-    if (graderQuizResponse == null || !graderQuizResponse.isSuccess()) {
-      return GradeGuestQuizzesResponse.builder()
-          .success(false)
-          .errorCode(GradeGuestQuizzesErrorCode.GRADE_FAILED)
-          .build();
-    }
-    boolean isCorrect = graderQuizResponse.isCorrect();
-
-    return GradeGuestQuizzesResponse.builder()
-        .quiz(quiz)
-        .isCorrect(isCorrect)
-        .build();
-  }
-
-
-  @Getter
-  @RequiredArgsConstructor
-  public enum GradeGuestQuizzesErrorCode implements BaseErrorCode<DomainException> {
-
-    NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
-    GRADE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채점에 실패하였습니다.");
-
-    private final HttpStatus httpStatus;
-
-    private final String message;
+    private final QuizRepository quizRepository;
+    private final GraderQuizService graderQuizService;
 
     @Override
-    public DomainException toException() {
-      return new DomainException(httpStatus, this);
+    public GradeGuestQuizzesResponse execute(GradeGuestQuizzesRequest request) {
+        if (request == null || !request.isValid()) {
+            return GradeGuestQuizzesResponse.builder()
+                .success(false)
+                .errorCode(GradeGuestQuizzesErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+                .build();
+        }
+
+        Optional<Quiz> optionalQuiz = quizRepository.findById(request.getQuizId());
+        if (optionalQuiz.isEmpty()) {
+            return GradeGuestQuizzesResponse.builder()
+                .success(false)
+                .errorCode(GradeGuestQuizzesErrorCode.QUIZ_NOT_FOUND)
+                .build();
+        }
+
+        Quiz quiz = optionalQuiz.get();
+
+        GraderQuizResponse graderQuizResponse = graderQuizService.execute(
+            GraderQuizRequest.builder()
+                .answer(quiz.getAnswer())
+                .userAnswer(request.getUserAnswer())
+                .build());
+        if (graderQuizResponse == null || !graderQuizResponse.isSuccess()) {
+            return GradeGuestQuizzesResponse.builder()
+                .success(false)
+                .errorCode(GradeGuestQuizzesErrorCode.GRADE_FAILED)
+                .build();
+        }
+        boolean isCorrect = graderQuizResponse.isCorrect();
+
+        return GradeGuestQuizzesResponse.builder()
+            .quiz(quiz)
+            .isCorrect(isCorrect)
+            .build();
     }
-  }
 
-  @Getter
-  @Setter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class GradeGuestQuizzesRequest implements BaseRequest {
 
-    private Long quizId;
+    @Getter
+    @RequiredArgsConstructor
+    public enum GradeGuestQuizzesErrorCode implements BaseErrorCode<DomainException> {
 
-    private String userAnswer;
+        NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
+        QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
+        GRADE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채점에 실패하였습니다.");
 
-    @Override
-    public boolean isValid() {
-      return quizId != null && userAnswer != null;
+        private final HttpStatus httpStatus;
+
+        private final String message;
+
+        @Override
+        public DomainException toException() {
+            return new DomainException(httpStatus, this);
+        }
     }
-  }
 
-  @Getter
-  @Setter
-  @SuperBuilder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class GradeGuestQuizzesResponse extends BaseResponse<GradeGuestQuizzesErrorCode> {
-    private Quiz quiz;
-    private boolean isCorrect;
-  }
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class GradeGuestQuizzesRequest implements BaseRequest {
+
+        private Long quizId;
+
+        private String userAnswer;
+
+        @Override
+        public boolean isValid() {
+            return quizId != null && userAnswer != null;
+        }
+    }
+
+    @Getter
+    @Setter
+    @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class GradeGuestQuizzesResponse extends BaseResponse<GradeGuestQuizzesErrorCode> {
+
+        private Quiz quiz;
+        private boolean isCorrect;
+    }
 
 }

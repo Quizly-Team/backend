@@ -19,10 +19,10 @@ import org.quizly.quizly.core.domin.shared.BaseEntity;
 @Table(name = "refresh_token")
 public class RefreshToken extends BaseEntity {
 
-  @Column(nullable = false, unique = true)
-  private Long userId;
+    @Column(nullable = false, unique = true)
+    private Long userId;
 
-  @Column(nullable = false)
-  private String token;
+    @Column(nullable = false)
+    private String token;
 
 }

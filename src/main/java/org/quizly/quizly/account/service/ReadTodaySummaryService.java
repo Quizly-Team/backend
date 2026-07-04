@@ -31,89 +31,96 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ReadTodaySummaryService  implements BaseService<ReadTodaySummaryRequest, ReadTodaySummaryResponse> {
+public class ReadTodaySummaryService implements
+    BaseService<ReadTodaySummaryRequest, ReadTodaySummaryResponse> {
 
-  private final SolveHistoryStatisticsRepository solveHistoryStatisticsRepository;
-
-  @Override
-  public ReadTodaySummaryResponse execute(ReadTodaySummaryRequest request) {
-    if (request == null || !request.isValid()) {
-      return ReadTodaySummaryResponse.builder()
-          .success(false)
-          .errorCode(ReadTodaySummaryErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-          .build();
-    }
-
-    User user = request.getUser();
-    LocalDate today = LocalDate.now();
-    TodaySummary todaySummary = getTodaySummary(user, today);
-
-    return ReadTodaySummaryResponse.builder()
-        .todaySummary(todaySummary)
-        .build();
-  }
-
-  private TodaySummary getTodaySummary(User user, LocalDate today) {
-    List<SolveHistoryStatisticsRepository.QuizTypeSummary> quizTypeSummaryList =
-        solveHistoryStatisticsRepository.findFirstAttemptsByQuizTypeAndDate(user, today);
-
-    int totalSolved = 0;
-    int totalCorrect = 0;
-
-    for (SolveHistoryStatisticsRepository.QuizTypeSummary quizTypeSummary : quizTypeSummaryList) {
-      totalSolved += Optional.ofNullable(quizTypeSummary.getTotalCount()).map(Long::intValue).orElse(0);
-      totalCorrect += Optional.ofNullable(quizTypeSummary.getCorrectCount()).map(Long::intValue).orElse(0);
-    }
-
-    int totalWrong = totalSolved - totalCorrect;
-
-    return new TodaySummary(totalSolved, totalCorrect, totalWrong);
-  }
-
-  @Getter
-  @RequiredArgsConstructor
-  public enum ReadTodaySummaryErrorCode implements BaseErrorCode<DomainException> {
-    NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다.");
-
-    private final HttpStatus httpStatus;
-    private final String message;
+    private final SolveHistoryStatisticsRepository solveHistoryStatisticsRepository;
 
     @Override
-    public DomainException toException() {
-      return new DomainException(httpStatus, this);
+    public ReadTodaySummaryResponse execute(ReadTodaySummaryRequest request) {
+        if (request == null || !request.isValid()) {
+            return ReadTodaySummaryResponse.builder()
+                .success(false)
+                .errorCode(ReadTodaySummaryErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+                .build();
+        }
+
+        User user = request.getUser();
+        LocalDate today = LocalDate.now();
+        TodaySummary todaySummary = getTodaySummary(user, today);
+
+        return ReadTodaySummaryResponse.builder()
+            .todaySummary(todaySummary)
+            .build();
     }
-  }
 
-  @Getter
-  @Setter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class ReadTodaySummaryRequest implements BaseRequest {
-    private User user;
+    private TodaySummary getTodaySummary(User user, LocalDate today) {
+        List<SolveHistoryStatisticsRepository.QuizTypeSummary> quizTypeSummaryList =
+            solveHistoryStatisticsRepository.findFirstAttemptsByQuizTypeAndDate(user, today);
 
-    @Override
-    public boolean isValid() {
-      return user != null;
+        int totalSolved = 0;
+        int totalCorrect = 0;
+
+        for (SolveHistoryStatisticsRepository.QuizTypeSummary quizTypeSummary : quizTypeSummaryList) {
+            totalSolved += Optional.ofNullable(quizTypeSummary.getTotalCount()).map(Long::intValue)
+                .orElse(0);
+            totalCorrect += Optional.ofNullable(quizTypeSummary.getCorrectCount())
+                .map(Long::intValue).orElse(0);
+        }
+
+        int totalWrong = totalSolved - totalCorrect;
+
+        return new TodaySummary(totalSolved, totalCorrect, totalWrong);
     }
-  }
 
-  @Getter
-  @Setter
-  @SuperBuilder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class ReadTodaySummaryResponse extends
-      BaseResponse<ReadTodaySummaryErrorCode> {
-    private TodaySummary todaySummary;
+    @Getter
+    @RequiredArgsConstructor
+    public enum ReadTodaySummaryErrorCode implements BaseErrorCode<DomainException> {
+        NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다.");
 
-    public record TodaySummary(
-        int solvedCount,
-        int correctCount,
-        int wrongCount
-    ){}
-  }
+        private final HttpStatus httpStatus;
+        private final String message;
+
+        @Override
+        public DomainException toException() {
+            return new DomainException(httpStatus, this);
+        }
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class ReadTodaySummaryRequest implements BaseRequest {
+
+        private User user;
+
+        @Override
+        public boolean isValid() {
+            return user != null;
+        }
+    }
+
+    @Getter
+    @Setter
+    @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class ReadTodaySummaryResponse extends
+        BaseResponse<ReadTodaySummaryErrorCode> {
+
+        private TodaySummary todaySummary;
+
+        public record TodaySummary(
+            int solvedCount,
+            int correctCount,
+            int wrongCount
+        ) {
+
+        }
+    }
 
 }
