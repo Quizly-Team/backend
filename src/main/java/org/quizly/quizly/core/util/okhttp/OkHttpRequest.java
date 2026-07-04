@@ -11,44 +11,44 @@ import org.quizly.quizly.core.exception.OkhttpException;
 @Slf4j
 public abstract class OkHttpRequest {
 
-  private static final OkHttpClient client = new OkHttpClient.Builder()
-      .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-      .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-      .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // 응답 대기 시간
-      .build();
+    private static final OkHttpClient client = new OkHttpClient.Builder()
+        .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // 응답 대기 시간
+        .build();
 
-  public static Response createRequest(Request request) {
-    StringBuilder logStringBuilder = new StringBuilder();
-    Response response;
-    try {
-      response = client.newCall(request)
-          .execute();
-    } catch (IOException e) {
-      logStringBuilder.append("[Okhttp Request Fail]");
-      logStringBuilder.append("Request Url : ");
-      logStringBuilder.append(request.url());
-      logStringBuilder.append(" Request Body : ");
-      logStringBuilder.append(requestBodyToString(request));
-      log.error(logStringBuilder.toString());
-      throw new OkhttpException(e.getMessage());
+    public static Response createRequest(Request request) {
+        StringBuilder logStringBuilder = new StringBuilder();
+        Response response;
+        try {
+            response = client.newCall(request)
+                .execute();
+        } catch (IOException e) {
+            logStringBuilder.append("[Okhttp Request Fail]");
+            logStringBuilder.append("Request Url : ");
+            logStringBuilder.append(request.url());
+            logStringBuilder.append(" Request Body : ");
+            logStringBuilder.append(requestBodyToString(request));
+            log.error(logStringBuilder.toString());
+            throw new OkhttpException(e.getMessage());
+        }
+        return response;
     }
-    return response;
-  }
 
-  private static String requestBodyToString(Request request) {
-    try {
-      final Request copy = request.newBuilder().build();
-      final okio.Buffer buffer = new okio.Buffer();
-      RequestBody body = copy.body();
-      if (body != null) {
-        body.writeTo(buffer);
-        return buffer.readUtf8();
-      }
-      return "";
-    } catch (final IOException e) {
-      return "did not work";
+    private static String requestBodyToString(Request request) {
+        try {
+            final Request copy = request.newBuilder().build();
+            final okio.Buffer buffer = new okio.Buffer();
+            RequestBody body = copy.body();
+            if (body != null) {
+                body.writeTo(buffer);
+                return buffer.readUtf8();
+            }
+            return "";
+        } catch (final IOException e) {
+            return "did not work";
+        }
     }
-  }
 
-  protected abstract String convertRequestToString();
+    protected abstract String convertRequestToString();
 }

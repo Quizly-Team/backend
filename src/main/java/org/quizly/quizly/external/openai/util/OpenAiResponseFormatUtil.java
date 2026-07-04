@@ -20,7 +20,8 @@ public class OpenAiResponseFormatUtil {
         );
     }
 
-    public static ResponseFormat createDescriptiveQuizResponseFormat(int quizCount, String quizType) {
+    public static ResponseFormat createDescriptiveQuizResponseFormat(int quizCount,
+        String quizType) {
         return buildQuizResponseFormat(
             "descriptive_quiz_list",
             quizType,
@@ -94,7 +95,8 @@ public class OpenAiResponseFormatUtil {
         return property;
     }
 
-    private static Map<String, Object> enumStringProperty(String description, List<String> enumValues) {
+    private static Map<String, Object> enumStringProperty(String description,
+        List<String> enumValues) {
         Map<String, Object> property = new LinkedHashMap<>();
         property.put("type", "string");
         property.put("description", description);
@@ -102,7 +104,8 @@ public class OpenAiResponseFormatUtil {
         return property;
     }
 
-    private static Map<String, Object> objectSchema(Map<String, Object> properties, List<String> required) {
+    private static Map<String, Object> objectSchema(Map<String, Object> properties,
+        List<String> required) {
         Map<String, Object> schema = new LinkedHashMap<>();
         schema.put("type", "object");
         schema.put("properties", properties);

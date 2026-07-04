@@ -4,8 +4,8 @@ import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.jwt.JwtAuthenticationFilter;
 import org.quizly.quizly.jwt.error.JwtAuthenticationEntryPoint;
-import org.quizly.quizly.oauth.service.OAuth2LoginUserService;
 import org.quizly.quizly.oauth.OAuth2LoginSuccessHandler;
+import org.quizly.quizly.oauth.service.OAuth2LoginUserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,51 +24,51 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-  private final OAuth2LoginUserService oAuth2LoginUserService;
-  private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-  private final JwtAuthenticationFilter jwtAuthenticationFilter;
-  private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-  private final CorsConfigurationSource corsConfigurationSource;
+    private final OAuth2LoginUserService oAuth2LoginUserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final CorsConfigurationSource corsConfigurationSource;
 
-  @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-    http.cors(cors -> cors.configurationSource(corsConfigurationSource))
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource))
 
-        .csrf(AbstractHttpConfigurer::disable)
-        .formLogin(AbstractHttpConfigurer::disable)
-        .httpBasic(AbstractHttpConfigurer::disable)
+            .csrf(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
 
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
-        .oauth2Login(oauth2 -> oauth2
-            .userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig
-                .userService(oAuth2LoginUserService))
-            .successHandler(oAuth2LoginSuccessHandler)
-        )
+            .oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig
+                    .userService(oAuth2LoginUserService))
+                .successHandler(oAuth2LoginSuccessHandler)
+            )
 
-        .exceptionHandling(exception -> exception
-            .authenticationEntryPoint(jwtAuthenticationEntryPoint))
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint))
 
-        .sessionManagement(session -> session
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-            .requestMatchers(
-                "/faqs",
-                "/",
-                "/docs",
-                "/swagger-ui/**",
-                "/api-docs/**",
-                "/auth/reissue",
-                "/quizzes/guest/**",
-                "/quizzes/{quizId}/answer/guest",
-                "/actuator/health"
-            ).permitAll()
-            .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
-            .anyRequest().authenticated());
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(
+                    "/faqs",
+                    "/",
+                    "/docs",
+                    "/swagger-ui/**",
+                    "/api-docs/**",
+                    "/auth/reissue",
+                    "/quizzes/guest/**",
+                    "/quizzes/{quizId}/answer/guest",
+                    "/actuator/health"
+                ).permitAll()
+                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                .anyRequest().authenticated());
 
-    return http.build();
-  }
+        return http.build();
+    }
 }

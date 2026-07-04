@@ -17,10 +17,10 @@ import lombok.experimental.SuperBuilder;
 @Schema(description = "기본 응답")
 public class BaseResponse<E> {
 
-  @Builder.Default
-  @Schema(description = "성공 여부", example = "true")
-  private boolean success = true;
+    @Builder.Default
+    @Schema(description = "성공 여부", example = "true")
+    private boolean success = true;
 
-  @Schema(description = "에러 코드", hidden = true)
-  private E errorCode;
+    @Schema(description = "에러 코드", hidden = true)
+    private E errorCode;
 }

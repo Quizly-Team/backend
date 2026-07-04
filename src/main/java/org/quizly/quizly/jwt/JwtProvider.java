@@ -20,68 +20,70 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class JwtProvider {
 
-  @Value("${jwt.secret}")
-  private String secret;
+    @Value("${jwt.secret}")
+    private String secret;
 
-  private SecretKey secretKey;
+    private SecretKey secretKey;
 
-  @Value("${jwt.access-token-expiration}")
-  private  Long accessTokenExpiration;
+    @Value("${jwt.access-token-expiration}")
+    private Long accessTokenExpiration;
 
-  @Value("${jwt.refresh-token-expiration}")
-  private Long refreshTokenExpiration;
+    @Value("${jwt.refresh-token-expiration}")
+    private Long refreshTokenExpiration;
 
-  @PostConstruct
-  private void init() {
-    this.secretKey = io.jsonwebtoken.security.Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-  }
-
-  public Long getUserId(String token) {
-    return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
-        .get("userId", Long.class);
-  }
-
-  public String getRole(String token) {
-    return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
-        .get("role", String.class);
-  }
-
-  public AuthErrorCode validateToken(String token) {
-    try {
-      Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
-      return null;
-    } catch (ExpiredJwtException e) {
-      return AuthErrorCode.EXPIRED_ACCESS_TOKEN;
-    } catch (JwtException | IllegalArgumentException e) {
-      return AuthErrorCode.INVALID_TOKEN;
+    @PostConstruct
+    private void init() {
+        this.secretKey = io.jsonwebtoken.security.Keys.hmacShaKeyFor(
+            secret.getBytes(StandardCharsets.UTF_8));
     }
-  }
 
-  public String generateAccessToken(Long userId, String role) {
-    return Jwts.builder()
-        .claim("userId", userId)
-        .claim("role", role)
-        .issuedAt(new Date(System.currentTimeMillis()))
-        .expiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
-        .signWith(secretKey)
-        .compact();
-  }
+    public Long getUserId(String token) {
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
+            .get("userId", Long.class);
+    }
 
-  public String generateRefreshToken(Long userId) {
-    return Jwts.builder()
-        .claim("userId", userId)
-        .issuedAt(new Date(System.currentTimeMillis()))
-        .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
-        .signWith(secretKey)
-        .compact();
-  }
+    public String getRole(String token) {
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
+            .get("role", String.class);
+    }
 
-  public Authentication getAuthentication(String token) {
-    Long userId = getUserId(token);
-    String roleString = getRole(token);
-    Role role = Role.fromKey(roleString);
+    public AuthErrorCode validateToken(String token) {
+        try {
+            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+            return null;
+        } catch (ExpiredJwtException e) {
+            return AuthErrorCode.EXPIRED_ACCESS_TOKEN;
+        } catch (JwtException | IllegalArgumentException e) {
+            return AuthErrorCode.INVALID_TOKEN;
+        }
+    }
 
-    UserPrincipal userPrincipal = new UserPrincipal(userId, role);
-    return new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
-  }
+    public String generateAccessToken(Long userId, String role) {
+        return Jwts.builder()
+            .claim("userId", userId)
+            .claim("role", role)
+            .issuedAt(new Date(System.currentTimeMillis()))
+            .expiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
+            .signWith(secretKey)
+            .compact();
+    }
+
+    public String generateRefreshToken(Long userId) {
+        return Jwts.builder()
+            .claim("userId", userId)
+            .issuedAt(new Date(System.currentTimeMillis()))
+            .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
+            .signWith(secretKey)
+            .compact();
+    }
+
+    public Authentication getAuthentication(String token) {
+        Long userId = getUserId(token);
+        String roleString = getRole(token);
+        Role role = Role.fromKey(roleString);
+
+        UserPrincipal userPrincipal = new UserPrincipal(userId, role);
+        return new UsernamePasswordAuthenticationToken(userPrincipal, null,
+            userPrincipal.getAuthorities());
+    }
 }

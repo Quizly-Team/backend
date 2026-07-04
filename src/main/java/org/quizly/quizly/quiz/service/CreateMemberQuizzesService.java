@@ -15,23 +15,23 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
+import org.quizly.quizly.account.service.ReadUserService;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domin.entity.Quiz;
 import org.quizly.quizly.core.domin.entity.SolveHistory;
 import org.quizly.quizly.core.domin.entity.User;
-import org.quizly.quizly.account.service.ReadUserService;
-import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
-import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.domin.repository.QuizRepository;
 import org.quizly.quizly.core.domin.repository.SolveHistoryRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.core.util.AsyncTaskUtil;
 import org.quizly.quizly.core.util.TextProcessingUtil;
-import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
 import org.quizly.quizly.oauth.UserPrincipal;
+import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
 import org.quizly.quizly.quiz.service.CreateMemberQuizzesService.CreateMemberQuizzesRequest;
 import org.quizly.quizly.quiz.service.CreateMemberQuizzesService.CreateMemberQuizzesResponse;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizRequest;
@@ -44,192 +44,201 @@ import org.springframework.stereotype.Service;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class CreateMemberQuizzesService implements BaseService<CreateMemberQuizzesRequest, CreateMemberQuizzesResponse> {
+public class CreateMemberQuizzesService implements
+    BaseService<CreateMemberQuizzesRequest, CreateMemberQuizzesResponse> {
 
-  private final CreateQuizService createQuizService;
-  private final CreateTopicService createTopicService;
-  private final QuizRepository quizRepository;
-  private final ReadUserService readUserService;
-  private final SolveHistoryRepository solveHistoryRepository;
+    private final CreateQuizService createQuizService;
+    private final CreateTopicService createTopicService;
+    private final QuizRepository quizRepository;
+    private final ReadUserService readUserService;
+    private final SolveHistoryRepository solveHistoryRepository;
 
-  private static final int DEFAULT_QUIZ_COUNT = 10;
-  private static final int CREATE_QUIZ_COUNT = 12;
-  private static final int DEFAULT_QUIZ_BATCH_SIZE = 2;
-  private static final int DEFAULT_CHUNK_SIZE = 500;
-  private static final int DEFAULT_CHUNK_OVERLAP = 100;
+    private static final int DEFAULT_QUIZ_COUNT = 10;
+    private static final int CREATE_QUIZ_COUNT = 12;
+    private static final int DEFAULT_QUIZ_BATCH_SIZE = 2;
+    private static final int DEFAULT_CHUNK_SIZE = 500;
+    private static final int DEFAULT_CHUNK_OVERLAP = 100;
 
-  @Override
-  public CreateMemberQuizzesResponse execute(CreateMemberQuizzesRequest request) {
-    if (request == null || !request.isValid()) {
-      return CreateMemberQuizzesResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberQuizzesErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-          .build();
-    }
+    @Override
+    public CreateMemberQuizzesResponse execute(CreateMemberQuizzesRequest request) {
+        if (request == null || !request.isValid()) {
+            return CreateMemberQuizzesResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberQuizzesErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+                .build();
+        }
 
-    ReadUserResponse readUserResponse = readUserService.execute(
-        ReadUserRequest.builder()
-            .userPrincipal(request.getUserPrincipal())
-            .build()
-    );
-
-    if (!readUserResponse.isSuccess()) {
-      return CreateMemberQuizzesResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberQuizzesErrorCode.NOT_FOUND_USER)
-          .build();
-    }
-    User user = readUserResponse.getUser();
-
-    CreateTopicResponse createTopicResponse = createTopicService.execute(
-        CreateTopicRequest.builder()
-            .plainText(request.getPlainText())
-            .build());
-
-    if (createTopicResponse == null || !createTopicResponse.isSuccess()) {
-      log.error("[CreateMemberQuizzesService] Failed to create topic. Response: {}", createTopicResponse);
-      return CreateMemberQuizzesResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberQuizzesErrorCode.FAILED_CREATE_TOPIC)
-          .build();
-    }
-
-    List<String> chunkList = TextProcessingUtil.createChunkList(
-        request.getPlainText(), DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP);
-    if (chunkList.isEmpty()) {
-      log.error("[CreateMemberQuizzesService] Failed to create chunks from plainText");
-      return CreateMemberQuizzesResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberQuizzesErrorCode.FAILED_CREATE_CHUNK)
-          .build();
-    }
-
-    Quiz.QuizType type = request.getType();
-    List<CompletableFuture<CreateQuizResponse>> futures = AsyncTaskUtil.requestAsyncTasks(
-        chunkList,
-        CREATE_QUIZ_COUNT,
-        DEFAULT_QUIZ_BATCH_SIZE,
-        (chunk, batchSize) -> createQuizService.execute(
-            CreateQuizRequest.builder()
-                .type(type)
-                .quizCount(batchSize)
-                .plainText(chunk)
+        ReadUserResponse readUserResponse = readUserService.execute(
+            ReadUserRequest.builder()
+                .userPrincipal(request.getUserPrincipal())
                 .build()
-        ),
-        "CreateMemberQuizzesService"
-    );
-
-    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-    List<GeneratedQuizResponse> generatedQuizResponseList = AsyncTaskUtil.joinAsyncTasks(futures, response -> {
-      if (response.isSuccess()) {
-        return response.getGeneratedQuizResponseList();
-      }
-      return null;
-    });
-
-    if (generatedQuizResponseList.isEmpty() || generatedQuizResponseList.size() < DEFAULT_QUIZ_COUNT) {
-      log.info("[CreateMemberQuizzesService] No quizzes were generated from OpenAi.");
-      return CreateMemberQuizzesResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberQuizzesErrorCode.OPENAI_QUIZ_GENERATION_FAILED)
-          .build();
-    }
-
-    List<GeneratedQuizResponse> mutableList = new ArrayList<>(generatedQuizResponseList);
-    Collections.shuffle(mutableList);
-
-    List<Quiz> quizList = saveQuiz(
-        mutableList.stream()
-            .limit(DEFAULT_QUIZ_COUNT)
-            .collect(Collectors.toList()),
-        user,
-        createTopicResponse.getTopic()
         );
 
-    return CreateMemberQuizzesResponse.builder()
-        .quizList(quizList)
-        .build();
-  }
+        if (!readUserResponse.isSuccess()) {
+            return CreateMemberQuizzesResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberQuizzesErrorCode.NOT_FOUND_USER)
+                .build();
+        }
+        User user = readUserResponse.getUser();
 
-  private List<Quiz> saveQuiz(List<GeneratedQuizResponse> generatedQuizResponseList, User user, String topic) {
-    List<Quiz> quizList = generatedQuizResponseList.stream()
-        .map(generatedQuizResponse -> Quiz.builder()
-            .quizText(generatedQuizResponse.getQuiz())
-            .answer(generatedQuizResponse.getAnswer())
-            .quizType(generatedQuizResponse.getType())
-            .explanation(generatedQuizResponse.getExplanation())
-            .options(generatedQuizResponse.getOptions())
-            .topic(topic)
-            .user(user)
-            .guest(false)
-            .build())
-        .collect(Collectors.toList());
+        CreateTopicResponse createTopicResponse = createTopicService.execute(
+            CreateTopicRequest.builder()
+                .plainText(request.getPlainText())
+                .build());
 
-    List<Quiz> savedQuizList = quizRepository.saveAll(quizList);
+        if (createTopicResponse == null || !createTopicResponse.isSuccess()) {
+            log.error("[CreateMemberQuizzesService] Failed to create topic. Response: {}",
+                createTopicResponse);
+            return CreateMemberQuizzesResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberQuizzesErrorCode.FAILED_CREATE_TOPIC)
+                .build();
+        }
 
-    List<SolveHistory> initialHistoryList = savedQuizList.stream()
-        .map(quiz -> SolveHistory.builder()
-            .user(user)
-            .quiz(quiz)
-            .isCorrect(false)
-            .submittedAt(LocalDateTime.now())
-            .build())
-        .collect(Collectors.toList());
+        List<String> chunkList = TextProcessingUtil.createChunkList(
+            request.getPlainText(), DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP);
+        if (chunkList.isEmpty()) {
+            log.error("[CreateMemberQuizzesService] Failed to create chunks from plainText");
+            return CreateMemberQuizzesResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberQuizzesErrorCode.FAILED_CREATE_CHUNK)
+                .build();
+        }
 
-    solveHistoryRepository.saveAll(initialHistoryList);
+        Quiz.QuizType type = request.getType();
+        List<CompletableFuture<CreateQuizResponse>> futures = AsyncTaskUtil.requestAsyncTasks(
+            chunkList,
+            CREATE_QUIZ_COUNT,
+            DEFAULT_QUIZ_BATCH_SIZE,
+            (chunk, batchSize) -> createQuizService.execute(
+                CreateQuizRequest.builder()
+                    .type(type)
+                    .quizCount(batchSize)
+                    .plainText(chunk)
+                    .build()
+            ),
+            "CreateMemberQuizzesService"
+        );
 
-    return savedQuizList;
-  }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        List<GeneratedQuizResponse> generatedQuizResponseList = AsyncTaskUtil.joinAsyncTasks(
+            futures, response -> {
+                if (response.isSuccess()) {
+                    return response.getGeneratedQuizResponseList();
+                }
+                return null;
+            });
 
-  @Getter
-  @RequiredArgsConstructor
-  public enum CreateMemberQuizzesErrorCode implements BaseErrorCode<DomainException> {
+        if (generatedQuizResponseList.isEmpty()
+            || generatedQuizResponseList.size() < DEFAULT_QUIZ_COUNT) {
+            log.info("[CreateMemberQuizzesService] No quizzes were generated from OpenAi.");
+            return CreateMemberQuizzesResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberQuizzesErrorCode.OPENAI_QUIZ_GENERATION_FAILED)
+                .build();
+        }
 
-    NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
-    FAILED_CREATE_TOPIC(HttpStatus.INTERNAL_SERVER_ERROR, "주제 생성에 실패하였습니다."),
-    FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "텍스트 청크 생성에 실패하였습니다."),
-    FAILED_CREATE_OPENAI_REQUEST(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버 요청 생성에 실패하였습니다."),
-    OPENAI_QUIZ_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버에서 퀴즈 생성에 실패하였습니다.");
+        List<GeneratedQuizResponse> mutableList = new ArrayList<>(generatedQuizResponseList);
+        Collections.shuffle(mutableList);
 
-    private final HttpStatus httpStatus;
+        List<Quiz> quizList = saveQuiz(
+            mutableList.stream()
+                .limit(DEFAULT_QUIZ_COUNT)
+                .collect(Collectors.toList()),
+            user,
+            createTopicResponse.getTopic()
+        );
 
-    private final String message;
-
-    @Override
-    public DomainException toException() {
-      return new DomainException(httpStatus, this);
+        return CreateMemberQuizzesResponse.builder()
+            .quizList(quizList)
+            .build();
     }
-  }
 
+    private List<Quiz> saveQuiz(List<GeneratedQuizResponse> generatedQuizResponseList, User user,
+        String topic) {
+        List<Quiz> quizList = generatedQuizResponseList.stream()
+            .map(generatedQuizResponse -> Quiz.builder()
+                .quizText(generatedQuizResponse.getQuiz())
+                .answer(generatedQuizResponse.getAnswer())
+                .quizType(generatedQuizResponse.getType())
+                .explanation(generatedQuizResponse.getExplanation())
+                .options(generatedQuizResponse.getOptions())
+                .topic(topic)
+                .user(user)
+                .guest(false)
+                .build())
+            .collect(Collectors.toList());
 
-  @Getter
-  @Setter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class CreateMemberQuizzesRequest implements BaseRequest {
+        List<Quiz> savedQuizList = quizRepository.saveAll(quizList);
 
-    private String plainText;
+        List<SolveHistory> initialHistoryList = savedQuizList.stream()
+            .map(quiz -> SolveHistory.builder()
+                .user(user)
+                .quiz(quiz)
+                .isCorrect(false)
+                .submittedAt(LocalDateTime.now())
+                .build())
+            .collect(Collectors.toList());
 
-    private Quiz.QuizType type;
+        solveHistoryRepository.saveAll(initialHistoryList);
 
-    private UserPrincipal userPrincipal;
-
-    @Override
-    public boolean isValid() {
-      return plainText != null && !plainText.isEmpty() && type != null && userPrincipal != null;
+        return savedQuizList;
     }
-  }
 
-  @Getter
-  @Setter
-  @SuperBuilder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class CreateMemberQuizzesResponse extends BaseResponse<CreateMemberQuizzesErrorCode> {
-    private List<Quiz> quizList;
-  }
+    @Getter
+    @RequiredArgsConstructor
+    public enum CreateMemberQuizzesErrorCode implements BaseErrorCode<DomainException> {
+
+        NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
+        NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
+        FAILED_CREATE_TOPIC(HttpStatus.INTERNAL_SERVER_ERROR, "주제 생성에 실패하였습니다."),
+        FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "텍스트 청크 생성에 실패하였습니다."),
+        FAILED_CREATE_OPENAI_REQUEST(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버 요청 생성에 실패하였습니다."),
+        OPENAI_QUIZ_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,
+            "OPENAI 서버에서 퀴즈 생성에 실패하였습니다.");
+
+        private final HttpStatus httpStatus;
+
+        private final String message;
+
+        @Override
+        public DomainException toException() {
+            return new DomainException(httpStatus, this);
+        }
+    }
+
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class CreateMemberQuizzesRequest implements BaseRequest {
+
+        private String plainText;
+
+        private Quiz.QuizType type;
+
+        private UserPrincipal userPrincipal;
+
+        @Override
+        public boolean isValid() {
+            return plainText != null && !plainText.isEmpty() && type != null
+                && userPrincipal != null;
+        }
+    }
+
+    @Getter
+    @Setter
+    @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class CreateMemberQuizzesResponse extends
+        BaseResponse<CreateMemberQuizzesErrorCode> {
+
+        private List<Quiz> quizList;
+    }
 }

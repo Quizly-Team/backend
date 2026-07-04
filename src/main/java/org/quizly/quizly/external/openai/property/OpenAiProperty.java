@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "openai.api")
 public class OpenAiProperty {
+
     private String url;
     private String model;
     private String key;

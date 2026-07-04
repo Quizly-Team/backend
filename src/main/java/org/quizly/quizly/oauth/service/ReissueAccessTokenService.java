@@ -31,7 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class ReissueAccessTokenService implements BaseService<ReissueAccessTokenRequest, ReissueAccessTokenResponse> {
+public class ReissueAccessTokenService implements
+    BaseService<ReissueAccessTokenRequest, ReissueAccessTokenResponse> {
 
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -125,6 +126,7 @@ public class ReissueAccessTokenService implements BaseService<ReissueAccessToken
     @AllArgsConstructor
     @ToString
     public static class ReissueAccessTokenRequest implements BaseRequest {
+
         private String refreshToken;
 
         @Override
@@ -139,7 +141,9 @@ public class ReissueAccessTokenService implements BaseService<ReissueAccessToken
     @NoArgsConstructor
     @AllArgsConstructor
     @ToString
-    public static class ReissueAccessTokenResponse extends BaseResponse<ReissueAccessTokenErrorCode> {
+    public static class ReissueAccessTokenResponse extends
+        BaseResponse<ReissueAccessTokenErrorCode> {
+
         private String accessToken;
         private String refreshToken;
     }

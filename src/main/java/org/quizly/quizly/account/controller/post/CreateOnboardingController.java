@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CreateOnboardingController {
 
     private final CreateOnboardingService createOnboardingService;
+
     @Operation(
         summary = "온보딩 설문조사 API",
         description = "최초 로그인 시 설문 조사 결과를 저장합니다.",
@@ -30,8 +31,8 @@ public class CreateOnboardingController {
     @PostMapping("account/onboarding")
     @ApiErrorCode(errorCodes = {GlobalErrorCode.class, CreateOnboardingErrorCode.class})
     public ResponseEntity<CreateOnboardingResponse> onboarding(
-            @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestBody CreateOnboardingRequest request
+        @AuthenticationPrincipal UserPrincipal userPrincipal,
+        @RequestBody CreateOnboardingRequest request
     ) {
         createOnboardingService.execute(
             CreateOnboardingService.CreateOnboardingRequest.builder()

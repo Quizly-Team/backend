@@ -22,11 +22,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
 @Profile({"dev", "prod"})
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SlackNotificationService implements NotificationProvider, BaseService<SlackNotificationService.NotificationRequest, SlackNotificationService.NotificationResponse> {
+public class SlackNotificationService implements NotificationProvider,
+    BaseService<SlackNotificationService.NotificationRequest, SlackNotificationService.NotificationResponse> {
 
     @Value("${notification.slack.batch.webhook-url}")
     private String batchWebhookUrl;
@@ -44,7 +46,7 @@ public class SlackNotificationService implements NotificationProvider, BaseServi
         }
         String text = format(message);
         String webhookUrl = getWebhookUrl(message.channel());
-        this.execute(new NotificationRequest(text,webhookUrl));
+        this.execute(new NotificationRequest(text, webhookUrl));
     }
 
     private String getWebhookUrl(NotificationChannel channel) {
@@ -60,6 +62,7 @@ public class SlackNotificationService implements NotificationProvider, BaseServi
         String profile = profiles.length > 0 ? profiles[0].toUpperCase() : "UNKNOWN";
         return "[" + profile + "] [" + message.title() + "]\n" + message.body();
     }
+
     @Override
     public NotificationResponse execute(NotificationRequest request) {
         if (request == null || !request.isValid()) {
@@ -81,6 +84,7 @@ public class SlackNotificationService implements NotificationProvider, BaseServi
                 .build();
         }
     }
+
     @Getter
     @RequiredArgsConstructor
     public enum NotificationErrorCode implements BaseErrorCode<DomainException> {
@@ -99,6 +103,7 @@ public class SlackNotificationService implements NotificationProvider, BaseServi
     @AllArgsConstructor
     @NoArgsConstructor
     public static class NotificationRequest implements BaseRequest {
+
         private String message;
         private String webhookUrl;
 
@@ -106,7 +111,7 @@ public class SlackNotificationService implements NotificationProvider, BaseServi
         public boolean isValid() {
 
             return message != null && !message.isBlank()
-                && webhookUrl !=null && !webhookUrl.isBlank();
+                && webhookUrl != null && !webhookUrl.isBlank();
         }
     }
 
@@ -114,5 +119,6 @@ public class SlackNotificationService implements NotificationProvider, BaseServi
     @SuperBuilder
     @NoArgsConstructor
     public static class NotificationResponse extends BaseResponse<NotificationErrorCode> {
+
     }
 }

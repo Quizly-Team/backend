@@ -31,17 +31,18 @@ import org.quizly.quizly.core.util.okhttp.OkHttpJsonRequest;
 import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest;
 import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest.ResponseFormat;
 import org.quizly.quizly.external.openai.dto.Response.OpenAiResponse;
-import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
 import org.quizly.quizly.external.openai.error.OpenAiErrorCode;
 import org.quizly.quizly.external.openai.property.OpenAiProperty;
 import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiRequest;
 import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiResponse;
+import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
 import org.springframework.stereotype.Service;
 
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequest, CreateQuizOpenAiResponse> {
+public class CreateQuizOpenAiService implements
+    BaseService<CreateQuizOpenAiRequest, CreateQuizOpenAiResponse> {
 
     private static final double QUIZ_TEMPERATURE = 0.7;
 
@@ -58,7 +59,8 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
                 .build();
         }
         String systemContent = getPrompt(request.getPromptPath());
-        String requestBody = createOpenAiRequestBody(request.getPlainText(), systemContent, request.getResponseFormat());
+        String requestBody = createOpenAiRequestBody(request.getPlainText(), systemContent,
+            request.getResponseFormat());
 
         Request httpRequest = new Request.Builder()
             .url(openAiProperty.getUrl())
@@ -71,7 +73,8 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
         try (Response response = createRequest(httpRequest)) {
             ResponseBody body = response.body();
             if (body == null) {
-                log.error("[CreateQuizOpenAiService] response body is null. response code: {}", response.code());
+                log.error("[CreateQuizOpenAiService] response body is null. response code: {}",
+                    response.code());
                 return CreateQuizOpenAiResponse.builder()
                     .success(false)
                     .errorCode(OpenAiErrorCode.EMPTY_OPENAI_RESPONSE_BODY)
@@ -81,7 +84,9 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
             String responseBody = body.string();
 
             if (!response.isSuccessful()) {
-                log.error("[CreateQuizOpenAiService] OpenAi API returned non-successful code: {}, body: {}", response.code(), responseBody);
+                log.error(
+                    "[CreateQuizOpenAiService] OpenAi API returned non-successful code: {}, body: {}",
+                    response.code(), responseBody);
                 return CreateQuizOpenAiResponse.builder()
                     .success(false)
                     .errorCode(OpenAiErrorCode.FAILED_CREATE_OPENAI_REQUEST)
@@ -89,11 +94,14 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
             }
 
             try {
-                OpenAiResponse openAiResponse = objectMapper.readValue(responseBody, OpenAiResponse.class);
+                OpenAiResponse openAiResponse = objectMapper.readValue(responseBody,
+                    OpenAiResponse.class);
                 String content = openAiResponse.extractText();
 
                 if (content == null || content.isBlank()) {
-                    log.error("[CreateQuizOpenAiService] Empty content in OpenAi response. Body: {}", responseBody);
+                    log.error(
+                        "[CreateQuizOpenAiService] Empty content in OpenAi response. Body: {}",
+                        responseBody);
                     return CreateQuizOpenAiResponse.builder()
                         .success(false)
                         .errorCode(OpenAiErrorCode.EMPTY_OPENAI_RESPONSE_BODY)
@@ -104,7 +112,9 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
                 JsonNode quizzesNode = rootNode.path("quizzes");
 
                 if (!quizzesNode.isArray()) {
-                    log.error("[CreateQuizOpenAiService] Failed to find 'quizzes' array in content. Original content: {}", content);
+                    log.error(
+                        "[CreateQuizOpenAiService] Failed to find 'quizzes' array in content. Original content: {}",
+                        content);
                     return CreateQuizOpenAiResponse.builder()
                         .success(false)
                         .errorCode(OpenAiErrorCode.FAILED_PARSE_OPENAI_RESPONSE)
@@ -112,7 +122,8 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
                 }
 
                 List<GeneratedQuizResponse> generatedQuizResponseList = objectMapper.convertValue(
-                    quizzesNode, new TypeReference<List<GeneratedQuizResponse>>() {});
+                    quizzesNode, new TypeReference<List<GeneratedQuizResponse>>() {
+                    });
 
                 shuffleMultipleChoiceOptions(generatedQuizResponseList);
 
@@ -122,7 +133,8 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
                     .build();
 
             } catch (IOException e) {
-                log.error("[CreateQuizOpenAiService] Failed to parse OpenAi API response. Body: {}", responseBody, e);
+                log.error("[CreateQuizOpenAiService] Failed to parse OpenAi API response. Body: {}",
+                    responseBody, e);
                 return CreateQuizOpenAiResponse.builder()
                     .success(false)
                     .errorCode(OpenAiErrorCode.FAILED_READ_OPENAI_RESPONSE)
@@ -130,7 +142,8 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
             }
 
         } catch (IOException e) {
-            log.error("[CreateQuizOpenAiService] OpenAi API request failed due to network I/O error.", e);
+            log.error(
+                "[CreateQuizOpenAiService] OpenAi API request failed due to network I/O error.", e);
             return CreateQuizOpenAiResponse.builder()
                 .success(false)
                 .errorCode(OpenAiErrorCode.OPENAI_NETWORK_ERROR)
@@ -138,7 +151,8 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
         }
     }
 
-    private String createOpenAiRequestBody(String plainText, String systemContent, ResponseFormat responseFormat) {
+    private String createOpenAiRequestBody(String plainText, String systemContent,
+        ResponseFormat responseFormat) {
         OpenAiRequest openAiRequest = OpenAiRequest.from(
             systemContent,
             "<입력으로 들어온 정리> " + plainText,
@@ -163,7 +177,8 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
     private void shuffleMultipleChoiceOptions(List<GeneratedQuizResponse> responseList) {
         responseList.stream()
             .filter(quiz -> quiz.getType() == Quiz.QuizType.MULTIPLE_CHOICE)
-            .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
+            .filter(
+                quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
             .forEach(quiz -> {
                 if (quiz.getOptions().isEmpty()) {
                     quiz.getOptions().add(quiz.getAnswer());
@@ -185,6 +200,7 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
     @AllArgsConstructor
     @ToString
     public static class CreateQuizOpenAiRequest implements BaseRequest {
+
         private String plainText;
         private String promptPath;
         private ResponseFormat responseFormat;
@@ -204,6 +220,7 @@ public class CreateQuizOpenAiService implements BaseService<CreateQuizOpenAiRequ
     @AllArgsConstructor
     @ToString
     public static class CreateQuizOpenAiResponse extends BaseResponse<OpenAiErrorCode> {
+
         private List<GeneratedQuizResponse> generatedQuizResponseList;
     }
 }

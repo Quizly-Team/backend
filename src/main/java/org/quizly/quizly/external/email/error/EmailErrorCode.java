@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.springframework.http.HttpStatus;
+
 @Getter
 @RequiredArgsConstructor
 public enum EmailErrorCode implements BaseErrorCode<EmailException> {

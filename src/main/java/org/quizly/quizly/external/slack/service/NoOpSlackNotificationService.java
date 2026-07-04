@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 @Profile({"local"})
 @Service
 public class NoOpSlackNotificationService implements NotificationProvider {
+
     @Override
     public void send(NotificationMessage message) {
 

@@ -2,7 +2,8 @@ package org.quizly.quizly.admin.controller.get;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.admin.dto.request.AdminReadInquiriesRequest;
 import org.quizly.quizly.admin.dto.response.AdminReadInquiriesResponse;
@@ -18,13 +19,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Optional;
-
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Admin", description = "관리자")
 public class AdminReadInquiriesController {
+
     private final AdminReadInquiriesService adminReadInquiriesService;
 
     @Operation(
@@ -36,10 +35,10 @@ public class AdminReadInquiriesController {
     )
     @GetMapping("/admin/inquiries")
     @PreAuthorize("hasRole('ADMIN')")
-    @ApiErrorCode(errorCodes = {GlobalErrorCode.class, AdminReadInquiriesService.AdminReadInquiriesErrorCode.class})
+    @ApiErrorCode(errorCodes = {GlobalErrorCode.class,
+        AdminReadInquiriesService.AdminReadInquiriesErrorCode.class})
     public ResponseEntity<AdminReadInquiriesResponse> adminReadInquiries(
-        @ModelAttribute AdminReadInquiriesRequest request)
-        {
+        @ModelAttribute AdminReadInquiriesRequest request) {
         AdminReadInquiriesService.AdminReadInquiriesResponse serviceResponse = adminReadInquiriesService.execute(
             AdminReadInquiriesService.AdminReadInquiriesRequest.builder()
                 .status(request.getStatus())
@@ -56,12 +55,13 @@ public class AdminReadInquiriesController {
                 });
         }
 
-        return ResponseEntity.ok(toResponse(serviceResponse.getInquiryList(),serviceResponse.getPagination()));
+        return ResponseEntity.ok(
+            toResponse(serviceResponse.getInquiryList(), serviceResponse.getPagination()));
     }
 
     private AdminReadInquiriesResponse toResponse(
         List<Inquiry> inquiryList,
-        Pagination pagination){
+        Pagination pagination) {
         List<AdminReadInquiriesResponse.AdminInquiryDetail> details = inquiryList.stream()
             .map(inquiry -> new AdminReadInquiriesResponse.AdminInquiryDetail(
                 inquiry.getId(),

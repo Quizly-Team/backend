@@ -26,82 +26,82 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GraderQuizService implements BaseService<GraderQuizRequest, GraderQuizResponse> {
 
-  @Override
-  public GraderQuizResponse execute(GraderQuizRequest request) {
-    if (request == null || !request.isValid()) {
-      return GraderQuizResponse.builder()
-          .success(false)
-          .errorCode(GraderQuizErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-          .build();
-    }
-
-    String normalizedCorrectAnswer = normalizeText(request.getAnswer());
-    String normalizedUserAnswer = normalizeText(request.getUserAnswer());
-
-    return GraderQuizResponse.builder()
-        .isCorrect(normalizedCorrectAnswer.equals(normalizedUserAnswer))
-        .build();
-  }
-
-  private String normalizeText(String text) {
-    if (text == null) {
-      return "";
-    }
-    text = text.trim().toUpperCase();
-
-    if(text.equals("O") || text.equals("TRUE")){
-      return "TRUE";
-    }
-    if(text.equals("X") || text.equals("FALSE")){
-      return "FALSE";
-    }
-
-    return text;
-  }
-
-  @Getter
-  @RequiredArgsConstructor
-  public enum GraderQuizErrorCode implements BaseErrorCode<DomainException> {
-
-    NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다.");
-
-    private final HttpStatus httpStatus;
-
-    private final String message;
-
     @Override
-    public DomainException toException() {
-      return new DomainException(httpStatus, this);
+    public GraderQuizResponse execute(GraderQuizRequest request) {
+        if (request == null || !request.isValid()) {
+            return GraderQuizResponse.builder()
+                .success(false)
+                .errorCode(GraderQuizErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+                .build();
+        }
+
+        String normalizedCorrectAnswer = normalizeText(request.getAnswer());
+        String normalizedUserAnswer = normalizeText(request.getUserAnswer());
+
+        return GraderQuizResponse.builder()
+            .isCorrect(normalizedCorrectAnswer.equals(normalizedUserAnswer))
+            .build();
     }
-  }
 
-  @Getter
-  @Setter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class GraderQuizRequest implements BaseRequest {
+    private String normalizeText(String text) {
+        if (text == null) {
+            return "";
+        }
+        text = text.trim().toUpperCase();
 
-    private String answer;
+        if (text.equals("O") || text.equals("TRUE")) {
+            return "TRUE";
+        }
+        if (text.equals("X") || text.equals("FALSE")) {
+            return "FALSE";
+        }
 
-    private String userAnswer;
-
-    @Override
-    public boolean isValid() {
-      return answer != null && userAnswer != null;
+        return text;
     }
-  }
 
-  @Getter
-  @Setter
-  @SuperBuilder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class GraderQuizResponse extends BaseResponse<GraderQuizErrorCode> {
+    @Getter
+    @RequiredArgsConstructor
+    public enum GraderQuizErrorCode implements BaseErrorCode<DomainException> {
 
-    private boolean isCorrect;
-  }
+        NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다.");
+
+        private final HttpStatus httpStatus;
+
+        private final String message;
+
+        @Override
+        public DomainException toException() {
+            return new DomainException(httpStatus, this);
+        }
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class GraderQuizRequest implements BaseRequest {
+
+        private String answer;
+
+        private String userAnswer;
+
+        @Override
+        public boolean isValid() {
+            return answer != null && userAnswer != null;
+        }
+    }
+
+    @Getter
+    @Setter
+    @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class GraderQuizResponse extends BaseResponse<GraderQuizErrorCode> {
+
+        private boolean isCorrect;
+    }
 
 }

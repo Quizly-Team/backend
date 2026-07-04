@@ -1,8 +1,15 @@
 package org.quizly.quizly.external.openai.service;
 
+import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.*;
+import java.io.IOException;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import okhttp3.MediaType;
@@ -19,14 +26,11 @@ import org.quizly.quizly.external.openai.error.OpenAiErrorCode;
 import org.quizly.quizly.external.openai.property.OpenAiProperty;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-
-import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
-
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class CreateTextOpenAiService implements BaseService<CreateTextOpenAiService.CreateTextOpenAiRequest, CreateTextOpenAiService.CreateTextOpenAiResponse> {
+public class CreateTextOpenAiService implements
+    BaseService<CreateTextOpenAiService.CreateTextOpenAiRequest, CreateTextOpenAiService.CreateTextOpenAiResponse> {
 
     private final OpenAiProperty openAiProperty;
     private final ObjectMapper objectMapper;
@@ -34,18 +38,19 @@ public class CreateTextOpenAiService implements BaseService<CreateTextOpenAiServ
 
     @Override
     public CreateTextOpenAiResponse execute(CreateTextOpenAiRequest request) {
-       if (request == null || !request.isValid()){
-           return CreateTextOpenAiResponse.builder()
-               .success(false)
-               .errorCode(OpenAiErrorCode.NOT_EXIST_OPENAI_REQUIRED_PARAMETER)
-               .build();
-       }
+        if (request == null || !request.isValid()) {
+            return CreateTextOpenAiResponse.builder()
+                .success(false)
+                .errorCode(OpenAiErrorCode.NOT_EXIST_OPENAI_REQUIRED_PARAMETER)
+                .build();
+        }
 
-       String systemPrompt = getPrompt(request.getPromptPath());
+        String systemPrompt = getPrompt(request.getPromptPath());
         String requestBody;
 
         try {
-            String systemPromptWithData = systemPrompt.replace("{{analysisTargetText}}", request.getInputText());
+            String systemPromptWithData = systemPrompt.replace("{{analysisTargetText}}",
+                request.getInputText());
             OpenAiRequest openAiRequest =
                 OpenAiRequest.from(
                     systemPromptWithData,
@@ -72,7 +77,6 @@ public class CreateTextOpenAiService implements BaseService<CreateTextOpenAiServ
             .post(RequestBody.create(requestBody, MediaType.parse("application/json")))
             .build();
 
-
         try (Response response = createRequest(httpRequest)) {
             if (response.body() == null) {
                 return CreateTextOpenAiService.CreateTextOpenAiResponse.builder()
@@ -84,7 +88,8 @@ public class CreateTextOpenAiService implements BaseService<CreateTextOpenAiServ
             String responseBody = response.body().string();
 
             if (!response.isSuccessful()) {
-                log.error("[CreateTextOpenAiService] OpenAi error {} body={}", response.code(), responseBody);
+                log.error("[CreateTextOpenAiService] OpenAi error {} body={}", response.code(),
+                    responseBody);
                 return CreateTextOpenAiService.CreateTextOpenAiResponse.builder()
                     .success(false)
                     .errorCode(OpenAiErrorCode.FAILED_CREATE_OPENAI_REQUEST)
@@ -125,11 +130,13 @@ public class CreateTextOpenAiService implements BaseService<CreateTextOpenAiServ
         }
         return prompt;
     }
+
     @Getter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CreateTextOpenAiRequest implements BaseRequest{
+    public static class CreateTextOpenAiRequest implements BaseRequest {
+
         private String inputText;
         private String promptPath;
 
@@ -145,6 +152,7 @@ public class CreateTextOpenAiService implements BaseService<CreateTextOpenAiServ
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateTextOpenAiResponse extends BaseResponse<OpenAiErrorCode> {
+
         private String resultText;
     }
 }

@@ -1,8 +1,8 @@
 package org.quizly.quizly.external.openai.dto.Response;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import java.util.List;
 
 @Getter
 @NoArgsConstructor
@@ -13,10 +13,13 @@ public class OpenAiResponse {
     public record Choice(
         Message message
     ) {
+
         public record Message(
             String role,
             String content
-        ) {}
+        ) {
+
+        }
     }
 
     public String extractText() {

@@ -1,5 +1,6 @@
 package org.quizly.quizly.configuration;
 
+import java.time.Duration;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -8,8 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
-
-import java.time.Duration;
 
 @Configuration
 public class RestClientConfig {

@@ -11,5 +11,5 @@ import org.quizly.quizly.core.exception.error.BaseErrorCode;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ApiErrorCode {
 
-  Class<? extends BaseErrorCode>[] errorCodes();
+    Class<? extends BaseErrorCode>[] errorCodes();
 }

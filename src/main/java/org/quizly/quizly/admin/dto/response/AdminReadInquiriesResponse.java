@@ -1,6 +1,8 @@
 package org.quizly.quizly.admin.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -9,14 +11,12 @@ import org.quizly.quizly.core.domin.entity.Inquiry;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.core.presentation.Pagination;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @Getter
 @SuperBuilder
 @NoArgsConstructor
 @Schema(description = "관리자 문의 조회 응답")
 public class AdminReadInquiriesResponse extends BaseResponse<GlobalErrorCode> {
+
     @Schema(description = "전체 문의 목록")
     private List<AdminInquiryDetail> inquiryList;
 
@@ -46,6 +46,9 @@ public class AdminReadInquiriesResponse extends BaseResponse<GlobalErrorCode> {
         @Schema(description = "수정 일자")
         LocalDateTime updatedAt
 
+    ) {
 
-    ){};
+    }
+
+    ;
 }

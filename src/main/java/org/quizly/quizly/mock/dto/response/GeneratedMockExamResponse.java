@@ -10,9 +10,10 @@ import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamTy
 @NoArgsConstructor
 @AllArgsConstructor
 public class GeneratedMockExamResponse {
-  private String quiz;
-  private MockExamType type;
-  private List<String> options;
-  private String answer;
-  private String explanation;
+
+    private String quiz;
+    private MockExamType type;
+    private List<String> options;
+    private String answer;
+    private String explanation;
 }
