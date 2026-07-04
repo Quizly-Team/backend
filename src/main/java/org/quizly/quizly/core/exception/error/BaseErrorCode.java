@@ -4,11 +4,11 @@ import org.springframework.http.HttpStatus;
 
 public interface BaseErrorCode<T extends RuntimeException> {
 
-  String name();
+    String name();
 
-  String getMessage();
+    String getMessage();
 
-  HttpStatus getHttpStatus();
+    HttpStatus getHttpStatus();
 
-  T toException();
+    T toException();
 }

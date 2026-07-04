@@ -1,12 +1,11 @@
 package org.quizly.quizly.account.support;
 
-import org.quizly.quizly.account.service.ReadQuizTypeSummaryService.ReadQuizTypeSummaryResponse.QuizTypeSummary;
-import org.quizly.quizly.account.service.ReadTopicSummaryService.ReadTopicSummaryResponse.TopicSummary;
-import org.quizly.quizly.account.service.ReadTodaySummaryService.ReadTodaySummaryResponse.TodaySummary;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import org.quizly.quizly.account.service.ReadQuizTypeSummaryService.ReadQuizTypeSummaryResponse.QuizTypeSummary;
+import org.quizly.quizly.account.service.ReadTodaySummaryService.ReadTodaySummaryResponse.TodaySummary;
+import org.quizly.quizly.account.service.ReadTopicSummaryService.ReadTopicSummaryResponse.TopicSummary;
+import org.springframework.stereotype.Component;
 
 @Component
 public class DashboardAiAnalysisInputBuilder {

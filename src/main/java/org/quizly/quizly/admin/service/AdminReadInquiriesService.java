@@ -1,6 +1,13 @@
 package org.quizly.quizly.admin.service;
 
-import lombok.*;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
@@ -17,32 +24,35 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class AdminReadInquiriesService implements BaseService<AdminReadInquiriesService.AdminReadInquiriesRequest, AdminReadInquiriesService.AdminReadInquiriesResponse> {
+public class AdminReadInquiriesService implements
+    BaseService<AdminReadInquiriesService.AdminReadInquiriesRequest, AdminReadInquiriesService.AdminReadInquiriesResponse> {
 
     private final InquiryRepository inquiryRepository;
     private static final String SORT_BY_LATEST = "createdAt";
+
     @Override
     public AdminReadInquiriesResponse execute(AdminReadInquiriesRequest request) {
 
-        if(request == null || !request.isValid()){
+        if (request == null || !request.isValid()) {
             return AdminReadInquiriesService.AdminReadInquiriesResponse.builder()
                 .success(false)
                 .errorCode(AdminReadInquiriesErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
                 .build();
         }
-        Pageable pageRequest = request.getPageRequest().withSort(Sort.by(Sort.Direction.DESC, SORT_BY_LATEST));
+        Pageable pageRequest = request.getPageRequest()
+            .withSort(Sort.by(Sort.Direction.DESC, SORT_BY_LATEST));
 
         Page<Inquiry> inquiryPage;
 
-        if(request.getStatus() == null){
+        if (request.getStatus() == null) {
             inquiryPage = inquiryRepository.findAllWithUser(pageRequest);
-        }else{
-            inquiryPage = inquiryRepository.findAllByStatusWithUser(request.getStatus(),pageRequest);
+        } else {
+            inquiryPage = inquiryRepository.findAllByStatusWithUser(request.getStatus(),
+                pageRequest);
         }
 
         return AdminReadInquiriesResponse.builder()
@@ -92,7 +102,8 @@ public class AdminReadInquiriesService implements BaseService<AdminReadInquiries
     @NoArgsConstructor
     @AllArgsConstructor
     @ToString
-    public static class AdminReadInquiriesResponse extends BaseResponse<AdminReadInquiriesService.AdminReadInquiriesErrorCode> {
+    public static class AdminReadInquiriesResponse extends
+        BaseResponse<AdminReadInquiriesService.AdminReadInquiriesErrorCode> {
 
         private List<Inquiry> inquiryList;
         private Pagination pagination;

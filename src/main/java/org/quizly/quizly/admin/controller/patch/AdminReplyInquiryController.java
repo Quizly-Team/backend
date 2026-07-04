@@ -2,6 +2,7 @@ package org.quizly.quizly.admin.controller.patch;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.admin.dto.request.AdminReplyInquiryRequest;
 import org.quizly.quizly.admin.dto.response.AdminReplyInquiryResponse;
@@ -15,8 +16,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,10 +31,11 @@ public class AdminReplyInquiryController {
     )
     @PatchMapping("/admin/inquiries/{inquiryId}")
     @PreAuthorize("hasRole('ADMIN')")
-    @ApiErrorCode(errorCodes = {GlobalErrorCode.class, AdminReplyInquiryService.AdminReplyInquiryErrorCode.class})
+    @ApiErrorCode(errorCodes = {GlobalErrorCode.class,
+        AdminReplyInquiryService.AdminReplyInquiryErrorCode.class})
     public ResponseEntity<AdminReplyInquiryResponse> adminReplyInquiry(
         @PathVariable Long inquiryId,
-        @RequestBody AdminReplyInquiryRequest request ) {
+        @RequestBody AdminReplyInquiryRequest request) {
 
         AdminReplyInquiryService.AdminReplyInquiryResponse serviceResponse = adminReplyInquiryService.execute(
             AdminReplyInquiryService.AdminReplyInquiryRequest.builder()
@@ -57,7 +57,8 @@ public class AdminReplyInquiryController {
         return ResponseEntity.ok(toResponse(serviceResponse));
     }
 
-    private AdminReplyInquiryResponse toResponse(AdminReplyInquiryService.AdminReplyInquiryResponse serviceResponse) {
+    private AdminReplyInquiryResponse toResponse(
+        AdminReplyInquiryService.AdminReplyInquiryResponse serviceResponse) {
         return AdminReplyInquiryResponse.builder()
             .inquiryId(serviceResponse.getInquiryId())
             .title(serviceResponse.getTitle())

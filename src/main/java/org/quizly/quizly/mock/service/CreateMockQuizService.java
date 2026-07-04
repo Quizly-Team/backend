@@ -32,104 +32,111 @@ import org.springframework.stereotype.Service;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class CreateMockQuizService implements BaseAsyncService<CreateMockQuizRequest, CreateMockQuizResponse> {
+public class CreateMockQuizService implements
+    BaseAsyncService<CreateMockQuizRequest, CreateMockQuizResponse> {
 
-  private final CreateMockExamOpenAiService createMockExamOpenAiService;
+    private final CreateMockExamOpenAiService createMockExamOpenAiService;
 
-  @Async("mockExamTaskExecutor")
-  @Override
-  public CompletableFuture<CreateMockQuizResponse> execute(CreateMockQuizRequest request) {
-    if (request == null || !request.isValid()) {
-      return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
-          .success(false)
-          .errorCode(CreateMockQuizErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-          .build());
-    }
+    @Async("mockExamTaskExecutor")
+    @Override
+    public CompletableFuture<CreateMockQuizResponse> execute(CreateMockQuizRequest request) {
+        if (request == null || !request.isValid()) {
+            return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
+                .success(false)
+                .errorCode(CreateMockQuizErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+                .build());
+        }
 
-    String promptPath = request.getType().getPromptPath();
-    if (promptPath == null) {
-      log.error("[CreateMockQuizService] Could not find a prompt path. MockExamType: {}", request.getType());
-      return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
-          .success(false)
-          .errorCode(CreateMockQuizErrorCode.NOT_EXIST_PROMPT_PATH)
-          .build());
-    }
+        String promptPath = request.getType().getPromptPath();
+        if (promptPath == null) {
+            log.error("[CreateMockQuizService] Could not find a prompt path. MockExamType: {}",
+                request.getType());
+            return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
+                .success(false)
+                .errorCode(CreateMockQuizErrorCode.NOT_EXIST_PROMPT_PATH)
+                .build());
+        }
 
-    ResponseFormat responseFormat = createResponseFormat(request);
+        ResponseFormat responseFormat = createResponseFormat(request);
 
-    CreateMockExamOpenAiResponse openAiResponse = createMockExamOpenAiService.execute(
-        CreateMockExamOpenAiRequest.builder()
-            .plainText(request.getPlainText())
-            .promptPath(promptPath)
-            .responseFormat(responseFormat)
+        CreateMockExamOpenAiResponse openAiResponse = createMockExamOpenAiService.execute(
+            CreateMockExamOpenAiRequest.builder()
+                .plainText(request.getPlainText())
+                .promptPath(promptPath)
+                .responseFormat(responseFormat)
+                .build());
+
+        if (openAiResponse != null && openAiResponse.isSuccess()) {
+            return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
+                .success(true)
+                .generatedMockExamResponseList(openAiResponse.getGeneratedMockExamResponseList())
+                .build());
+        }
+
+        log.error("[CreateMockQuizService] Thread: {}. Failed to create mock exam from OpenAi.",
+            Thread.currentThread().getName());
+        return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
+            .success(false)
+            .errorCode(CreateMockQuizErrorCode.ASYNC_FAILED_OPENAI_MOCK_EXAM_GENERATION)
             .build());
-
-    if (openAiResponse != null && openAiResponse.isSuccess()) {
-      return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
-          .success(true)
-          .generatedMockExamResponseList(openAiResponse.getGeneratedMockExamResponseList())
-          .build());
     }
 
-    log.error("[CreateMockQuizService] Thread: {}. Failed to create mock exam from OpenAi.", Thread.currentThread().getName());
-    return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
-        .success(false)
-        .errorCode(CreateMockQuizErrorCode.ASYNC_FAILED_OPENAI_MOCK_EXAM_GENERATION)
-        .build());
-  }
+    private ResponseFormat createResponseFormat(CreateMockQuizRequest request) {
+        int quizCount = request.getQuizCount();
+        String quizType = request.getType().name();
+        TypeCategory category = request.getType().getTypeCategory();
 
-  private ResponseFormat createResponseFormat(CreateMockQuizRequest request) {
-    int quizCount = request.getQuizCount();
-    String quizType = request.getType().name();
-    TypeCategory category = request.getType().getTypeCategory();
-
-    if (category == TypeCategory.DESCRIPTIVE) {
-      return OpenAiResponseFormatUtil.createDescriptiveQuizResponseFormat(quizCount, quizType);
-    } else {
-      return OpenAiResponseFormatUtil.createSelectionQuizResponseFormat(quizCount, quizType);
+        if (category == TypeCategory.DESCRIPTIVE) {
+            return OpenAiResponseFormatUtil.createDescriptiveQuizResponseFormat(quizCount,
+                quizType);
+        } else {
+            return OpenAiResponseFormatUtil.createSelectionQuizResponseFormat(quizCount, quizType);
+        }
     }
-  }
 
-  @Getter
-  @RequiredArgsConstructor
-  public enum CreateMockQuizErrorCode implements BaseErrorCode<DomainException> {
+    @Getter
+    @RequiredArgsConstructor
+    public enum CreateMockQuizErrorCode implements BaseErrorCode<DomainException> {
 
-    NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    NOT_EXIST_PROMPT_PATH(HttpStatus.INTERNAL_SERVER_ERROR, "요청 유형의 프롬프트 주소가 존재하지 않습니다."),
-    ASYNC_FAILED_OPENAI_MOCK_EXAM_GENERATION(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버의 비동기 모의고사 생성 중 실패하였습니다.");
+        NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
+        NOT_EXIST_PROMPT_PATH(HttpStatus.INTERNAL_SERVER_ERROR, "요청 유형의 프롬프트 주소가 존재하지 않습니다."),
+        ASYNC_FAILED_OPENAI_MOCK_EXAM_GENERATION(HttpStatus.INTERNAL_SERVER_ERROR,
+            "OPENAI 서버의 비동기 모의고사 생성 중 실패하였습니다.");
 
-    private final HttpStatus httpStatus;
+        private final HttpStatus httpStatus;
 
-    private final String message;
+        private final String message;
 
-    @Override
-    public DomainException toException() {
-      return new DomainException(httpStatus, this);
+        @Override
+        public DomainException toException() {
+            return new DomainException(httpStatus, this);
+        }
     }
-  }
 
-  @Getter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class CreateMockQuizRequest implements BaseRequest {
-    private MockExamType type;
-    private int quizCount;
-    private String plainText;
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class CreateMockQuizRequest implements BaseRequest {
 
-    @Override
-    public boolean isValid() {
-      return type != null && plainText != null && !plainText.isEmpty() && quizCount > 0;
+        private MockExamType type;
+        private int quizCount;
+        private String plainText;
+
+        @Override
+        public boolean isValid() {
+            return type != null && plainText != null && !plainText.isEmpty() && quizCount > 0;
+        }
     }
-  }
 
-  @Getter
-  @SuperBuilder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class CreateMockQuizResponse extends BaseResponse<CreateMockQuizErrorCode>  {
-    private List<GeneratedMockExamResponse> generatedMockExamResponseList;
-  }
+    @Getter
+    @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class CreateMockQuizResponse extends BaseResponse<CreateMockQuizErrorCode> {
+
+        private List<GeneratedMockExamResponse> generatedMockExamResponseList;
+    }
 }

@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
-
 import org.springframework.web.multipart.MultipartFile;
 
 public class ByteArrayMultipartFile implements MultipartFile {
@@ -15,17 +14,17 @@ public class ByteArrayMultipartFile implements MultipartFile {
     private final String contentType;
 
     public ByteArrayMultipartFile(
-            String name,
-            String originalFilename,
-            String contentType,
-            byte[] content
+        String name,
+        String originalFilename,
+        String contentType,
+        byte[] content
     ) {
         this.name = name;
         this.originalFilename = originalFilename;
         this.contentType = contentType;
         this.content = Optional.ofNullable(content)
-                .map(arr -> arr.clone())
-                .orElse(null);
+            .map(arr -> arr.clone())
+            .orElse(null);
 
     }
 

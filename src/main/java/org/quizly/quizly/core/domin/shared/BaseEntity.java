@@ -26,16 +26,16 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class BaseEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @CreatedDate
-  private LocalDateTime createdAt;
+    @CreatedDate
+    private LocalDateTime createdAt;
 
-  @LastModifiedDate
-  private LocalDateTime updatedAt;
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
 
-  @Builder.Default
-  private Boolean deleted = false;
+    @Builder.Default
+    private Boolean deleted = false;
 }

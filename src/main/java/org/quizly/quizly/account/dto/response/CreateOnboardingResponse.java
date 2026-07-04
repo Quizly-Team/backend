@@ -12,7 +12,7 @@ import org.quizly.quizly.core.application.BaseResponse;
 @NoArgsConstructor
 @ToString
 public class CreateOnboardingResponse
-        extends BaseResponse<CreateOnboardingErrorCode> {
+    extends BaseResponse<CreateOnboardingErrorCode> {
 
     private Boolean onboardingCompleted;
 }

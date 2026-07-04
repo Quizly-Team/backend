@@ -1,12 +1,11 @@
 package org.quizly.quizly.mock.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,8 +25,8 @@ import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.core.util.AsyncTaskUtil;
 import org.quizly.quizly.core.util.TextProcessingUtil;
-import org.quizly.quizly.mock.dto.response.GeneratedMockExamResponse;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType;
+import org.quizly.quizly.mock.dto.response.GeneratedMockExamResponse;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService.CreateMemberMockExamRequest;
 import org.quizly.quizly.mock.service.CreateMemberMockExamService.CreateMemberMockExamResponse;
 import org.quizly.quizly.mock.service.CreateMockQuizService.CreateMockQuizRequest;
@@ -35,292 +34,308 @@ import org.quizly.quizly.mock.service.CreateMockQuizService.CreateMockQuizRespon
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
 @Log4j2
 @Service
 @RequiredArgsConstructor
 public class CreateMemberMockExamService implements
     BaseService<CreateMemberMockExamRequest, CreateMemberMockExamResponse> {
 
-  private final CreateMockQuizService createMockQuizService;
-  private final ReadUserService readUserService;
-  private final MockExamRepository mockExamRepository;
-  private final ObjectMapper objectMapper;
+    private final CreateMockQuizService createMockQuizService;
+    private final ReadUserService readUserService;
+    private final MockExamRepository mockExamRepository;
+    private final ObjectMapper objectMapper;
 
-  private static final int MIN_QUIZ_COUNT = 10;
-  private static final int MAX_QUIZ_COUNT = 30;
-  private static final int DEFAULT_MOCK_EXAM_BATCH_SIZE = 2;
-  private static final int DEFAULT_CHUNK_SIZE = 500;
-  private static final int DEFAULT_CHUNK_OVERLAP = 100;
-  private static final int MIN_CHUNK_SIZE = 200;
+    private static final int MIN_QUIZ_COUNT = 10;
+    private static final int MAX_QUIZ_COUNT = 30;
+    private static final int DEFAULT_MOCK_EXAM_BATCH_SIZE = 2;
+    private static final int DEFAULT_CHUNK_SIZE = 500;
+    private static final int DEFAULT_CHUNK_OVERLAP = 100;
+    private static final int MIN_CHUNK_SIZE = 200;
 
 
-  @Override
-  public CreateMemberMockExamResponse execute(CreateMemberMockExamRequest request) {
-    if (request == null || !request.isValid()) {
-      return CreateMemberMockExamResponse.builder()
-              .success(false)
-              .errorCode(CreateMemberMockExamErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
-              .build();
-    }
-    ReadUserService.ReadUserResponse readUserResponse = readUserService.execute(
-        ReadUserService.ReadUserRequest.builder()
-            .userPrincipal(request.getUserPrincipal())
-            .build()
-    );
+    @Override
+    public CreateMemberMockExamResponse execute(CreateMemberMockExamRequest request) {
+        if (request == null || !request.isValid()) {
+            return CreateMemberMockExamResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberMockExamErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
+                .build();
+        }
+        ReadUserService.ReadUserResponse readUserResponse = readUserService.execute(
+            ReadUserService.ReadUserRequest.builder()
+                .userPrincipal(request.getUserPrincipal())
+                .build()
+        );
 
-    if (!readUserResponse.isSuccess()) {
-      return CreateMemberMockExamResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberMockExamErrorCode.NOT_FOUND_USER)
-          .build();
-    }
-    User user = readUserResponse.getUser();
+        if (!readUserResponse.isSuccess()) {
+            return CreateMemberMockExamResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberMockExamErrorCode.NOT_FOUND_USER)
+                .build();
+        }
+        User user = readUserResponse.getUser();
 
-    String plainText = request.getPlainText();
-    List<String> chunkList = TextProcessingUtil.createChunkList(
+        String plainText = request.getPlainText();
+        List<String> chunkList = TextProcessingUtil.createChunkList(
             plainText,
             DEFAULT_CHUNK_SIZE,
             DEFAULT_CHUNK_OVERLAP
-    );
+        );
 
+        if (chunkList.isEmpty()) {
+            return CreateMemberMockExamResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberMockExamErrorCode.FAILED_CREATE_CHUNK)
+                .build();
+        }
 
+        postProcessingChunkList(chunkList);
+        int quizCount = calculateQuizCount(chunkList.size());
 
-    if (chunkList.isEmpty()) {
-      return CreateMemberMockExamResponse.builder()
-              .success(false)
-              .errorCode(CreateMemberMockExamErrorCode.FAILED_CREATE_CHUNK)
-              .build();
-    }
-
-    postProcessingChunkList(chunkList);
-    int quizCount = calculateQuizCount(chunkList.size());
-
-    List<CompletableFuture<CreateMockQuizResponse>> createMockQuizResponseFutureList = requestAsyncMockQuizTasks(
-        chunkList, request.getMockExamTypeList(), quizCount
-    );
-    CompletableFuture.allOf(createMockQuizResponseFutureList.toArray(new CompletableFuture[0])).join();
-    List<GeneratedMockExamResponse> generatedMockExamResponseList = AsyncTaskUtil.joinAsyncTasks(
-        createMockQuizResponseFutureList, response -> {
-          if (response.isSuccess()) {
-            return response.getGeneratedMockExamResponseList();
-          }
-          return null;
-        });
-
-    if (generatedMockExamResponseList.isEmpty() || generatedMockExamResponseList.size() < quizCount) {
-      log.error("[CreateMemberMockExamService] Failed to generate any mock exams from OpenAi after all async.");
-      return CreateMemberMockExamResponse.builder()
-          .success(false)
-          .errorCode(CreateMemberMockExamErrorCode.OPENAI_MOCK_EXAM_GENERATION_FAILED)
-          .build();
-    }
-
-    postProcessingFindMatch(generatedMockExamResponseList);
-    postProcessingFindCorrectAndIncorrect(generatedMockExamResponseList);
-
-    saveMockExam(generatedMockExamResponseList,user);
-
-    return CreateMemberMockExamResponse.builder()
-        .quizList(generatedMockExamResponseList)
-        .success(true)
-        .build();
-  }
-  private void saveMockExam(
-      List<GeneratedMockExamResponse> generatedMockExamResponseList,
-      User user
-  ) {
-    try {
-      String content = objectMapper.writeValueAsString(generatedMockExamResponseList);
-
-      MockExam mockExam = MockExam.builder()
-          .content(content)
-          .user(user)
-          .build();
-
-      mockExamRepository.saveAndFlush(mockExam);
-
-    } catch (JsonProcessingException e) {
-      log.warn(
-          "[CreateMemberMockExamService] Failed to serialize mock exam result. userId={}, generatedQuizCount={}",
-          user.getId(),
-          generatedMockExamResponseList.size(),
-          e
-      );
-    } catch (Exception e) {
-      log.warn(
-          "[CreateMemberMockExamService] Failed to save mock exam. userId={}, generatedQuizCount={}",
-          user.getId(),
-          generatedMockExamResponseList.size(),
-          e
-      );
-    }
-  }
-  private void postProcessingChunkList(List<String> chunkList) {
-    if (chunkList.size() <= 1) {
-      return;
-    }
-
-    int lastIndex = chunkList.size() - 1;
-    String lastChunk = chunkList.get(lastIndex);
-
-    if (lastChunk.length() <= MIN_CHUNK_SIZE) {
-      if (lastChunk.length() <= DEFAULT_CHUNK_OVERLAP) {
-        chunkList.remove(lastIndex);
-      } else {
-        String targetChunk = chunkList.get(lastIndex - 1);
-        chunkList.set(lastIndex - 1, targetChunk + lastChunk.substring(DEFAULT_CHUNK_OVERLAP));
-        chunkList.remove(lastIndex);
-      }
-    }
-  }
-
-  private List<CompletableFuture<CreateMockQuizResponse>> requestAsyncMockQuizTasks(
-      List<String> chunkList, List<MockExamType> mockExamTypeList, int quizCount) {
-
-    Collections.shuffle(chunkList);
-    List<CompletableFuture<CreateMockQuizResponse>> futures = new ArrayList<>();
-    int totalTasks = (quizCount + DEFAULT_MOCK_EXAM_BATCH_SIZE - 1) / DEFAULT_MOCK_EXAM_BATCH_SIZE;
-    int mockExamTypeListSize = mockExamTypeList.size();
-    int chunkListSize = chunkList.size();
-
-    for (int i = 0; i < totalTasks; i++) {
-      MockExamType mockExamType = mockExamTypeList.get(i % mockExamTypeListSize);
-      String selectedChunk = chunkList.get(i % chunkListSize);
-
-      CreateMockQuizRequest createMockQuizRequest = CreateMockQuizRequest.builder()
-          .type(mockExamType)
-          .quizCount(DEFAULT_MOCK_EXAM_BATCH_SIZE)
-          .plainText(selectedChunk)
-          .build();
-
-      CompletableFuture<CreateMockQuizResponse> future = createMockQuizService.execute(createMockQuizRequest);
-      futures.add(
-          future.exceptionally(ex -> {
-            log.error("[CreateMemberMockExamService] Async mock exam creation failed for chunk (length: {})", selectedChunk.length(), ex);
-            return null;
-          })
-      );
-    }
-    return futures;
-  }
-
-
-  private void postProcessingFindMatch(List<GeneratedMockExamResponse> responseList) {
-    responseList.stream()
-        .filter(quiz -> quiz.getType() == MockExamType.FIND_MATCH)
-        .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
-        .forEach(quiz -> {
-          if (quiz.getOptions().isEmpty()) {
-            quiz.getOptions().add(quiz.getAnswer());
-          }
-          else {
-            quiz.getOptions().set(0, quiz.getAnswer());
-          }
-        });
-
-    responseList.stream()
-        .filter(quiz -> quiz.getType() == MockExamType.FIND_MATCH)
-        .forEach(quiz -> {
-          if (quiz.getOptions() != null) {
-            quiz.getOptions().sort((o1, o2) -> {
-              int count1 = countItems(o1);
-              int count2 = countItems(o2);
-              if (count1 != count2) {
-                return Integer.compare(count1, count2);
-              }
-              return o1.compareTo(o2);
+        List<CompletableFuture<CreateMockQuizResponse>> createMockQuizResponseFutureList = requestAsyncMockQuizTasks(
+            chunkList, request.getMockExamTypeList(), quizCount
+        );
+        CompletableFuture.allOf(createMockQuizResponseFutureList.toArray(new CompletableFuture[0]))
+            .join();
+        List<GeneratedMockExamResponse> generatedMockExamResponseList = AsyncTaskUtil.joinAsyncTasks(
+            createMockQuizResponseFutureList, response -> {
+                if (response.isSuccess()) {
+                    return response.getGeneratedMockExamResponseList();
+                }
+                return null;
             });
-          }
-        });
-  }
 
-  private void postProcessingFindCorrectAndIncorrect(List<GeneratedMockExamResponse> responseList) {
-    responseList.stream()
-        .filter(quiz -> quiz.getType() == MockExamType.FIND_CORRECT
-            || quiz.getType() == MockExamType.FIND_INCORRECT)
-        .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
-        .forEach(quiz -> {
-          if (quiz.getOptions().isEmpty()) {
-            quiz.getOptions().add(quiz.getAnswer());
-          } else {
-            quiz.getOptions().set(0, quiz.getAnswer());
-          }
-        });
+        if (generatedMockExamResponseList.isEmpty()
+            || generatedMockExamResponseList.size() < quizCount) {
+            log.error(
+                "[CreateMemberMockExamService] Failed to generate any mock exams from OpenAi after all async.");
+            return CreateMemberMockExamResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberMockExamErrorCode.OPENAI_MOCK_EXAM_GENERATION_FAILED)
+                .build();
+        }
 
-    responseList.stream()
-        .filter(quiz -> quiz.getType() == MockExamType.FIND_CORRECT
-            || quiz.getType() == MockExamType.FIND_INCORRECT)
-        .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().isEmpty())
-        .forEach(quiz -> Collections.shuffle(quiz.getOptions()));
-  }
+        postProcessingFindMatch(generatedMockExamResponseList);
+        postProcessingFindCorrectAndIncorrect(generatedMockExamResponseList);
 
-  private int countItems(String option) {
-    if (option == null) {
-      return 0;
+        saveMockExam(generatedMockExamResponseList, user);
+
+        return CreateMemberMockExamResponse.builder()
+            .quizList(generatedMockExamResponseList)
+            .success(true)
+            .build();
     }
-    return option.replaceAll("[\\s,]", "").length();
-  }
 
-  private int calculateQuizCount(int listSize) {
-    int quizCount = listSize * DEFAULT_MOCK_EXAM_BATCH_SIZE;
+    private void saveMockExam(
+        List<GeneratedMockExamResponse> generatedMockExamResponseList,
+        User user
+    ) {
+        try {
+            String content = objectMapper.writeValueAsString(generatedMockExamResponseList);
 
-    if (quizCount < MIN_QUIZ_COUNT) return MIN_QUIZ_COUNT;
-    if (quizCount > MAX_QUIZ_COUNT) return MAX_QUIZ_COUNT;
-    return quizCount;
-  }
+            MockExam mockExam = MockExam.builder()
+                .content(content)
+                .user(user)
+                .build();
 
-  @Getter
-  @RequiredArgsConstructor
-  public enum CreateMemberMockExamErrorCode implements BaseErrorCode<DomainException> {
+            mockExamRepository.saveAndFlush(mockExam);
 
-    NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-    NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
-    INVALID_QUIZ_COUNT_RANGE(HttpStatus.BAD_REQUEST, "모의고사 문제 개수는 10개 이상 30개 이하여야 합니다."),
-    FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 입력을 chunk 단위 분리에 실패하였습니다."),
-    OPENAI_MOCK_EXAM_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버에서 모의고사 생성에 실패하였습니다."),
-    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.");
-
-    private final HttpStatus httpStatus;
-
-    private final String message;
-
-    @Override
-    public DomainException toException() {
-      return new DomainException(httpStatus, this);
+        } catch (JsonProcessingException e) {
+            log.warn(
+                "[CreateMemberMockExamService] Failed to serialize mock exam result. userId={}, generatedQuizCount={}",
+                user.getId(),
+                generatedMockExamResponseList.size(),
+                e
+            );
+        } catch (Exception e) {
+            log.warn(
+                "[CreateMemberMockExamService] Failed to save mock exam. userId={}, generatedQuizCount={}",
+                user.getId(),
+                generatedMockExamResponseList.size(),
+                e
+            );
+        }
     }
-  }
 
-  @Getter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class CreateMemberMockExamRequest implements BaseRequest {
+    private void postProcessingChunkList(List<String> chunkList) {
+        if (chunkList.size() <= 1) {
+            return;
+        }
 
-    private String plainText;
+        int lastIndex = chunkList.size() - 1;
+        String lastChunk = chunkList.get(lastIndex);
 
-    private List<MockExamType> mockExamTypeList;
-
-    private UserPrincipal userPrincipal;
-
-    private Integer quizCount;
-
-    @Override
-    public boolean isValid() {
-      return plainText != null && !plainText.isBlank()
-              && mockExamTypeList != null && !mockExamTypeList.isEmpty()
-              && userPrincipal != null;
+        if (lastChunk.length() <= MIN_CHUNK_SIZE) {
+            if (lastChunk.length() <= DEFAULT_CHUNK_OVERLAP) {
+                chunkList.remove(lastIndex);
+            } else {
+                String targetChunk = chunkList.get(lastIndex - 1);
+                chunkList.set(lastIndex - 1,
+                    targetChunk + lastChunk.substring(DEFAULT_CHUNK_OVERLAP));
+                chunkList.remove(lastIndex);
+            }
+        }
     }
-  }
 
-  @Getter
-  @SuperBuilder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @ToString
-  public static class CreateMemberMockExamResponse extends
-      BaseResponse<CreateMemberMockExamErrorCode> {
+    private List<CompletableFuture<CreateMockQuizResponse>> requestAsyncMockQuizTasks(
+        List<String> chunkList, List<MockExamType> mockExamTypeList, int quizCount) {
 
-    private List<GeneratedMockExamResponse> quizList;
-  }
+        Collections.shuffle(chunkList);
+        List<CompletableFuture<CreateMockQuizResponse>> futures = new ArrayList<>();
+        int totalTasks =
+            (quizCount + DEFAULT_MOCK_EXAM_BATCH_SIZE - 1) / DEFAULT_MOCK_EXAM_BATCH_SIZE;
+        int mockExamTypeListSize = mockExamTypeList.size();
+        int chunkListSize = chunkList.size();
+
+        for (int i = 0; i < totalTasks; i++) {
+            MockExamType mockExamType = mockExamTypeList.get(i % mockExamTypeListSize);
+            String selectedChunk = chunkList.get(i % chunkListSize);
+
+            CreateMockQuizRequest createMockQuizRequest = CreateMockQuizRequest.builder()
+                .type(mockExamType)
+                .quizCount(DEFAULT_MOCK_EXAM_BATCH_SIZE)
+                .plainText(selectedChunk)
+                .build();
+
+            CompletableFuture<CreateMockQuizResponse> future = createMockQuizService.execute(
+                createMockQuizRequest);
+            futures.add(
+                future.exceptionally(ex -> {
+                    log.error(
+                        "[CreateMemberMockExamService] Async mock exam creation failed for chunk (length: {})",
+                        selectedChunk.length(), ex);
+                    return null;
+                })
+            );
+        }
+        return futures;
+    }
+
+
+    private void postProcessingFindMatch(List<GeneratedMockExamResponse> responseList) {
+        responseList.stream()
+            .filter(quiz -> quiz.getType() == MockExamType.FIND_MATCH)
+            .filter(
+                quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
+            .forEach(quiz -> {
+                if (quiz.getOptions().isEmpty()) {
+                    quiz.getOptions().add(quiz.getAnswer());
+                } else {
+                    quiz.getOptions().set(0, quiz.getAnswer());
+                }
+            });
+
+        responseList.stream()
+            .filter(quiz -> quiz.getType() == MockExamType.FIND_MATCH)
+            .forEach(quiz -> {
+                if (quiz.getOptions() != null) {
+                    quiz.getOptions().sort((o1, o2) -> {
+                        int count1 = countItems(o1);
+                        int count2 = countItems(o2);
+                        if (count1 != count2) {
+                            return Integer.compare(count1, count2);
+                        }
+                        return o1.compareTo(o2);
+                    });
+                }
+            });
+    }
+
+    private void postProcessingFindCorrectAndIncorrect(
+        List<GeneratedMockExamResponse> responseList) {
+        responseList.stream()
+            .filter(quiz -> quiz.getType() == MockExamType.FIND_CORRECT
+                || quiz.getType() == MockExamType.FIND_INCORRECT)
+            .filter(
+                quiz -> quiz.getOptions() != null && !quiz.getOptions().contains(quiz.getAnswer()))
+            .forEach(quiz -> {
+                if (quiz.getOptions().isEmpty()) {
+                    quiz.getOptions().add(quiz.getAnswer());
+                } else {
+                    quiz.getOptions().set(0, quiz.getAnswer());
+                }
+            });
+
+        responseList.stream()
+            .filter(quiz -> quiz.getType() == MockExamType.FIND_CORRECT
+                || quiz.getType() == MockExamType.FIND_INCORRECT)
+            .filter(quiz -> quiz.getOptions() != null && !quiz.getOptions().isEmpty())
+            .forEach(quiz -> Collections.shuffle(quiz.getOptions()));
+    }
+
+    private int countItems(String option) {
+        if (option == null) {
+            return 0;
+        }
+        return option.replaceAll("[\\s,]", "").length();
+    }
+
+    private int calculateQuizCount(int listSize) {
+        int quizCount = listSize * DEFAULT_MOCK_EXAM_BATCH_SIZE;
+
+      if (quizCount < MIN_QUIZ_COUNT) {
+        return MIN_QUIZ_COUNT;
+      }
+      if (quizCount > MAX_QUIZ_COUNT) {
+        return MAX_QUIZ_COUNT;
+      }
+        return quizCount;
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum CreateMemberMockExamErrorCode implements BaseErrorCode<DomainException> {
+
+        NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
+        NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
+        INVALID_QUIZ_COUNT_RANGE(HttpStatus.BAD_REQUEST, "모의고사 문제 개수는 10개 이상 30개 이하여야 합니다."),
+        FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "사용자 입력을 chunk 단위 분리에 실패하였습니다."),
+        OPENAI_MOCK_EXAM_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,
+            "OPENAI 서버에서 모의고사 생성에 실패하였습니다."),
+        NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.");
+
+        private final HttpStatus httpStatus;
+
+        private final String message;
+
+        @Override
+        public DomainException toException() {
+            return new DomainException(httpStatus, this);
+        }
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class CreateMemberMockExamRequest implements BaseRequest {
+
+        private String plainText;
+
+        private List<MockExamType> mockExamTypeList;
+
+        private UserPrincipal userPrincipal;
+
+        private Integer quizCount;
+
+        @Override
+        public boolean isValid() {
+            return plainText != null && !plainText.isBlank()
+                && mockExamTypeList != null && !mockExamTypeList.isEmpty()
+                && userPrincipal != null;
+        }
+    }
+
+    @Getter
+    @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class CreateMemberMockExamResponse extends
+        BaseResponse<CreateMemberMockExamErrorCode> {
+
+        private List<GeneratedMockExamResponse> quizList;
+    }
 }

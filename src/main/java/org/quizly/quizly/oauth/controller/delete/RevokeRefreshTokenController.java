@@ -26,44 +26,44 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Auth", description = "인증")
 public class RevokeRefreshTokenController {
 
-  private final RevokeRefreshTokenService revokeRefreshTokenService;
+    private final RevokeRefreshTokenService revokeRefreshTokenService;
 
-  @Operation(
-      summary = "리프레시 토큰 무효화 API (로그아웃)",
-      description = "인증된 사용자의 리프레시 토큰을 무효화하고 쿠키를 삭제합니다.",
-      operationId = "/auth/logout"
-  )
-  @DeleteMapping("/auth/logout")
-  @ApiErrorCode(errorCodes = {GlobalErrorCode.class, RevokeRefreshTokenErrorCode.class})
-  public ResponseEntity<Void> revokeRefreshToken(
-      @AuthenticationPrincipal UserPrincipal userPrincipal,
-      HttpServletResponse response
-  ) {
+    @Operation(
+        summary = "리프레시 토큰 무효화 API (로그아웃)",
+        description = "인증된 사용자의 리프레시 토큰을 무효화하고 쿠키를 삭제합니다.",
+        operationId = "/auth/logout"
+    )
+    @DeleteMapping("/auth/logout")
+    @ApiErrorCode(errorCodes = {GlobalErrorCode.class, RevokeRefreshTokenErrorCode.class})
+    public ResponseEntity<Void> revokeRefreshToken(
+        @AuthenticationPrincipal UserPrincipal userPrincipal,
+        HttpServletResponse response
+    ) {
 
-    var serviceResponse = revokeRefreshTokenService.execute( RevokeRefreshTokenRequest.builder()
-        .userId(userPrincipal.getUserId())
-        .build());
+        var serviceResponse = revokeRefreshTokenService.execute(RevokeRefreshTokenRequest.builder()
+            .userId(userPrincipal.getUserId())
+            .build());
 
-    if (!serviceResponse.isSuccess()) {
-      Optional.of(serviceResponse)
-          .map(BaseResponse::getErrorCode)
-          .ifPresent(errorCode -> {
-            throw errorCode.toException();
-          });
+        if (!serviceResponse.isSuccess()) {
+            Optional.of(serviceResponse)
+                .map(BaseResponse::getErrorCode)
+                .ifPresent(errorCode -> {
+                    throw errorCode.toException();
+                });
+        }
+
+        log.info("[AUTH] Logout - userId: {}", userPrincipal.getUserId());
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+            .httpOnly(true)
+            .secure(true)
+            .path("/")
+            .sameSite("Lax")
+            .maxAge(0)
+            .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ResponseEntity.ok().build();
     }
-
-    log.info("[AUTH] Logout - userId: {}", userPrincipal.getUserId());
-
-    ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-        .httpOnly(true)
-        .secure(true)
-        .path("/")
-        .sameSite("Lax")
-        .maxAge(0)
-        .build();
-
-    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-
-    return ResponseEntity.ok().build();
-  }
 }

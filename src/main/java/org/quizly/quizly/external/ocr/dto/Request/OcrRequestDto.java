@@ -1,10 +1,9 @@
 package org.quizly.quizly.external.ocr.dto.Request;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Getter
 @NoArgsConstructor
@@ -20,6 +19,7 @@ public class OcrRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Image {
+
         private String format;
         private String name;
     }

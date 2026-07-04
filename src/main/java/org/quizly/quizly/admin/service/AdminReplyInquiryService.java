@@ -1,6 +1,14 @@
 package org.quizly.quizly.admin.service;
 
-import lombok.*;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.core.application.BaseRequest;
@@ -16,14 +24,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Log4j2
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class AdminReplyInquiryService implements BaseService<AdminReplyInquiryService.AdminReplyInquiryRequest, AdminReplyInquiryService.AdminReplyInquiryResponse> {
+public class AdminReplyInquiryService implements
+    BaseService<AdminReplyInquiryService.AdminReplyInquiryRequest, AdminReplyInquiryService.AdminReplyInquiryResponse> {
 
     private final InquiryRepository inquiryRepository;
     private final EmailService emailService;
@@ -31,7 +37,7 @@ public class AdminReplyInquiryService implements BaseService<AdminReplyInquirySe
     @Override
     public AdminReplyInquiryResponse execute(AdminReplyInquiryRequest request) {
 
-        if(request == null || !request.isValid()){
+        if (request == null || !request.isValid()) {
             return AdminReplyInquiryResponse.builder()
                 .success(false)
                 .errorCode(AdminReplyInquiryErrorCode.NOT_EXIST_REQUIRED_PARAMETER)
@@ -44,11 +50,10 @@ public class AdminReplyInquiryService implements BaseService<AdminReplyInquirySe
 
         User user = inquiry.getUser();
 
-
-        if(user != null && user.getEmail() != null){
-            Map<String,Object> variables = new HashMap<>();
+        if (user != null && user.getEmail() != null) {
+            Map<String, Object> variables = new HashMap<>();
             String nickname = user.getNickName() != null ? user.getNickName() : "고객";
-            String defaultTitle = String.format("%s님, 문의 하신 내용에 답변이 완료되었습니다.",nickname);
+            String defaultTitle = String.format("%s님, 문의 하신 내용에 답변이 완료되었습니다.", nickname);
             variables.put("title", defaultTitle);
             variables.put("replyContent", inquiry.getReply());
             variables.put("inquiryTitle", inquiry.getTitle());
@@ -78,7 +83,8 @@ public class AdminReplyInquiryService implements BaseService<AdminReplyInquirySe
             .inquiryId(inquiry.getId())
             .title(inquiry.getTitle())
             .reply(inquiry.getReply())
-            .repliedAt(inquiry.getRepliedAt().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+            .repliedAt(inquiry.getRepliedAt()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
             .build();
 
     }
@@ -122,7 +128,9 @@ public class AdminReplyInquiryService implements BaseService<AdminReplyInquirySe
     @NoArgsConstructor
     @AllArgsConstructor
     @ToString
-    public static class AdminReplyInquiryResponse extends BaseResponse<AdminReplyInquiryService.AdminReplyInquiryErrorCode> {
+    public static class AdminReplyInquiryResponse extends
+        BaseResponse<AdminReplyInquiryService.AdminReplyInquiryErrorCode> {
+
         private Long inquiryId;
         private String title;
         private String reply;

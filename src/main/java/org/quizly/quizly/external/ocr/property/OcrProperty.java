@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "ocr.api")
 public class OcrProperty {
+
     private String url;
     private String secret;
 }

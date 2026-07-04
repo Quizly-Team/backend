@@ -6,6 +6,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,8 +15,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.domin.shared.BaseEntity;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -26,29 +25,29 @@ import java.time.LocalDateTime;
 @Table(name = "solve_history")
 public class SolveHistory extends BaseEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "quiz_id", nullable = false)
-  private Quiz quiz;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quiz_id", nullable = false)
+    private Quiz quiz;
 
-  @Column(nullable = true)
-  private Boolean isCorrect;
+    @Column(nullable = true)
+    private Boolean isCorrect;
 
-  @Column(nullable = true)
-  private String userAnswer;
+    @Column(nullable = true)
+    private String userAnswer;
 
-  @Column(nullable = true)
-  private Double solveTime;
+    @Column(nullable = true)
+    private Double solveTime;
 
-  @Column(nullable = true)
-  private LocalDateTime submittedAt;
+    @Column(nullable = true)
+    private LocalDateTime submittedAt;
 
-  @Column(nullable = false)
-  @Builder.Default
-  @Setter(AccessLevel.NONE)
-  private boolean isFirst = true;
+    @Column(nullable = false)
+    @Builder.Default
+    @Setter(AccessLevel.NONE)
+    private boolean isFirst = true;
 
 }

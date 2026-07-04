@@ -1,6 +1,11 @@
 package org.quizly.quizly.account.service;
 
-import lombok.*;
+import java.time.LocalDate;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.core.application.BaseRequest;
@@ -17,19 +22,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-
 @Log4j2
 @Service
 @RequiredArgsConstructor
 @Transactional(propagation = Propagation.REQUIRES_NEW)
-public class CreateAiAnalysisService implements BaseService<CreateAiAnalysisService.CreateAiAnalysisRequest,CreateAiAnalysisService.CreateAiAnalysisResponse> {
+public class CreateAiAnalysisService implements
+    BaseService<CreateAiAnalysisService.CreateAiAnalysisRequest, CreateAiAnalysisService.CreateAiAnalysisResponse> {
 
     private final CreateTextOpenAiService createTextOpenAiService;
     private final AiAnalysisRepository aiAnalysisRepository;
+
     @Override
-    public CreateAiAnalysisService.CreateAiAnalysisResponse execute(CreateAiAnalysisRequest request) {
-        if(request == null || !request.isValid()){
+    public CreateAiAnalysisService.CreateAiAnalysisResponse execute(
+        CreateAiAnalysisRequest request) {
+        if (request == null || !request.isValid()) {
             return CreateAiAnalysisResponse.builder()
                 .success(false)
                 .errorCode(CreateAiAnalysisErrorCode.INVALID_PARAMETER)
@@ -43,7 +49,7 @@ public class CreateAiAnalysisService implements BaseService<CreateAiAnalysisServ
                 .build()
         );
 
-        if(!openAiResponse.isSuccess()) {
+        if (!openAiResponse.isSuccess()) {
             return CreateAiAnalysisResponse.builder()
                 .success(false)
                 .errorCode(CreateAiAnalysisErrorCode.ANALYSIS_FAILED)
@@ -76,13 +82,16 @@ public class CreateAiAnalysisService implements BaseService<CreateAiAnalysisServ
         private final String message;
 
         @Override
-        public DomainException toException() { return new DomainException(httpStatus, this); }
+        public DomainException toException() {
+            return new DomainException(httpStatus, this);
+        }
     }
 
     @Getter
     @Builder
     @AllArgsConstructor
     public static class CreateAiAnalysisRequest implements BaseRequest {
+
         private final User user;
         private final int solvedCount;
         private final String analysisTargetText;
@@ -90,7 +99,8 @@ public class CreateAiAnalysisService implements BaseService<CreateAiAnalysisServ
 
         @Override
         public boolean isValid() {
-            return user != null && analysisTargetText != null && !analysisTargetText.isBlank() && promptPath != null && !promptPath.isBlank();
+            return user != null && analysisTargetText != null && !analysisTargetText.isBlank()
+                && promptPath != null && !promptPath.isBlank();
         }
     }
 
@@ -99,6 +109,7 @@ public class CreateAiAnalysisService implements BaseService<CreateAiAnalysisServ
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateAiAnalysisResponse extends BaseResponse<CreateAiAnalysisErrorCode> {
+
         private String analysisResult;
     }
 }

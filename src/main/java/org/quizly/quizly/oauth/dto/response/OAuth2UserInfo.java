@@ -2,11 +2,11 @@ package org.quizly.quizly.oauth.dto.response;
 
 public interface OAuth2UserInfo {
 
-  String getProvider();
+    String getProvider();
 
-  String getProviderId();
+    String getProviderId();
 
-  String getEmail();
+    String getEmail();
 
-  String getNickname();
+    String getNickname();
 }

@@ -49,7 +49,8 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
         Assert.hasText(conversationId, "conversationId must not be empty");
         Assert.notNull(messages, "messages must not be null");
         String json = serializeMessages(messages);
-        redisTemplate.opsForValue().set(KEY_PREFIX + conversationId, json, TTL_HOURS, TimeUnit.HOURS);
+        redisTemplate.opsForValue()
+            .set(KEY_PREFIX + conversationId, json, TTL_HOURS, TimeUnit.HOURS);
     }
 
     @Override
@@ -77,7 +78,8 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
     private List<Message> deserializeMessages(String json) {
         try {
             List<Map<String, String>> raw = objectMapper.readValue(json,
-                new TypeReference<>() {});
+                new TypeReference<>() {
+                });
             return raw.stream()
                 .map(entry -> {
                     MessageType type = MessageType.valueOf(entry.get("type"));
@@ -87,7 +89,9 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
                         case ASSISTANT -> new AssistantMessage(text);
                         case SYSTEM -> new SystemMessage(text);
                         default -> {
-                            log.warn("[RedisChatMemoryRepository] Unexpected message type: {}, skipping", type);
+                            log.warn(
+                                "[RedisChatMemoryRepository] Unexpected message type: {}, skipping",
+                                type);
                             yield new UserMessage(text);
                         }
                     };

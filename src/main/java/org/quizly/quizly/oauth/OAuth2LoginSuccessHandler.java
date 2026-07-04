@@ -29,60 +29,61 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
-  private final JwtProvider jwtProvider;
-  private final RefreshTokenRepository refreshTokenRepository;
-  private final UserRepository userRepository;
-  private final ObjectMapper objectMapper;
+    private final JwtProvider jwtProvider;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
-  @Value("${jwt.refresh-token-expiration}")
-  private Long refreshTokenExpiration;
+    @Value("${jwt.refresh-token-expiration}")
+    private Long refreshTokenExpiration;
 
 
-  @Override
-  @Transactional
-  public void onAuthenticationSuccess(
-      HttpServletRequest request,
-      HttpServletResponse response,
-      Authentication authentication) throws IOException, ServletException {
+    @Override
+    @Transactional
+    public void onAuthenticationSuccess(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        Authentication authentication) throws IOException, ServletException {
 
-    UserPrincipal customUserDetails = (UserPrincipal) authentication.getPrincipal();
+        UserPrincipal customUserDetails = (UserPrincipal) authentication.getPrincipal();
 
-    Long userId = customUserDetails.getUserId();
+        Long userId = customUserDetails.getUserId();
 
-    User user = userRepository.findById(userId)
-        .orElseThrow(() -> new IllegalStateException("User not found"));
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalStateException("User not found"));
 
-    String role = authentication.getAuthorities().stream()
-        .findFirst()
-        .map(GrantedAuthority::getAuthority)
-        .orElseThrow(() -> new IllegalStateException("User has no authorities"));
+        String role = authentication.getAuthorities().stream()
+            .findFirst()
+            .map(GrantedAuthority::getAuthority)
+            .orElseThrow(() -> new IllegalStateException("User has no authorities"));
 
-    String accessToken = jwtProvider.generateAccessToken(userId, role);
-    String refreshToken = jwtProvider.generateRefreshToken(userId);
+        String accessToken = jwtProvider.generateAccessToken(userId, role);
+        String refreshToken = jwtProvider.generateRefreshToken(userId);
 
-    log.info("[OAuth2LoginSuccessHandler] Login successful - userId: {}, provider: {}", user.getId(), user.getProvider());
+        log.info("[OAuth2LoginSuccessHandler] Login successful - userId: {}, provider: {}",
+            user.getId(), user.getProvider());
 
-    Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByUserId(userId);
-    if (refreshTokenOptional.isPresent()) {
-      refreshTokenOptional.get().setToken(refreshToken);
-    } else {
-      refreshTokenRepository.save(new RefreshToken(userId, refreshToken));
+        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByUserId(userId);
+        if (refreshTokenOptional.isPresent()) {
+            refreshTokenOptional.get().setToken(refreshToken);
+        } else {
+            refreshTokenRepository.save(new RefreshToken(userId, refreshToken));
+        }
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+            .httpOnly(true)
+            .secure(true)
+            .path("/")
+            .sameSite("Lax")
+            .maxAge(refreshTokenExpiration / 1000)
+            .build();
+
+        Map<String, String> tokenMap = new HashMap<>();
+        tokenMap.put("accessToken", accessToken);
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(objectMapper.writeValueAsString(tokenMap));
     }
-
-    ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
-        .httpOnly(true)
-        .secure(true)
-        .path("/")
-        .sameSite("Lax")
-        .maxAge(refreshTokenExpiration / 1000)
-        .build();
-
-    Map<String, String> tokenMap = new HashMap<>();
-    tokenMap.put("accessToken", accessToken);
-
-    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-    response.setContentType("application/json");
-    response.setCharacterEncoding("UTF-8");
-    response.getWriter().write(objectMapper.writeValueAsString(tokenMap));
-  }
 }
