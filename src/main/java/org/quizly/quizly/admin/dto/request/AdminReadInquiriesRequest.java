@@ -3,7 +3,7 @@ package org.quizly.quizly.admin.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
-import org.quizly.quizly.core.domin.entity.Inquiry;
+import org.quizly.quizly.core.domain.entity.Inquiry;
 import org.quizly.quizly.core.presentation.BasePaginationRequest;
 
 @Getter

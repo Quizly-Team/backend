@@ -9,7 +9,7 @@ import org.quizly.quizly.admin.service.DeleteFaqService.DeleteFaqResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
-import org.quizly.quizly.core.domin.repository.FaqRepository;
+import org.quizly.quizly.core.domain.repository.FaqRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.springframework.http.HttpStatus;

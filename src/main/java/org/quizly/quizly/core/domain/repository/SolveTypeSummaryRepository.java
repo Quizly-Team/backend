@@ -1,11 +1,11 @@
-package org.quizly.quizly.core.domin.repository;
+package org.quizly.quizly.core.domain.repository;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import org.quizly.quizly.core.domin.entity.Quiz.QuizType;
-import org.quizly.quizly.core.domin.entity.SolveTypeSummary;
-import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.core.domain.entity.Quiz.QuizType;
+import org.quizly.quizly.core.domain.entity.SolveTypeSummary;
+import org.quizly.quizly.core.domain.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

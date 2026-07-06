@@ -1,6 +1,6 @@
 package org.quizly.quizly.oauth.message;
 
-import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.core.domain.entity.User;
 import org.quizly.quizly.core.notification.NotificationChannel;
 import org.quizly.quizly.core.notification.NotificationMessage;
 

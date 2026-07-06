@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.application.BaseRequest;
-import org.quizly.quizly.core.domin.entity.Faq.FaqCategory;
+import org.quizly.quizly.core.domain.entity.Faq.FaqCategory;
 
 @Getter
 @SuperBuilder

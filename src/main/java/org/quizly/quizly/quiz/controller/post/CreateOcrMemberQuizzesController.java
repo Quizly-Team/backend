@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.core.application.BaseResponse;
-import org.quizly.quizly.core.domin.entity.Quiz;
+import org.quizly.quizly.core.domain.entity.Quiz;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.external.ocr.service.ClovaOcrService;
 import org.quizly.quizly.external.ocr.service.ExtractTextFromOcrService;

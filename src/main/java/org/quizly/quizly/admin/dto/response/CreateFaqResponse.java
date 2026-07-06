@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.application.BaseResponse;
-import org.quizly.quizly.core.domin.entity.Faq.FaqCategory;
+import org.quizly.quizly.core.domain.entity.Faq.FaqCategory;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 
 @Getter

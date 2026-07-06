@@ -13,7 +13,7 @@ import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
 import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
-import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.core.domain.entity.User;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.springframework.http.ResponseEntity;

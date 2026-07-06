@@ -7,7 +7,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
-import org.quizly.quizly.core.domin.entity.Quiz;
+import org.quizly.quizly.core.domain.entity.Quiz;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.quiz.dto.request.CreateQuizzesRequest;

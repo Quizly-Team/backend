@@ -1,4 +1,4 @@
-package org.quizly.quizly.core.domin.entity;
+package org.quizly.quizly.core.domain.entity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import org.quizly.quizly.core.domin.shared.BaseEntity;
+import org.quizly.quizly.core.domain.shared.BaseEntity;
 
 @Getter
 @Setter
