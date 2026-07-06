@@ -25,7 +25,7 @@ import okhttp3.ResponseBody;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
-import org.quizly.quizly.core.domin.entity.Quiz;
+import org.quizly.quizly.core.domain.entity.Quiz;
 import org.quizly.quizly.core.util.TextResourceReaderUtil;
 import org.quizly.quizly.core.util.okhttp.OkHttpJsonRequest;
 import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest;

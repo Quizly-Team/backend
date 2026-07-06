@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.quizly.quizly.core.application.BaseRequest;
-import org.quizly.quizly.core.domin.entity.Quiz;
+import org.quizly.quizly.core.domain.entity.Quiz;
 
 @Getter
 @Setter

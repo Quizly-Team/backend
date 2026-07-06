@@ -1,8 +1,8 @@
-package org.quizly.quizly.core.domin.repository;
+package org.quizly.quizly.core.domain.repository;
 
 import java.util.Optional;
-import org.quizly.quizly.core.domin.entity.AiAnalysis;
-import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.core.domain.entity.AiAnalysis;
+import org.quizly.quizly.core.domain.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AiAnalysisRepository extends JpaRepository<AiAnalysis, Long> {

@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.quizly.quizly.core.domin.entity.Quiz.QuizType;
+import org.quizly.quizly.core.domain.entity.Quiz.QuizType;
 
 @Getter
 @Builder

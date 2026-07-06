@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
-import org.quizly.quizly.core.domin.repository.RefreshTokenRepository;
+import org.quizly.quizly.core.domain.repository.RefreshTokenRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.service.RevokeRefreshTokenService.RevokeRefreshTokenRequest;
