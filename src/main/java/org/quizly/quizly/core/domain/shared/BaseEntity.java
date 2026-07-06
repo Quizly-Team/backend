@@ -1,4 +1,4 @@
-package org.quizly.quizly.core.domin.shared;
+package org.quizly.quizly.core.domain.shared;
 
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;

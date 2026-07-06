@@ -1,4 +1,4 @@
-package org.quizly.quizly.core.domin.repository.redis;
+package org.quizly.quizly.core.domain.repository.redis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

@@ -4,7 +4,7 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.quizly.quizly.core.domin.entity.Quiz;
+import org.quizly.quizly.core.domain.entity.Quiz;
 
 @Getter
 @NoArgsConstructor

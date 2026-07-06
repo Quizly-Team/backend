@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.application.BaseResponse;
-import org.quizly.quizly.core.domin.entity.Inquiry;
+import org.quizly.quizly.core.domain.entity.Inquiry;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.core.presentation.Pagination;
 

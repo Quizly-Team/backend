@@ -1,8 +1,8 @@
-package org.quizly.quizly.core.domin.repository;
+package org.quizly.quizly.core.domain.repository;
 
 import java.util.List;
-import org.quizly.quizly.core.domin.entity.Inquiry;
-import org.quizly.quizly.core.domin.entity.User;
+import org.quizly.quizly.core.domain.entity.Inquiry;
+import org.quizly.quizly.core.domain.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

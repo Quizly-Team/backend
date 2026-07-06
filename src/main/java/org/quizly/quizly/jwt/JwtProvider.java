@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
-import org.quizly.quizly.core.domin.entity.User.Role;
+import org.quizly.quizly.core.domain.entity.User.Role;
 import org.quizly.quizly.jwt.error.AuthErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.springframework.beans.factory.annotation.Value;

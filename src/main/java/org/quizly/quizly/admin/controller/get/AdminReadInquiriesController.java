@@ -10,7 +10,7 @@ import org.quizly.quizly.admin.dto.response.AdminReadInquiriesResponse;
 import org.quizly.quizly.admin.service.AdminReadInquiriesService;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
-import org.quizly.quizly.core.domin.entity.Inquiry;
+import org.quizly.quizly.core.domain.entity.Inquiry;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.core.presentation.Pagination;
 import org.springframework.http.ResponseEntity;
