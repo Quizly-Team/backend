@@ -63,7 +63,7 @@ public class ReissueAccessTokenController {
             .httpOnly(true)
             .secure(true)
             .path("/")
-            .sameSite("Lax")
+            .sameSite("Strict")
             .maxAge((int) (refreshTokenExpiration / 1000))
             .build();
 

@@ -58,7 +58,7 @@ public class RevokeRefreshTokenController {
             .httpOnly(true)
             .secure(true)
             .path("/")
-            .sameSite("Lax")
+            .sameSite("Strict")
             .maxAge(0)
             .build();
 
