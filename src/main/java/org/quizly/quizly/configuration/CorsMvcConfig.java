@@ -11,9 +11,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 public class CorsMvcConfig {
 
-    @Value("${custom.oauth2.front-redirect-url}")
-    private String frontRedirectUrl;
-
     @Value("${cors.allowed-origins}")
     private List<String> corsAllowedOrigins;
 
@@ -22,10 +19,7 @@ public class CorsMvcConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        List<String> allowedOrigins = new java.util.ArrayList<>(corsAllowedOrigins);
-        allowedOrigins.add(frontRedirectUrl);
-
-        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedOrigins(corsAllowedOrigins);
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
