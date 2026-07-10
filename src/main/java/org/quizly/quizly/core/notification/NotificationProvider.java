@@ -1,6 +1,8 @@
 package org.quizly.quizly.core.notification;
 
+import java.util.Optional;
+
 public interface NotificationProvider {
 
-    void send(NotificationMessage message);
+    Optional<String> send(NotificationMessage message);
 }
