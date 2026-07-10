@@ -8,6 +8,7 @@ import org.quizly.quizly.core.domain.entity.User.Provider;
 import org.quizly.quizly.core.domain.entity.User.Role;
 import org.quizly.quizly.core.domain.repository.UserRepository;
 import org.quizly.quizly.core.notification.NotificationProvider;
+import org.quizly.quizly.core.notification.NotificationThreadRepository;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.oauth.dto.response.KakaoUserInfo;
 import org.quizly.quizly.oauth.dto.response.NaverUserInfo;
@@ -26,6 +27,7 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
     private final NotificationProvider notificationProvider;
+    private final NotificationThreadRepository notificationThreadRepository;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -83,7 +85,9 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
         User savedUser = userRepository.save(userEntity);
 
         try {
-            notificationProvider.send(new SignupNotificationMessage(savedUser));
+            long totalMemberCount = userRepository.count();
+            notificationProvider.send(new SignupNotificationMessage(savedUser, totalMemberCount))
+                .ifPresent(threadTs -> notificationThreadRepository.save(savedUser.getId(), threadTs));
         } catch (Exception e) {
             log.warn("[OAuth2LoginUserService] 회원가입 슬랙 알림 전송 실패. userId: {}", savedUser.getId(), e);
         }
