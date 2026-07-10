@@ -10,6 +10,7 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
+import org.quizly.quizly.account.event.OnboardingCompletedEvent;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
@@ -18,6 +19,7 @@ import org.quizly.quizly.core.domain.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ public class CreateOnboardingService
     CreateOnboardingService.CreateOnboardingResponse> {
 
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public CreateOnboardingResponse execute(CreateOnboardingRequest request) {
@@ -65,6 +68,8 @@ public class CreateOnboardingService
         user.setStudyGoal(request.getStudyGoal());
         user.setOnboardingCompleted(true);
         userRepository.save(user);
+
+        eventPublisher.publishEvent(new OnboardingCompletedEvent(user));
 
         return CreateOnboardingResponse.builder().build();
     }

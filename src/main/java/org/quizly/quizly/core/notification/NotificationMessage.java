@@ -8,4 +8,8 @@ public interface NotificationMessage {
     String body();
 
     NotificationChannel channel();
+
+    default String threadTs() {
+        return null;
+    }
 }
