@@ -55,7 +55,7 @@ public class CreateOnboardingService
 
         Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isEmpty()) {
-            log.error("[CreateOnboardingService] User not found for userId: {}", userId);
+            log.warn("[CreateOnboardingService] User not found for userId: {}", userId);
             return CreateOnboardingResponse.builder()
                 .success(false)
                 .errorCode(CreateOnboardingErrorCode.NOT_FOUND_USER)

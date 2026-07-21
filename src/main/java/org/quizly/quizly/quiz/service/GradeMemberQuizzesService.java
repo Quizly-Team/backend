@@ -78,7 +78,7 @@ public class GradeMemberQuizzesService implements
         Quiz quiz = optionalQuiz.get();
 
         if (quiz.getUser() == null || !quiz.getUser().equals(user)) {
-            log.error("[GradeMemberQuizzesService] Cannot solve other quiz userId: {}, quizId: {} ",
+            log.warn("[GradeMemberQuizzesService] Cannot solve other quiz userId: {}, quizId: {} ",
                 user.getId(), quiz.getId());
             return GradeMemberQuizzesResponse.builder()
                 .success(false)
@@ -103,7 +103,7 @@ public class GradeMemberQuizzesService implements
             .findFirstByUserAndQuizOrderByCreatedAtDesc(user, quiz);
 
         if (existingHistory.isEmpty()) {
-            log.error("[GradeMemberQuizzesService] Draft not found: userId={}, quizId={}",
+            log.warn("[GradeMemberQuizzesService] Draft not found: userId={}, quizId={}",
                 user.getId(), quiz.getId());
             return GradeMemberQuizzesResponse.builder()
                 .success(false)
