@@ -50,7 +50,7 @@ public class ReadUserService implements
 
         Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isEmpty()) {
-            log.error("[ReadUserService] User not found for userId: {}", userId);
+            log.warn("[ReadUserService] User not found for userId: {}", userId);
             return ReadUserResponse.builder()
                 .success(false)
                 .errorCode(ReadUserErrorCode.NOT_FOUND_USER)
