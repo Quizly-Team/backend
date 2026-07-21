@@ -53,14 +53,14 @@ public class SlackApiSender implements SlackMessageSender {
                 restTemplate.postForObject(POST_MESSAGE_URL, httpEntity, SlackPostMessageResponse.class);
 
             if (response == null || !response.ok()) {
-                log.error(
+                log.warn(
                     "[SlackApiSender] 전송 실패. error: {}",
                     response == null ? "no response" : response.error());
                 return Optional.empty();
             }
             return Optional.ofNullable(response.ts());
         } catch (RestClientException e) {
-            log.error("[SlackApiSender] 전송 실패", e);
+            log.warn("[SlackApiSender] 전송 실패", e);
             return Optional.empty();
         }
     }

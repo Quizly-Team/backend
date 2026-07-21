@@ -49,7 +49,7 @@ public class CreateMockQuizService implements
 
         String promptPath = request.getType().getPromptPath();
         if (promptPath == null) {
-            log.error("[CreateMockQuizService] Could not find a prompt path. MockExamType: {}",
+            log.warn("[CreateMockQuizService] Could not find a prompt path. MockExamType: {}",
                 request.getType());
             return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
                 .success(false)
@@ -73,7 +73,7 @@ public class CreateMockQuizService implements
                 .build());
         }
 
-        log.error("[CreateMockQuizService] Thread: {}. Failed to create mock exam from OpenAi.",
+        log.warn("[CreateMockQuizService] Thread: {}. Failed to create mock exam from OpenAi.",
             Thread.currentThread().getName());
         return CompletableFuture.completedFuture(CreateMockQuizResponse.builder()
             .success(false)

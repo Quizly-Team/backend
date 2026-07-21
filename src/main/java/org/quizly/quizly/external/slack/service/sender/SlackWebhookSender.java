@@ -35,7 +35,7 @@ public class SlackWebhookSender implements SlackMessageSender {
         try {
             restTemplate.postForEntity(batchWebhookUrl, new SlackRequest(text), String.class);
         } catch (RestClientException e) {
-            log.error("[SlackWebhookSender] 전송 실패", e);
+            log.warn("[SlackWebhookSender] 전송 실패", e);
         }
         return Optional.empty();
     }

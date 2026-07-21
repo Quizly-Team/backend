@@ -52,7 +52,7 @@ public class BatchAggregateSummaryService implements
 
         var userOptional = userRepository.findById(userId);
         if (userOptional.isEmpty()) {
-            log.error("[BatchAggregateSummaryService] User not found for userId: {}", userId);
+            log.warn("[BatchAggregateSummaryService] User not found for userId: {}", userId);
             return BatchAggregateSummaryResponse.builder()
                 .success(false)
                 .errorCode(BatchAggregateSummaryErrorCode.NOT_FOUND_USER)
