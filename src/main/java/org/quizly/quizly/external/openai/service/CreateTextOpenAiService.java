@@ -88,7 +88,7 @@ public class CreateTextOpenAiService implements
             String responseBody = response.body().string();
 
             if (!response.isSuccessful()) {
-                log.error("[CreateTextOpenAiService] OpenAi error {} body={}", response.code(),
+                log.warn("[CreateTextOpenAiService] OpenAi error {} body={}", response.code(),
                     responseBody);
                 return CreateTextOpenAiService.CreateTextOpenAiResponse.builder()
                     .success(false)

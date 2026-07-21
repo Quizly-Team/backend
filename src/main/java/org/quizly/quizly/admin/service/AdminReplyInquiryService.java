@@ -69,7 +69,7 @@ public class AdminReplyInquiryService implements
 
             EmailService.EmailResponse emailResponse = emailService.execute(emailRequest);
             if (emailResponse == null || !emailResponse.isSuccess()) {
-                log.error("Failed to send reply notification email to: {}", user.getEmail());
+                log.warn("Failed to send reply notification email to: {}", user.getEmail());
 
                 return AdminReplyInquiryResponse.builder()
                     .success(false)

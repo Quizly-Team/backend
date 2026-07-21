@@ -73,7 +73,7 @@ public class CreateQuizOpenAiService implements
         try (Response response = createRequest(httpRequest)) {
             ResponseBody body = response.body();
             if (body == null) {
-                log.error("[CreateQuizOpenAiService] response body is null. response code: {}",
+                log.warn("[CreateQuizOpenAiService] response body is null. response code: {}",
                     response.code());
                 return CreateQuizOpenAiResponse.builder()
                     .success(false)
@@ -84,7 +84,7 @@ public class CreateQuizOpenAiService implements
             String responseBody = body.string();
 
             if (!response.isSuccessful()) {
-                log.error(
+                log.warn(
                     "[CreateQuizOpenAiService] OpenAi API returned non-successful code: {}, body: {}",
                     response.code(), responseBody);
                 return CreateQuizOpenAiResponse.builder()
@@ -99,7 +99,7 @@ public class CreateQuizOpenAiService implements
                 String content = openAiResponse.extractText();
 
                 if (content == null || content.isBlank()) {
-                    log.error(
+                    log.warn(
                         "[CreateQuizOpenAiService] Empty content in OpenAi response. Body: {}",
                         responseBody);
                     return CreateQuizOpenAiResponse.builder()
@@ -112,7 +112,7 @@ public class CreateQuizOpenAiService implements
                 JsonNode quizzesNode = rootNode.path("quizzes");
 
                 if (!quizzesNode.isArray()) {
-                    log.error(
+                    log.warn(
                         "[CreateQuizOpenAiService] Failed to find 'quizzes' array in content. Original content: {}",
                         content);
                     return CreateQuizOpenAiResponse.builder()

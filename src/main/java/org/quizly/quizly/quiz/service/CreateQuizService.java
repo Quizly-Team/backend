@@ -47,7 +47,7 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
         }
         String promptPath = request.getType().getPromptPath();
         if (promptPath == null) {
-            log.error("[CreateQuizService] Could not find a prompt path. QuizType: {}",
+            log.warn("[CreateQuizService] Could not find a prompt path. QuizType: {}",
                 request.getType());
             return CompletableFuture.completedFuture(CreateQuizResponse.builder()
                 .success(false)
@@ -71,7 +71,7 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
                 .build());
         }
 
-        log.error("[CreateQuizService] Thread: {}. Failed to create quiz from OpenAi.",
+        log.warn("[CreateQuizService] Thread: {}. Failed to create quiz from OpenAi.",
             Thread.currentThread().getName());
         return CompletableFuture.completedFuture(CreateQuizResponse.builder()
             .success(false)

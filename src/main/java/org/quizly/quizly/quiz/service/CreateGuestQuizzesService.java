@@ -56,7 +56,7 @@ public class CreateGuestQuizzesService implements
         List<String> chunkList = TextProcessingUtil.createChunkList(
             request.getPlainText(), DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP);
         if (chunkList.isEmpty()) {
-            log.error("[CreateGuestQuizzesService] Failed to create chunks from plainText");
+            log.warn("[CreateGuestQuizzesService] Failed to create chunks from plainText");
             return CreateGuestQuizzesResponse.builder()
                 .success(false)
                 .errorCode(CreateGuestQuizzesErrorCode.FAILED_CREATE_CHUNK)

@@ -71,7 +71,7 @@ public class CreateMockExamOpenAiService implements
         try (Response response = createRequest(httpRequest)) {
             ResponseBody body = response.body();
             if (body == null) {
-                log.error("[CreateMockExamOpenAiService] response body is null. response code: {}",
+                log.warn("[CreateMockExamOpenAiService] response body is null. response code: {}",
                     response.code());
                 return CreateMockExamOpenAiResponse.builder()
                     .success(false)
@@ -82,7 +82,7 @@ public class CreateMockExamOpenAiService implements
             String responseBody = body.string();
 
             if (!response.isSuccessful()) {
-                log.error(
+                log.warn(
                     "[CreateMockExamOpenAiService] OpenAi API returned non-successful code: {}, body: {}",
                     response.code(), responseBody);
                 return CreateMockExamOpenAiResponse.builder()
@@ -97,7 +97,7 @@ public class CreateMockExamOpenAiService implements
                 String content = openAiResponse.extractText();
 
                 if (content == null || content.isBlank()) {
-                    log.error(
+                    log.warn(
                         "[CreateMockExamOpenAiService] Empty content in OpenAi response. Body: {}",
                         responseBody);
                     return CreateMockExamOpenAiResponse.builder()
@@ -110,7 +110,7 @@ public class CreateMockExamOpenAiService implements
                 JsonNode quizzesNode = rootNode.path("quizzes");
 
                 if (!quizzesNode.isArray()) {
-                    log.error(
+                    log.warn(
                         "[CreateMockExamOpenAiService] Failed to find 'quizzes' array in content. Original content: {}",
                         content);
                     return CreateMockExamOpenAiResponse.builder()

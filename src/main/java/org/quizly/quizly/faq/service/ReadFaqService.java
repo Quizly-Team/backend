@@ -30,7 +30,7 @@ public class ReadFaqService implements
     @Override
     public ReadFaqResponse execute(ReadFaqRequest request) {
         if (request == null) {
-            log.error("[ReadFaqService] request is null - unexpected service logic error");
+            log.warn("[ReadFaqService] request is null - unexpected service logic error");
             return ReadFaqResponse.builder()
                 .success(false)
                 .errorCode(ReadFaqErrorCode.NOT_EXIST_REQUIRED_PARAMETER)

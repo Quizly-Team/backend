@@ -68,7 +68,7 @@ public class CreateTopicOpenAiService implements
         try (Response response = createRequest(httpRequest)) {
             ResponseBody body = response.body();
             if (body == null) {
-                log.error("[CreateTopicOpenAiService] response body is null. response code: {}",
+                log.warn("[CreateTopicOpenAiService] response body is null. response code: {}",
                     response.code());
                 return CreateTopicOpenAiResponse.builder()
                     .success(false)
@@ -79,7 +79,7 @@ public class CreateTopicOpenAiService implements
             String responseBody = body.string();
 
             if (!response.isSuccessful()) {
-                log.error(
+                log.warn(
                     "[CreateTopicOpenAiService] OpenAi API returned non-successful code: {}, body: {}",
                     response.code(), responseBody);
                 return CreateTopicOpenAiResponse.builder()
@@ -94,7 +94,7 @@ public class CreateTopicOpenAiService implements
                 String content = openAiResponse.extractText();
 
                 if (content == null || content.isBlank()) {
-                    log.error(
+                    log.warn(
                         "[CreateTopicOpenAiService] Empty content in OpenAi response. Body: {}",
                         responseBody);
                     return CreateTopicOpenAiResponse.builder()
@@ -107,7 +107,7 @@ public class CreateTopicOpenAiService implements
                     GeneratedTopicResponse.class);
 
                 if (generatedTopicResponse == null || generatedTopicResponse.getTopic() == null) {
-                    log.error("[CreateTopicOpenAiService] Failed to parse topic from content: {}",
+                    log.warn("[CreateTopicOpenAiService] Failed to parse topic from content: {}",
                         content);
                     return CreateTopicOpenAiResponse.builder()
                         .success(false)
