@@ -33,7 +33,7 @@ docker run -d --name "$TARGET_NAME" \
   --network host \
   -e SERVER_PORT=${TARGET_PORT} \
   -v "$LOG_DIR":/logs \
-  --memory="1280m" \
+  --memory="2048m" \
   "$FULL_IMAGE_NAME"
 
 echo "> Health Check (http://localhost:${TARGET_PORT}/)..."

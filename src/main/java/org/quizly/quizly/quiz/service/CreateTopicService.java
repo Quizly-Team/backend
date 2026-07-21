@@ -48,7 +48,7 @@ public class CreateTopicService implements BaseService<CreateTopicRequest, Creat
         );
 
         if (openAiResponse == null || !openAiResponse.isSuccess()) {
-            log.error("[CreateTopicService] Failed to create topic from OpenAi. Response: {}",
+            log.warn("[CreateTopicService] Failed to create topic from OpenAi. Response: {}",
                 openAiResponse);
             return CreateTopicResponse.builder()
                 .success(false)
@@ -58,7 +58,7 @@ public class CreateTopicService implements BaseService<CreateTopicRequest, Creat
 
         String topic = openAiResponse.getTopic();
         if (topic == null || topic.isBlank()) {
-            log.error("[CreateTopicService] Topic is empty from OpenAi response");
+            log.warn("[CreateTopicService] Topic is empty from OpenAi response");
             return CreateTopicResponse.builder()
                 .success(false)
                 .errorCode(CreateTopicErrorCode.EMPTY_TOPIC)

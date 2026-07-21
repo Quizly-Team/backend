@@ -108,7 +108,7 @@ public class CreateMemberMockExamService implements
 
         if (generatedMockExamResponseList.isEmpty()
             || generatedMockExamResponseList.size() < quizCount) {
-            log.error(
+            log.warn(
                 "[CreateMemberMockExamService] Failed to generate any mock exams from OpenAi after all async.");
             return CreateMemberMockExamResponse.builder()
                 .success(false)

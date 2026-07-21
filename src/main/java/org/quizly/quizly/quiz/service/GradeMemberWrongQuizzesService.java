@@ -78,7 +78,7 @@ public class GradeMemberWrongQuizzesService implements
         Quiz quiz = optionalQuiz.get();
 
         if (quiz.getUser() == null || !quiz.getUser().equals(user)) {
-            log.error(
+            log.warn(
                 "[GradeMemberWrongQuizzesService] Cannot solve other quiz userId: {}, quizId: {} ",
                 user.getId(), quiz.getId());
             return GradeMemberWrongQuizzesResponse.builder()
