@@ -81,6 +81,10 @@ dependencies {
 	// Actuator
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+	// Sentry
+	implementation 'io.sentry:sentry-spring-boot-starter-jakarta:8.16.0'
+	implementation 'io.sentry:sentry-logback:8.16.0'
+
 	// mail
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
