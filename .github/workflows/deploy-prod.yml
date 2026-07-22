@@ -45,14 +45,19 @@ jobs:
           push: true
           tags: ghcr.io/quizly-team/backend:${{ github.sha }}
 
-      - name: Transfer Deploy Script to Server
+      - name: Transfer Deploy Script & Logging Infra Config to Server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.OCI_HOST_PROD }}
           username: ${{ secrets.OCI_USERNAME_PROD }}
           key: ${{ secrets.OCI_SSH_KEY_PROD }}
           port: 22
-          source: "./deploy-prod.sh"
+          source: |
+            ./deploy-prod.sh
+            ./docker-compose.yml
+            ./docker/loki
+            ./docker/promtail
+            ./docker/grafana/provisioning
           target: "/home/ubuntu/quizly-server"
 
       - name: Execute Deploy Script
@@ -65,5 +70,6 @@ jobs:
           script: |
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             cd /home/ubuntu/quizly-server
+            docker compose up -d loki promtail grafana
             chmod +x deploy-prod.sh
             ./deploy-prod.sh ghcr.io/quizly-team/backend ${{ github.sha }}

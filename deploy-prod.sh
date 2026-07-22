@@ -32,6 +32,7 @@ docker rm -f "$TARGET_NAME" 2>/dev/null || true
 docker run -d --name "$TARGET_NAME" \
   --network host \
   -e SERVER_PORT=${TARGET_PORT} \
+  -e LOG_DIR=/logs \
   -v "$LOG_DIR":/logs \
   --memory="2048m" \
   "$FULL_IMAGE_NAME"

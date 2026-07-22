@@ -89,6 +89,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
+	// Logging (Loki/Grafana)
+	implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
 }
 
 tasks.named('test') {
