@@ -5,8 +5,8 @@ IMAGE_PATH=$1
 IMAGE_TAG=$2
 FULL_IMAGE_NAME="${IMAGE_PATH}:${IMAGE_TAG}"
 
-LOG_DIR="/var/log/quizly"
-mkdir -p "$LOG_DIR"
+HOST_LOG_DIR="/var/log/quizly"
+mkdir -p "$HOST_LOG_DIR"
 
 echo "> 배포 시작: $FULL_IMAGE_NAME"
 
@@ -32,7 +32,8 @@ docker rm -f "$TARGET_NAME" 2>/dev/null || true
 docker run -d --name "$TARGET_NAME" \
   --network host \
   -e SERVER_PORT=${TARGET_PORT} \
-  -v "$LOG_DIR":/logs \
+  -e LOG_DIR=/logs \
+  -v "$HOST_LOG_DIR":/logs \
   --memory="2048m" \
   "$FULL_IMAGE_NAME"
 

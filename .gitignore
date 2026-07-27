@@ -57,6 +57,12 @@ $RECYCLE.BIN/
 docker/mysql/db
 !docker/sample.env
 docker/.DS_Store
+docker/loki/data
+docker/grafana/data
+docker/promtail/positions
+
+# App logs (local)
+/logs
 
 # Environment variables
 .env
