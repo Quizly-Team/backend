@@ -1,0 +1,80 @@
+{
+  "title": "Quizly Backend Logs",
+  "uid": "quizly-backend-logs",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log volume by level",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "Loki" },
+      "targets": [
+        {
+          "expr": "sum by (level) (count_over_time({service=\"quizly-backend\"}[$__interval]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "{level=\"ERROR\"}" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "{level=\"WARN\"}" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "{level=\"INFO\"}" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "{level=\"DEBUG\"}" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Error logs",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "loki", "uid": "Loki" },
+      "targets": [
+        {
+          "expr": "{service=\"quizly-backend\", level=\"ERROR\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "All logs",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 18 },
+      "datasource": { "type": "loki", "uid": "Loki" },
+      "targets": [
+        {
+          "expr": "{service=\"quizly-backend\"}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
