@@ -52,6 +52,22 @@ services:
       - loki
     restart: unless-stopped
 
+  prometheus:
+    container_name: quizly_prometheus
+    image: prom/prometheus:v2.53.0
+    user: "65534:65534"
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus/data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
   grafana:
     container_name: quizly_grafana
     image: grafana/grafana:11.1.0
@@ -66,4 +82,5 @@ services:
       - ./docker/grafana/data:/var/lib/grafana
     depends_on:
       - loki
+      - prometheus
     restart: unless-stopped

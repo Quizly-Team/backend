@@ -1,0 +1,133 @@
+{
+  "title": "Quizly Backend Metrics",
+  "uid": "quizly-backend-metrics",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "JVM Heap Used vs Max",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum by (instance) (jvm_memory_used_bytes{application=\"quizly-backend\", area=\"heap\"})",
+          "legendFormat": "used - {{instance}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (instance) (jvm_memory_max_bytes{application=\"quizly-backend\", area=\"heap\"})",
+          "legendFormat": "max - {{instance}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Process CPU Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "process_cpu_usage{application=\"quizly-backend\"}",
+          "legendFormat": "process cpu - {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Live JVM Threads",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "jvm_threads_live_threads{application=\"quizly-backend\"}",
+          "legendFormat": "live - {{instance}}",
+          "refId": "A"
+        },
+        {
+          "expr": "jvm_threads_daemon_threads{application=\"quizly-backend\"}",
+          "legendFormat": "daemon - {{instance}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "GC Pause Time",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "rate(jvm_gc_pause_seconds_sum{application=\"quizly-backend\"}[$__rate_interval])",
+          "legendFormat": "{{action}} - {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "HTTP Request Rate by Status",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum by (status, instance) (rate(http_server_requests_seconds_count{application=\"quizly-backend\"}[$__rate_interval]))",
+          "legendFormat": "{{status}} - {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "HTTP Average Latency",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(http_server_requests_seconds_sum{application=\"quizly-backend\"}[$__rate_interval])) / sum by (instance) (rate(http_server_requests_seconds_count{application=\"quizly-backend\"}[$__rate_interval]))",
+          "legendFormat": "avg latency - {{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "HikariCP Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active{application=\"quizly-backend\"}",
+          "legendFormat": "active - {{instance}}",
+          "refId": "A"
+        },
+        {
+          "expr": "hikaricp_connections_idle{application=\"quizly-backend\"}",
+          "legendFormat": "idle - {{instance}}",
+          "refId": "B"
+        },
+        {
+          "expr": "hikaricp_connections_pending{application=\"quizly-backend\"}",
+          "legendFormat": "pending - {{instance}}",
+          "refId": "C"
+        }
+      ]
+    }
+  ]
+}
