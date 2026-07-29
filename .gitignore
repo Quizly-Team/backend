@@ -60,6 +60,7 @@ docker/.DS_Store
 docker/loki/data
 docker/grafana/data
 docker/promtail/positions
+docker/prometheus/data
 
 # App logs (local)
 /logs

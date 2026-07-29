@@ -78,7 +78,8 @@ public class SecurityConfig {
                     "/auth/reissue",
                     "/quizzes/guest/**",
                     "/quizzes/{quizId}/answer/guest",
-                    "/actuator/health"
+                    "/actuator/health",
+                    "/actuator/prometheus"
                 ).permitAll()
                 .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 .anyRequest().authenticated());
