@@ -1,19 +1,15 @@
 package org.quizly.quizly.oauth.service;
 
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quizly.quizly.core.domain.entity.User;
-import org.quizly.quizly.core.domain.entity.User.Provider;
-import org.quizly.quizly.core.domain.entity.User.Role;
-import org.quizly.quizly.core.domain.repository.UserRepository;
-import org.quizly.quizly.core.notification.NotificationProvider;
-import org.quizly.quizly.core.notification.NotificationThreadRepository;
+import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.oauth.dto.response.KakaoUserInfo;
 import org.quizly.quizly.oauth.dto.response.NaverUserInfo;
 import org.quizly.quizly.oauth.dto.response.OAuth2UserInfo;
-import org.quizly.quizly.oauth.message.SignupNotificationMessage;
+import org.quizly.quizly.oauth.service.RegisterOAuthUserService.RegisterOAuthUserRequest;
+import org.quizly.quizly.oauth.service.RegisterOAuthUserService.RegisterOAuthUserResponse;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -25,9 +21,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class OAuth2LoginUserService extends DefaultOAuth2UserService {
 
-    private final UserRepository userRepository;
-    private final NotificationProvider notificationProvider;
-    private final NotificationThreadRepository notificationThreadRepository;
+    private final RegisterOAuthUserService registerOAuthUserService;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -41,7 +35,16 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
             return null;
         }
 
-        User user = processUser(oAuth2UserInfo);
+        RegisterOAuthUserResponse response = registerOAuthUserService.execute(
+            RegisterOAuthUserRequest.builder().oAuth2UserInfo(oAuth2UserInfo).build());
+
+        if (!response.isSuccess()) {
+            throw response.getErrorCode() != null
+                ? response.getErrorCode().toException()
+                : GlobalErrorCode.INTERNAL_ERROR.toException();
+        }
+
+        User user = response.getUser();
 
         return new UserPrincipal(user.getId(), user.getRole());
     }
@@ -55,49 +58,5 @@ public class OAuth2LoginUserService extends DefaultOAuth2UserService {
             default:
                 return null;
         }
-    }
-
-    private User processUser(OAuth2UserInfo oAuth2UserInfo) {
-        Optional<User> existDataOptional = userRepository.findByProviderId(
-            oAuth2UserInfo.getProviderId());
-
-        return existDataOptional.map(user -> updateUser(user, oAuth2UserInfo))
-            .orElseGet(() -> createUser(oAuth2UserInfo));
-
-    }
-
-    private User createUser(OAuth2UserInfo oAuth2UserInfo) {
-        User userEntity = new User();
-
-        try {
-            Provider providerEnum = Provider.valueOf(oAuth2UserInfo.getProvider().toUpperCase());
-            userEntity.setProvider(providerEnum);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                "지원하지 않는 소셜 로그인 Provider입니다: " + oAuth2UserInfo.getProvider());
-        }
-
-        userEntity.setProviderId(oAuth2UserInfo.getProviderId());
-        userEntity.setEmail(oAuth2UserInfo.getEmail());
-        userEntity.setName(oAuth2UserInfo.getNickname());
-        userEntity.setNickName(oAuth2UserInfo.getNickname());
-        userEntity.setRole(Role.USER);
-        User savedUser = userRepository.save(userEntity);
-
-        try {
-            long totalMemberCount = userRepository.count();
-            notificationProvider.send(new SignupNotificationMessage(savedUser, totalMemberCount))
-                .ifPresent(threadTs -> notificationThreadRepository.save(savedUser.getId(), threadTs));
-        } catch (Exception e) {
-            log.warn("[OAuth2LoginUserService] 회원가입 슬랙 알림 전송 실패. userId: {}", savedUser.getId(), e);
-        }
-        return savedUser;
-    }
-
-    private User updateUser(User user, OAuth2UserInfo oAuth2UserInfo) {
-        user.setEmail(oAuth2UserInfo.getEmail());
-        user.setName(oAuth2UserInfo.getNickname());
-        userRepository.save(user);
-        return user;
     }
 }

@@ -11,9 +11,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quizly.quizly.core.domain.entity.RefreshToken;
-import org.quizly.quizly.core.domain.entity.User;
 import org.quizly.quizly.core.domain.repository.RefreshTokenRepository;
-import org.quizly.quizly.core.domain.repository.UserRepository;
 import org.quizly.quizly.jwt.JwtProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -31,7 +29,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${jwt.refresh-token-expiration}")
@@ -49,9 +46,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         Long userId = customUserDetails.getUserId();
 
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalStateException("User not found"));
-
         String role = authentication.getAuthorities().stream()
             .findFirst()
             .map(GrantedAuthority::getAuthority)
@@ -60,8 +54,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = jwtProvider.generateAccessToken(userId, role);
         String refreshToken = jwtProvider.generateRefreshToken(userId);
 
-        log.info("[OAuth2LoginSuccessHandler] Login successful - userId: {}, provider: {}",
-            user.getId(), user.getProvider());
+        log.info("[OAuth2LoginSuccessHandler] Login successful - userId: {}", userId);
 
         Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByUserId(userId);
         if (refreshTokenOptional.isPresent()) {
