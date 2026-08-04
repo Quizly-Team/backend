@@ -19,12 +19,11 @@ import org.quizly.quizly.core.domain.entity.User.Role;
 import org.quizly.quizly.core.domain.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
-import org.quizly.quizly.core.notification.NotificationProvider;
-import org.quizly.quizly.core.notification.NotificationThreadRepository;
 import org.quizly.quizly.oauth.dto.response.OAuth2UserInfo;
-import org.quizly.quizly.oauth.message.SignupNotificationMessage;
+import org.quizly.quizly.oauth.event.UserSignedUpEvent;
 import org.quizly.quizly.oauth.service.RegisterOAuthUserService.RegisterOAuthUserRequest;
 import org.quizly.quizly.oauth.service.RegisterOAuthUserService.RegisterOAuthUserResponse;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,8 +41,7 @@ public class RegisterOAuthUserService implements
     BaseService<RegisterOAuthUserRequest, RegisterOAuthUserResponse> {
 
     private final UserRepository userRepository;
-    private final NotificationProvider notificationProvider;
-    private final NotificationThreadRepository notificationThreadRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -81,13 +79,9 @@ public class RegisterOAuthUserService implements
         userEntity.setRole(Role.USER);
         User savedUser = userRepository.save(userEntity);
 
-        try {
-            long totalMemberCount = userRepository.count();
-            notificationProvider.send(new SignupNotificationMessage(savedUser, totalMemberCount))
-                .ifPresent(threadTs -> notificationThreadRepository.save(savedUser.getId(), threadTs));
-        } catch (Exception e) {
-            log.warn("[RegisterOAuthUserService] 회원가입 슬랙 알림 전송 실패. userId: {}", savedUser.getId(), e);
-        }
+        long totalMemberCount = userRepository.count();
+        eventPublisher.publishEvent(new UserSignedUpEvent(savedUser, totalMemberCount));
+
         return savedUser;
     }
 
