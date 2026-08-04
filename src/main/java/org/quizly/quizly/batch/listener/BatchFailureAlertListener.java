@@ -2,20 +2,20 @@ package org.quizly.quizly.batch.listener;
 
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.quizly.quizly.batch.message.BatchFailureNotificationMessage;
+import org.quizly.quizly.core.notification.NotificationExecutor;
 import org.quizly.quizly.core.notification.NotificationProvider;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class BatchFailureAlertListener implements JobExecutionListener {
 
     private final NotificationProvider notificationProvider;
+    private final NotificationExecutor notificationExecutor;
 
     @Override
     public void afterJob(JobExecution jobExecution) {
@@ -34,9 +34,9 @@ public class BatchFailureAlertListener implements JobExecutionListener {
 
             String parameters = formatJobParameters(jobExecution);
 
-            notificationProvider.send(
-                new BatchFailureNotificationMessage(jobName, reason, step, parameters)
-            );
+            notificationExecutor.runQuietly("BatchFailureAlertListener", () ->
+                notificationProvider.send(
+                    new BatchFailureNotificationMessage(jobName, reason, step, parameters)));
         }
     }
 
