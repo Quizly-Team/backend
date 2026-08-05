@@ -71,6 +71,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
                     "/faqs",
+                    "/daily-quizzes",
                     "/",
                     "/docs",
                     "/swagger-ui/**",
