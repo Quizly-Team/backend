@@ -34,7 +34,7 @@ public class ReadFaqController {
         summary = "FAQ 조회 API",
         description = "FAQ 목록을 카테고리별로 조회합니다.\n\n"
             + "- `category` 미입력 시 전체 반환\n"
-            + "- 카테고리: SERVICE_INTRO(서비스 소개), QUIZ_GENERATION(문제 생성), WRONG_ANSWER(오답 관리), TECH_SUPPORT(기술 지원)",
+            + "- 카테고리: SERVICE_INTRO(서비스 소개), QUIZ_GENERATION(문제 생성), WRONG_ANSWER(오답 관리), MOCK_EXAM(모의고사 기능), TECH_SUPPORT(기술 지원)",
         operationId = "/faqs"
     )
     @GetMapping("/faqs")

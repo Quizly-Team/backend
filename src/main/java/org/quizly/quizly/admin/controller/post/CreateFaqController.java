@@ -31,7 +31,7 @@ public class CreateFaqController {
     @Operation(
         summary = "FAQ 등록 API",
         description = "관리자 전용 API로 FAQ를 등록합니다.\n\n"
-            + "- 카테고리: SERVICE_INTRO(서비스 소개), QUIZ_GENERATION(문제 생성), WRONG_ANSWER(오답 관리), TECH_SUPPORT(기술 지원)",
+            + "- 카테고리: SERVICE_INTRO(서비스 소개), QUIZ_GENERATION(문제 생성), WRONG_ANSWER(오답 관리), MOCK_EXAM(모의고사 기능), TECH_SUPPORT(기술 지원)",
         operationId = "/admin/faqs"
     )
     @PostMapping("/admin/faqs")
