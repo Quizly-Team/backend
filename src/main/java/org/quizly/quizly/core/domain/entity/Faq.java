@@ -28,6 +28,7 @@ public class Faq extends BaseEntity {
         SERVICE_INTRO("서비스 소개"),
         QUIZ_GENERATION("문제 생성"),
         WRONG_ANSWER("오답 관리"),
+        MOCK_EXAM("모의고사 기능"),
         TECH_SUPPORT("기술 지원");
 
         private final String description;
