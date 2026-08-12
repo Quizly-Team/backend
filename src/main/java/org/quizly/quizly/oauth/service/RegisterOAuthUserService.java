@@ -29,12 +29,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * OAuth 사용자 정보를 받아온 이후의 DB 조회·생성·수정만 담당하는 서비스.
- *
- * <p>외부 OAuth 통신({@code super.loadUser})은 {@link OAuth2LoginUserService}에서 트랜잭션 밖으로 수행하고,
- * 이 서비스의 {@link #execute}만 트랜잭션으로 감싼다. 외부 응답 지연이 DB 커넥션 점유 시간에 영향을 주지 않도록 분리했다.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -82,7 +76,7 @@ public class RegisterOAuthUserService implements
         User savedUser = userRepository.save(userEntity);
 
         try {
-            long totalMemberCount = userRepository.count();
+            long totalMemberCount = userRepository.countByDeletedFalse();
             notificationProvider.send(new SignupNotificationMessage(savedUser, totalMemberCount))
                 .ifPresent(threadTs -> notificationThreadRepository.save(savedUser.getId(), threadTs));
         } catch (Exception e) {

@@ -6,13 +6,13 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
+import org.quizly.quizly.account.service.ReadUserService;
 import org.quizly.quizly.admin.service.BatchAggregateSummaryService.BatchAggregateSummaryRequest;
 import org.quizly.quizly.admin.service.BatchAggregateSummaryService.BatchAggregateSummaryResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domain.entity.User;
-import org.quizly.quizly.core.domain.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
@@ -31,7 +31,7 @@ public class BatchAggregateSummaryService implements
 
     private final JobLauncher jobLauncher;
     private final Job aggregateDailySummaryJob;
-    private final UserRepository userRepository;
+    private final ReadUserService readUserService;
 
     @Override
     public BatchAggregateSummaryResponse execute(BatchAggregateSummaryRequest request) {
@@ -42,23 +42,21 @@ public class BatchAggregateSummaryService implements
                 .build();
         }
 
-        Long userId = request.getUserPrincipal().getUserId();
-        if (userId == null) {
-            return BatchAggregateSummaryResponse.builder()
-                .success(false)
-                .errorCode(BatchAggregateSummaryErrorCode.INVALID_PARAMETER)
-                .build();
-        }
+        ReadUserService.ReadUserResponse readUserResponse = readUserService.execute(
+            ReadUserService.ReadUserRequest.builder()
+                .userPrincipal(request.getUserPrincipal())
+                .build()
+        );
 
-        var userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            log.warn("[BatchAggregateSummaryService] User not found for userId: {}", userId);
+        if (!readUserResponse.isSuccess()) {
+            log.warn("[BatchAggregateSummaryService] User not found for userId: {}",
+                request.getUserPrincipal().getUserId());
             return BatchAggregateSummaryResponse.builder()
                 .success(false)
                 .errorCode(BatchAggregateSummaryErrorCode.NOT_FOUND_USER)
                 .build();
         }
-        User user = userOptional.get();
+        User user = readUserResponse.getUser();
 
         LocalDate targetDate = request.getTargetDate();
         LocalDate yesterday = LocalDate.now().minusDays(1);
