@@ -13,13 +13,14 @@ import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.account.message.AccountDeleteNotificationMessage;
 import org.quizly.quizly.account.service.DeleteUserService.DeleteUserRequest;
 import org.quizly.quizly.account.service.DeleteUserService.DeleteUserResponse;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.domain.entity.RefreshToken;
 import org.quizly.quizly.core.domain.entity.User;
 import org.quizly.quizly.core.domain.repository.RefreshTokenRepository;
-import org.quizly.quizly.core.domain.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.core.notification.NotificationProvider;
@@ -37,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeleteUserService implements
     BaseService<DeleteUserRequest, DeleteUserResponse> {
 
-    private final UserRepository userRepository;
+    private final ReadUserService readUserService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final NotificationProvider notificationProvider;
     private final JwtProvider jwtProvider;
@@ -51,13 +52,22 @@ public class DeleteUserService implements
                 .build();
         }
 
-        Long userId = request.getUserPrincipal().getUserId();
-        if (userId == null) {
+        ReadUserResponse readUserResponse = readUserService.execute(
+            ReadUserRequest.builder()
+                .userPrincipal(request.getUserPrincipal())
+                .build());
+
+        if (!readUserResponse.isSuccess()) {
+            log.warn("[DeleteUserService] User not found for userId: {}",
+                request.getUserPrincipal().getUserId());
             return DeleteUserResponse.builder()
                 .success(false)
-                .errorCode(DeleteUserErrorCode.NOT_EXIST_PROVIDER_ID)
+                .errorCode(DeleteUserErrorCode.NOT_FOUND_USER)
                 .build();
         }
+
+        User user = readUserResponse.getUser();
+        Long userId = user.getId();
 
         DeleteUserErrorCode refreshTokenErrorCode = validateRefreshToken(userId,
             request.getRefreshToken());
@@ -68,20 +78,9 @@ public class DeleteUserService implements
                 .build();
         }
 
-        return userRepository.findByIdAndDeletedFalse(userId)
-            .map(user -> {
-                deleteUser(user, userId);
-                DeleteUserResponse response = DeleteUserResponse.builder().build();
-                return response;
-            })
-            .orElseGet(() -> {
-                log.warn("[DeleteUserService] User not found for userId: {}", userId);
-                DeleteUserResponse response = DeleteUserResponse.builder()
-                    .success(false)
-                    .errorCode(DeleteUserErrorCode.NOT_FOUND_USER)
-                    .build();
-                return response;
-            });
+        deleteUser(user, userId);
+
+        return DeleteUserResponse.builder().build();
     }
 
     private DeleteUserErrorCode validateRefreshToken(Long userId, String refreshToken) {
@@ -132,7 +131,6 @@ public class DeleteUserService implements
     public enum DeleteUserErrorCode implements BaseErrorCode<DomainException> {
 
         NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-        NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "사용자 인증 정보가 제공되지 않았습니다."),
         NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
         REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 만료되었습니다."),
         REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "리프레시 토큰을 찾을 수 없습니다."),
