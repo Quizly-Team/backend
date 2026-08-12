@@ -1,6 +1,5 @@
 package org.quizly.quizly.account.service;
 
-import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,6 +10,8 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
 import org.quizly.quizly.account.event.OnboardingCompletedEvent;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserRequest;
+import org.quizly.quizly.account.service.ReadUserService.ReadUserResponse;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
@@ -33,6 +34,7 @@ public class CreateOnboardingService
     CreateOnboardingService.CreateOnboardingRequest,
     CreateOnboardingService.CreateOnboardingResponse> {
 
+    private final ReadUserService readUserService;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -45,24 +47,20 @@ public class CreateOnboardingService
                 .build();
         }
 
-        Long userId = request.getUserPrincipal().getUserId();
-        if (userId == null) {
-            return CreateOnboardingResponse.builder()
-                .success(false)
-                .errorCode(CreateOnboardingErrorCode.NOT_EXIST_PROVIDER_ID)
-                .build();
-        }
+        ReadUserResponse readUserResponse = readUserService.execute(
+            ReadUserRequest.builder()
+                .userPrincipal(request.getUserPrincipal())
+                .build()
+        );
 
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            log.warn("[CreateOnboardingService] User not found for userId: {}", userId);
+        if (!readUserResponse.isSuccess()) {
             return CreateOnboardingResponse.builder()
                 .success(false)
                 .errorCode(CreateOnboardingErrorCode.NOT_FOUND_USER)
                 .build();
         }
 
-        User user = userOptional.get();
+        User user = readUserResponse.getUser();
 
         user.setTargetType(request.getTargetType());
         user.setStudyGoal(request.getStudyGoal());
@@ -78,7 +76,6 @@ public class CreateOnboardingService
     @RequiredArgsConstructor
     public enum CreateOnboardingErrorCode implements BaseErrorCode<DomainException> {
         NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
-        NOT_EXIST_PROVIDER_ID(HttpStatus.BAD_REQUEST, "Provider ID가 존재하지 않습니다."),
         NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.");
 
         private final HttpStatus httpStatus;
