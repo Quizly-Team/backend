@@ -87,4 +87,17 @@ public class User extends BaseEntity {
             this.profileImageUrl = "https://kr.object.ncloudstorage.com/quizly-profile-images/defaults/default_profile.png";
         }
     }
+
+    public void softDelete() {
+        setDeleted(true);
+    }
+
+    public void deletePersonalInfo() {
+        this.email = "deleted-" + getId() + "@quizly.invalid";
+        this.name = "삭제된 사용자";
+        this.nickName = "삭제된 사용자";
+        this.profileImageUrl = null;
+        this.provider = null;
+        this.providerId = null;
+    }
 }
