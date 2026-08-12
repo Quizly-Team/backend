@@ -48,7 +48,7 @@ public class ReadUserService implements
                 .build();
         }
 
-        Optional<User> userOptional = userRepository.findById(userId);
+        Optional<User> userOptional = userRepository.findByIdAndDeletedFalse(userId);
         if (userOptional.isEmpty()) {
             log.warn("[ReadUserService] User not found for userId: {}", userId);
             return ReadUserResponse.builder()

@@ -77,7 +77,7 @@ public class ReissueAccessTokenService implements
                 .build();
         }
 
-        Optional<User> userOptional = userRepository.findById(userId);
+        Optional<User> userOptional = userRepository.findByIdAndDeletedFalse(userId);
         if (userOptional.isEmpty()) {
             log.warn("[ReissueAccessTokenService] User Not  - userId: {}", userId);
             return ReissueAccessTokenResponse.builder()
