@@ -10,6 +10,7 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
+import org.quizly.quizly.account.message.AccountDeleteNotificationMessage;
 import org.quizly.quizly.account.service.DeleteUserService.DeleteUserRequest;
 import org.quizly.quizly.account.service.DeleteUserService.DeleteUserResponse;
 import org.quizly.quizly.core.application.BaseRequest;
@@ -21,6 +22,7 @@ import org.quizly.quizly.core.domain.repository.RefreshTokenRepository;
 import org.quizly.quizly.core.domain.repository.UserRepository;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
+import org.quizly.quizly.core.notification.NotificationProvider;
 import org.quizly.quizly.jwt.JwtProvider;
 import org.quizly.quizly.jwt.error.AuthErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
@@ -37,6 +39,7 @@ public class DeleteUserService implements
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final NotificationProvider notificationProvider;
     private final JwtProvider jwtProvider;
 
     @Override
@@ -109,9 +112,19 @@ public class DeleteUserService implements
     }
 
     private void deleteUser(User user, Long userId) {
+        String nickName = user.getNickName();
+        User.Provider provider = user.getProvider();
+
         user.softDelete();
         user.deletePersonalInfo();
         refreshTokenRepository.deleteByUserId(userId);
+
+        try {
+            notificationProvider.send(
+                new AccountDeleteNotificationMessage(userId, nickName, provider));
+        } catch (Exception e) {
+            log.warn("[DeleteUserService] 회원 탈퇴 슬랙 알림 전송 실패. userId: {}", userId, e);
+        }
     }
 
     @Getter
