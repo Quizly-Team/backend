@@ -79,6 +79,7 @@ public class SecurityConfig {
                     "/auth/reissue",
                     "/quizzes/guest/**",
                     "/quizzes/{quizId}/answer/guest",
+                    "/quizzes/{quizId}/follow-up/guest",
                     "/actuator/health",
                     "/actuator/prometheus"
                 ).permitAll()

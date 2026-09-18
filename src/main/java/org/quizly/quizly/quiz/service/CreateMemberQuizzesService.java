@@ -56,7 +56,7 @@ public class CreateMemberQuizzesService implements
     private static final int DEFAULT_QUIZ_COUNT = 10;
     private static final int CREATE_QUIZ_COUNT = 12;
     private static final int DEFAULT_QUIZ_BATCH_SIZE = 2;
-    private static final int DEFAULT_CHUNK_SIZE = 500;
+    private static final int DEFAULT_CHUNK_SIZE = 1200;
     private static final int DEFAULT_CHUNK_OVERLAP = 100;
 
     @Override
@@ -117,7 +117,7 @@ public class CreateMemberQuizzesService implements
                     .quizCount(batchSize)
                     .plainText(chunk)
                     .build()
-            ),
+            ).thenApply(response -> attachSourceText(response, chunk)),
             "CreateMemberQuizzesService"
         );
 
@@ -165,6 +165,7 @@ public class CreateMemberQuizzesService implements
                 .explanation(generatedQuizResponse.getExplanation())
                 .options(generatedQuizResponse.getOptions())
                 .topic(topic)
+                .sourceText(generatedQuizResponse.getSourceText())
                 .user(user)
                 .guest(false)
                 .build())
@@ -184,6 +185,15 @@ public class CreateMemberQuizzesService implements
         solveHistoryRepository.saveAll(initialHistoryList);
 
         return savedQuizList;
+    }
+
+    private CreateQuizResponse attachSourceText(CreateQuizResponse response, String chunk) {
+        if (response != null && response.isSuccess()
+            && response.getGeneratedQuizResponseList() != null) {
+            response.getGeneratedQuizResponseList()
+                .forEach(generated -> generated.setSourceText(chunk));
+        }
+        return response;
     }
 
     @Getter

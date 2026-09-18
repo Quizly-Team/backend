@@ -40,7 +40,7 @@ public class CreateGuestQuizzesService implements
 
     private static final int DEFAULT_QUIZ_COUNT = 3;
     private static final int DEFAULT_QUIZ_BATCH_SIZE = 2;
-    private static final int DEFAULT_CHUNK_SIZE = 500;
+    private static final int DEFAULT_CHUNK_SIZE = 1200;
     private static final int DEFAULT_CHUNK_OVERLAP = 100;
     private static final String GUEST_TOPIC = "guest";
 
@@ -74,7 +74,7 @@ public class CreateGuestQuizzesService implements
                     .quizCount(batchSize)
                     .plainText(chunk)
                     .build()
-            ),
+            ).thenApply(response -> attachSourceText(response, chunk)),
             "CreateGuestQuizzesService"
         );
 
@@ -113,11 +113,21 @@ public class CreateGuestQuizzesService implements
                 .explanation(generatedQuizResponse.getExplanation())
                 .options(generatedQuizResponse.getOptions())
                 .topic(GUEST_TOPIC)
+                .sourceText(generatedQuizResponse.getSourceText())
                 .user(null)
                 .guest(true)
                 .build())
             .collect(Collectors.toList());
         return quizRepository.saveAll(quizList);
+    }
+
+    private CreateQuizResponse attachSourceText(CreateQuizResponse response, String chunk) {
+        if (response != null && response.isSuccess()
+            && response.getGeneratedQuizResponseList() != null) {
+            response.getGeneratedQuizResponseList()
+                .forEach(generated -> generated.setSourceText(chunk));
+        }
+        return response;
     }
 
 

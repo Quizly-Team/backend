@@ -57,6 +57,13 @@ public class Quiz extends BaseEntity {
     @Column(nullable = false)
     private String topic;
 
+    @Column(name = "source_text", columnDefinition = "LONGTEXT")
+    private String sourceText;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_quiz_id")
+    private Quiz parentQuiz;
+
     @Builder.Default
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "quiz_options", joinColumns = @JoinColumn(name = "quiz_id"))
