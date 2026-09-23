@@ -88,9 +88,9 @@ public class CreateMockQuizService implements
 
         if (category == TypeCategory.DESCRIPTIVE) {
             return OpenAiResponseFormatUtil.createDescriptiveQuizResponseFormat(quizCount,
-                quizType);
+                quizType, false);
         } else {
-            return OpenAiResponseFormatUtil.createSelectionQuizResponseFormat(quizCount, quizType);
+            return OpenAiResponseFormatUtil.createSelectionQuizResponseFormat(quizCount, quizType, false);
         }
     }
 

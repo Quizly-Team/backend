@@ -23,6 +23,7 @@ import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQ
 import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiResponse;
 import org.quizly.quizly.external.openai.util.OpenAiResponseFormatUtil;
 import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
+import org.quizly.quizly.quiz.dto.response.QuizTagResponse;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizRequest;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizResponse;
 import org.springframework.http.HttpStatus;
@@ -62,13 +63,47 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
                 .plainText(request.getPlainText())
                 .promptPath(promptPath)
                 .responseFormat(responseFormat)
+                .tags(request.getTags())
                 .build());
 
         if (openAiResponse != null && openAiResponse.isSuccess()) {
-            return CompletableFuture.completedFuture(CreateQuizResponse.builder()
-                .success(true)
-                .generatedQuizResponseList(openAiResponse.getGeneratedQuizResponseList())
-                .build());
+
+            log.info("=== 생성된 문제 목록 ===");
+
+            openAiResponse.getGeneratedQuizResponseList().forEach(quiz -> {
+
+                if (request.getTags() != null && !request.getTags().isEmpty()) {
+
+                    String tagName = request.getTags().stream()
+                        .filter(tag -> tag.getId().equals(quiz.getTagId()))
+                        .map(QuizTagResponse::getName)
+                        .findFirst()
+                        .orElse("UNKNOWN");
+
+                    log.info(
+                        "quiz={}, answer={}, tagId={}, tagName={}",
+                        quiz.getQuiz(),
+                        quiz.getAnswer(),
+                        quiz.getTagId(),
+                        tagName
+                    );
+
+                } else {
+
+                    log.info(
+                        "quiz={}, answer={}",
+                        quiz.getQuiz(),
+                        quiz.getAnswer()
+                    );
+                }
+            });
+
+            return CompletableFuture.completedFuture(
+                CreateQuizResponse.builder()
+                    .success(true)
+                    .generatedQuizResponseList(openAiResponse.getGeneratedQuizResponseList())
+                    .build()
+            );
         }
 
         log.warn("[CreateQuizService] Thread: {}. Failed to create quiz from OpenAi.",
@@ -83,11 +118,13 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
         int quizCount = request.getQuizCount();
         String quizType = request.getType().name();
 
+        boolean useTag = request.getTags() != null && !request.getTags().isEmpty();
+
         if (request.getType().equals(QuizType.TRUE_FALSE)) {
             return OpenAiResponseFormatUtil.createDescriptiveQuizResponseFormat(quizCount,
-                quizType);
+                quizType, useTag);
         } else {
-            return OpenAiResponseFormatUtil.createSelectionQuizResponseFormat(quizCount, quizType);
+            return OpenAiResponseFormatUtil.createSelectionQuizResponseFormat(quizCount, quizType,useTag);
         }
     }
 
@@ -120,6 +157,7 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
         private Quiz.QuizType type;
         private int quizCount;
         private String plainText;
+        private List<QuizTagResponse> tags;
 
         @Override
         public boolean isValid() {

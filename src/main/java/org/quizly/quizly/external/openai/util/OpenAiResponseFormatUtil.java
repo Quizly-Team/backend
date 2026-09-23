@@ -11,22 +11,24 @@ public class OpenAiResponseFormatUtil {
     private static final int SELECTION_OPTION_COUNT = 4;
     private static final int DESCRIPTIVE_OPTION_COUNT = 0;
 
-    public static ResponseFormat createSelectionQuizResponseFormat(int quizCount, String quizType) {
+    public static ResponseFormat createSelectionQuizResponseFormat(int quizCount, String quizType, boolean useTag) {
         return buildQuizResponseFormat(
             "selection_quiz_list",
             quizType,
             optionsArrayProperty("문제 선택지 - 정확히 4개의 선택지", SELECTION_OPTION_COUNT),
-            quizCount
+            quizCount,
+            useTag
         );
     }
 
     public static ResponseFormat createDescriptiveQuizResponseFormat(int quizCount,
-        String quizType) {
+        String quizType, boolean useTag) {
         return buildQuizResponseFormat(
             "descriptive_quiz_list",
             quizType,
             optionsArrayProperty("문제 선택지 목록 - 빈 배열", DESCRIPTIVE_OPTION_COUNT),
-            quizCount
+            quizCount,
+            useTag
         );
     }
 
@@ -46,7 +48,8 @@ public class OpenAiResponseFormatUtil {
         String schemaName,
         String quizType,
         Map<String, Object> optionsProperty,
-        int quizCount
+        int quizCount,
+        boolean useTag
     ) {
         Map<String, Object> quizItemProperties = new LinkedHashMap<>();
         quizItemProperties.put("quiz", stringProperty("문제 내용"));
@@ -55,9 +58,27 @@ public class OpenAiResponseFormatUtil {
         quizItemProperties.put("answer", stringProperty("퀴즈의 답안"));
         quizItemProperties.put("explanation", stringProperty("정답에 대한 해설"));
 
+        List<String> required = new java.util.ArrayList<>(
+            List.of(
+                "quiz",
+                "type",
+                "options",
+                "answer",
+                "explanation"
+            )
+        );
+
+        if (useTag) {
+            quizItemProperties.put(
+                "tagId",
+                stringProperty("사용 가능한 태그 중 선택한 태그의 id")
+            );
+
+            required.add("tagId");
+        }
         Map<String, Object> quizItemSchema = objectSchema(
             quizItemProperties,
-            List.of("quiz", "type", "options", "answer", "explanation")
+            required
         );
 
         Map<String, Object> quizzesArray = new LinkedHashMap<>();

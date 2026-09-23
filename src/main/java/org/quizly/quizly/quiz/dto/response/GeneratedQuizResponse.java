@@ -16,4 +16,5 @@ public class GeneratedQuizResponse {
     private List<String> options;
     private String answer;
     private String explanation;
+    private String tagId;
 }

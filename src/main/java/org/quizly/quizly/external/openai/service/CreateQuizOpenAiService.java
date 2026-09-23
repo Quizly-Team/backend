@@ -2,6 +2,7 @@ package org.quizly.quizly.external.openai.service;
 
 import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,6 +37,7 @@ import org.quizly.quizly.external.openai.property.OpenAiProperty;
 import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiRequest;
 import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiResponse;
 import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
+import org.quizly.quizly.quiz.dto.response.QuizTagResponse;
 import org.springframework.stereotype.Service;
 
 @Log4j2
@@ -60,7 +62,7 @@ public class CreateQuizOpenAiService implements
         }
         String systemContent = getPrompt(request.getPromptPath());
         String requestBody = createOpenAiRequestBody(request.getPlainText(), systemContent,
-            request.getResponseFormat());
+            request.getResponseFormat(),request.getTags());
 
         Request httpRequest = new Request.Builder()
             .url(openAiProperty.getUrl())
@@ -152,18 +154,42 @@ public class CreateQuizOpenAiService implements
     }
 
     private String createOpenAiRequestBody(String plainText, String systemContent,
-        ResponseFormat responseFormat) {
-        OpenAiRequest openAiRequest = OpenAiRequest.from(
-            systemContent,
-            "<입력으로 들어온 정리> " + plainText,
-            openAiProperty.getModel(),
-            QUIZ_TEMPERATURE,
-            responseFormat
-        );
+        ResponseFormat responseFormat, List<QuizTagResponse> tags) {
+        try{
+            String tagText = objectMapper.writeValueAsString(tags);
 
-        String jsonBody = new OkHttpJsonRequest(openAiRequest).convertRequestToString();
-        log.debug("Request JSON Body: {}", jsonBody);
-        return jsonBody;
+            String userContent;
+
+            if (tags != null && !tags.isEmpty()) {
+
+                userContent = """
+                    <사용 가능한 태그>
+                    %s
+            
+                    <참고 텍스트>
+                    %s
+                    """.formatted(tagText, plainText);
+                        } else {
+                            userContent = """
+                    <참고 텍스트>
+                    %s
+                    """.formatted(plainText);
+            }
+            OpenAiRequest openAiRequest = OpenAiRequest.from(
+                systemContent,
+                userContent,
+                openAiProperty.getModel(),
+                QUIZ_TEMPERATURE,
+                responseFormat
+            );
+
+            String jsonBody = new OkHttpJsonRequest(openAiRequest).convertRequestToString();
+            log.debug("Request JSON Body: {}", jsonBody);
+            return jsonBody;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("태그 직렬화 실패", e);
+        }
+
     }
 
     public String getPrompt(String promptPath) {
@@ -204,6 +230,7 @@ public class CreateQuizOpenAiService implements
         private String plainText;
         private String promptPath;
         private ResponseFormat responseFormat;
+        private List<QuizTagResponse> tags;
 
         @Override
         public boolean isValid() {

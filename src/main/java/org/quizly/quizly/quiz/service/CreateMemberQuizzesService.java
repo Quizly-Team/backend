@@ -36,6 +36,8 @@ import org.quizly.quizly.quiz.service.CreateMemberQuizzesService.CreateMemberQui
 import org.quizly.quizly.quiz.service.CreateMemberQuizzesService.CreateMemberQuizzesResponse;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizRequest;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizResponse;
+import org.quizly.quizly.quiz.service.CreateQuizStructureService.CreateQuizStructureRequest;
+import org.quizly.quizly.quiz.service.CreateQuizStructureService.CreateQuizStructureResponse;
 import org.quizly.quizly.quiz.service.CreateTopicService.CreateTopicRequest;
 import org.quizly.quizly.quiz.service.CreateTopicService.CreateTopicResponse;
 import org.springframework.http.HttpStatus;
@@ -52,6 +54,7 @@ public class CreateMemberQuizzesService implements
     private final QuizRepository quizRepository;
     private final ReadUserService readUserService;
     private final SolveHistoryRepository solveHistoryRepository;
+    private final CreateQuizStructureService createQuizStructureService;
 
     private static final int DEFAULT_QUIZ_COUNT = 10;
     private static final int CREATE_QUIZ_COUNT = 12;
@@ -96,6 +99,26 @@ public class CreateMemberQuizzesService implements
                 .build();
         }
 
+        CreateQuizStructureResponse structureResponse = createQuizStructureService.execute(
+            CreateQuizStructureRequest.builder()
+                .plainText(request.getPlainText())
+                .build()
+        );
+
+        if (structureResponse == null || !structureResponse.isSuccess()) {
+            log.warn("[CreateMemberQuizzesService] Failed to create quiz structure. Response: {}",
+                structureResponse);
+            return CreateMemberQuizzesResponse.builder()
+                .success(false)
+                .errorCode(CreateMemberQuizzesErrorCode.FAILED_CREATE_QUIZ_STRUCTURE)
+                .build();
+        }
+
+        log.info("=== 생성된 태그 목록 ===");
+        structureResponse.getTags().forEach(tag ->
+            log.info("tagId={}, name={}", tag.getId(), tag.getName())
+        );
+
         List<String> chunkList = TextProcessingUtil.createChunkList(
             request.getPlainText(), DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP);
         if (chunkList.isEmpty()) {
@@ -116,6 +139,7 @@ public class CreateMemberQuizzesService implements
                     .type(type)
                     .quizCount(batchSize)
                     .plainText(chunk)
+                    .tags(structureResponse.getTags())
                     .build()
             ),
             "CreateMemberQuizzesService"
@@ -186,6 +210,7 @@ public class CreateMemberQuizzesService implements
         return savedQuizList;
     }
 
+
     @Getter
     @RequiredArgsConstructor
     public enum CreateMemberQuizzesErrorCode implements BaseErrorCode<DomainException> {
@@ -193,6 +218,7 @@ public class CreateMemberQuizzesService implements
         NOT_EXIST_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "요청 파라미터가 존재하지 않습니다."),
         NOT_FOUND_USER(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
         FAILED_CREATE_TOPIC(HttpStatus.INTERNAL_SERVER_ERROR, "주제 생성에 실패하였습니다."),
+        FAILED_CREATE_QUIZ_STRUCTURE(HttpStatus.INTERNAL_SERVER_ERROR, "퀴즈 태그 생성에 실패하였습니다."),
         FAILED_CREATE_CHUNK(HttpStatus.INTERNAL_SERVER_ERROR, "텍스트 청크 생성에 실패하였습니다."),
         FAILED_CREATE_OPENAI_REQUEST(HttpStatus.INTERNAL_SERVER_ERROR, "OPENAI 서버 요청 생성에 실패하였습니다."),
         OPENAI_QUIZ_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,
