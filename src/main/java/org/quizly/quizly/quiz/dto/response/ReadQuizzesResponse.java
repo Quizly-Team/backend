@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.quizly.quizly.core.application.BaseResponse;
+import org.quizly.quizly.core.domain.entity.Quiz;
+import org.quizly.quizly.core.domain.entity.SolveHistory;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
 import org.quizly.quizly.core.presentation.Pagination;
 
@@ -17,25 +19,14 @@ import org.quizly.quizly.core.presentation.Pagination;
 @Schema(description = "그룹별 문제 조회 응답")
 public class ReadQuizzesResponse extends BaseResponse<GlobalErrorCode> {
 
-    @Schema(description = "그룹별 문제")
-    private List<QuizGroup> quizGroupList;
+    @Schema(description = "그룹명 (date: yyyy-MM-dd, topic: 주제명)", example = "자바")
+    private String group;
 
-    @Schema(description = "페이지네이션 정보")
+    @Schema(description = "풀이 결과가 포함된 문제 목록")
+    private List<QuizHistoryDetail> quizHistoryDetailList;
+
+    @Schema(description = "페이지네이션 정보 (문제 수 기준)")
     private Pagination pagination;
-
-    @Getter
-    @NoArgsConstructor
-    @ToString
-    @SuperBuilder
-    @Schema(description = "문제 그룹 정보")
-    public static class QuizGroup {
-
-        @Schema(description = "그룹명", example = "자바")
-        private String group;
-
-        @Schema(description = "해당 그룹의 풀이 결과가 포함된 문제 목록")
-        private List<QuizHistoryDetail> quizHistoryDetailList;
-    }
 
     @Schema(description = "풀이 결과가 포함된 문제 상세 정보")
     public record QuizHistoryDetail(
@@ -62,5 +53,18 @@ public class ReadQuizzesResponse extends BaseResponse<GlobalErrorCode> {
         boolean isLastSolveCorrect
     ) {
 
+        public static QuizHistoryDetail from(SolveHistory solveHistory) {
+            Quiz quiz = solveHistory.getQuiz();
+            return new QuizHistoryDetail(
+                quiz.getId(),
+                quiz.getQuizText(),
+                quiz.getQuizType().name(),
+                quiz.getOptions(),
+                quiz.getAnswer(),
+                quiz.getExplanation(),
+                quiz.getTopic(),
+                Boolean.TRUE.equals(solveHistory.getIsCorrect())
+            );
+        }
     }
 }

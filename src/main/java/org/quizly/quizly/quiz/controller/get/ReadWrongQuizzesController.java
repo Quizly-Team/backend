@@ -2,24 +2,16 @@ package org.quizly.quizly.quiz.controller.get;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.configuration.swagger.ApiErrorCode;
 import org.quizly.quizly.core.application.BaseResponse;
-import org.quizly.quizly.core.domain.entity.Quiz;
-import org.quizly.quizly.core.domain.entity.SolveHistory;
 import org.quizly.quizly.core.exception.error.GlobalErrorCode;
-import org.quizly.quizly.core.presentation.Pagination;
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.quizly.quizly.quiz.dto.request.ReadWrongQuizzesRequest;
 import org.quizly.quizly.quiz.dto.response.ReadQuizzesResponse;
-import org.quizly.quizly.quiz.dto.response.ReadQuizzesResponse.QuizGroup;
 import org.quizly.quizly.quiz.dto.response.ReadQuizzesResponse.QuizHistoryDetail;
 import org.quizly.quizly.quiz.service.ReadWrongQuizzesService;
 import org.quizly.quizly.quiz.service.ReadWrongQuizzesService.ReadWrongQuizzesErrorCode;
@@ -28,7 +20,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RestController;
-
 
 @RestController
 @RequiredArgsConstructor
@@ -39,11 +30,12 @@ public class ReadWrongQuizzesController {
 
     @Operation(
         summary = "틀린 문제 조회 API",
-        description = "회원 전용 API로 지정된 그룹화 기준에 따라 틀린 문제 목록을 조회합니다.\n\n이 API는 JWT 토큰을 필요로 합니다.\n\n"
+        description = "회원 전용 API로 지정된 그룹에 속한 틀린 문제 목록을 문제 단위로 페이징하여 조회합니다. 이 API는 JWT 토큰을 필요로 합니다.\n\n"
             + "- `groupType`: date (날짜별), topic (주제별)\n"
+            + "- `group`: 조회할 그룹 (date: yyyy-MM-dd, topic: 주제명), 필수\n"
             + "- `page`: 페이지 번호 (기본값 1)\n"
-            + "- `pageSize`: 그룹 단위 페이지 크기 (기본값 10)\n"
-            + "- 기본값: 그룹 기준이 명시되지 않으면 date로 자동 그룹화됩니다.",
+            + "- `pageSize`: 문제 단위 페이지 크기 (기본값 20, 최대 100)\n"
+            + "- 그룹 목록은 `/quizzes/wrong/groups` 로 조회합니다.",
         operationId = "/quizzes/wrong"
     )
     @GetMapping("/quizzes/wrong")
@@ -55,6 +47,7 @@ public class ReadWrongQuizzesController {
         ReadWrongQuizzesService.ReadWrongQuizzesResponse serviceResponse = readWrongQuizzesService.execute(
             ReadWrongQuizzesService.ReadWrongQuizzesRequest.builder()
                 .groupType(request.getGroupType())
+                .group(request.getGroup())
                 .pageRequest(request.toPageRequest())
                 .userPrincipal(userPrincipal)
                 .build());
@@ -69,68 +62,16 @@ public class ReadWrongQuizzesController {
                 });
         }
 
-        Map<Quiz, SolveHistory> solveHistoryMap =
+        List<QuizHistoryDetail> quizHistoryDetailList =
             Stream.ofNullable(serviceResponse.getSolveHistoryList())
                 .flatMap(List::stream)
-                .collect(
-                    Collectors.toMap(SolveHistory::getQuiz, Function.identity(), (o1, o2) -> o1));
+                .map(QuizHistoryDetail::from)
+                .toList();
 
-        return ResponseEntity.ok(
-            toResponse(serviceResponse.getQuizList(), solveHistoryMap, request.getGroupType(),
-                serviceResponse.getPagination()));
+        return ResponseEntity.ok(ReadQuizzesResponse.builder()
+            .group(request.getGroup())
+            .quizHistoryDetailList(quizHistoryDetailList)
+            .pagination(serviceResponse.getPagination())
+            .build());
     }
-
-    private ReadQuizzesResponse toResponse(
-        List<Quiz> quizList,
-        Map<Quiz, SolveHistory> solveHistoryMap,
-        String groupType,
-        Pagination pagination
-    ) {
-        Map<String, List<Quiz>> groupedQuizMap = quizList.stream()
-            .collect(Collectors.groupingBy(getGroupingFunction(groupType)));
-
-        Comparator<Map.Entry<String, List<Quiz>>> groupComparator =
-            "topic".equalsIgnoreCase(groupType)
-                ? Map.Entry.comparingByKey()
-                : Map.Entry.<String, List<Quiz>>comparingByKey().reversed();
-
-        List<QuizGroup> quizGroupList = groupedQuizMap.entrySet().stream()
-            .sorted(groupComparator)
-            .map(entry -> {
-                List<QuizHistoryDetail> quizHistoryDetailList = entry.getValue().stream()
-                    .map(quiz -> {
-                        SolveHistory history = solveHistoryMap.get(quiz);
-                        return new QuizHistoryDetail(
-                            quiz.getId(),
-                            quiz.getQuizText(),
-                            quiz.getQuizType().name(),
-                            quiz.getOptions(),
-                            quiz.getAnswer(),
-                            quiz.getExplanation(),
-                            quiz.getTopic(),
-                            (history.getIsCorrect())
-                        );
-                    })
-                    .collect(Collectors.toList());
-
-                return QuizGroup.builder()
-                    .group(entry.getKey())
-                    .quizHistoryDetailList(quizHistoryDetailList)
-                    .build();
-            })
-            .collect(Collectors.toList());
-
-        return ReadQuizzesResponse.builder()
-            .quizGroupList(quizGroupList)
-            .pagination(pagination)
-            .build();
-    }
-
-    private Function<Quiz, String> getGroupingFunction(String groupType) {
-        if ("topic".equalsIgnoreCase(groupType)) {
-            return Quiz::getTopic;
-        }
-        return quiz -> quiz.getCreatedAt().toLocalDate().toString();
-    }
-
 }
