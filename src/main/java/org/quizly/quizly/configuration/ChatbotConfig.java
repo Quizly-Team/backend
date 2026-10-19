@@ -19,7 +19,7 @@ public class ChatbotConfig {
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
             .model(openAiProperty.getModel())
-            .temperature(0.7)
+            .reasoningEffort(openAiProperty.getReasoningEffort())
             .build();
 
         return OpenAiChatModel.builder()
