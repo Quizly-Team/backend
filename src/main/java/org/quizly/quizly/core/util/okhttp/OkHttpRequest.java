@@ -49,6 +49,4 @@ public abstract class OkHttpRequest {
             return "did not work";
         }
     }
-
-    protected abstract String convertRequestToString();
 }
