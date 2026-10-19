@@ -1,7 +1,5 @@
 package org.quizly.quizly.external.openai.service;
 
-import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,21 +14,14 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
-import okhttp3.MediaType;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.util.TextResourceReaderUtil;
-import org.quizly.quizly.core.util.okhttp.OkHttpJsonRequest;
-import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest;
+import org.quizly.quizly.external.openai.client.OpenAiChatCompletionClient;
+import org.quizly.quizly.external.openai.client.OpenAiChatCompletionClient.ChatCompletionResult;
 import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest.ResponseFormat;
-import org.quizly.quizly.external.openai.dto.Response.OpenAiResponse;
 import org.quizly.quizly.external.openai.error.OpenAiErrorCode;
-import org.quizly.quizly.external.openai.property.OpenAiProperty;
 import org.quizly.quizly.external.openai.service.CreateMockExamOpenAiService.CreateMockExamOpenAiRequest;
 import org.quizly.quizly.external.openai.service.CreateMockExamOpenAiService.CreateMockExamOpenAiResponse;
 import org.quizly.quizly.mock.dto.response.GeneratedMockExamResponse;
@@ -44,7 +35,7 @@ public class CreateMockExamOpenAiService implements
 
     private static final double MOCK_EXAM_TEMPERATURE = 0.7;
 
-    private final OpenAiProperty openAiProperty;
+    private final OpenAiChatCompletionClient openAiChatCompletionClient;
     private final ObjectMapper objectMapper;
     private final TextResourceReaderUtil textResourceReaderUtil;
 
@@ -56,115 +47,51 @@ public class CreateMockExamOpenAiService implements
                 .errorCode(OpenAiErrorCode.NOT_EXIST_OPENAI_REQUIRED_PARAMETER)
                 .build();
         }
-        String systemContent = getPrompt(request.getPromptPath());
-        String requestBody = createOpenAiRequestBody(request.getPlainText(), systemContent,
-            request.getResponseFormat());
 
-        Request httpRequest = new Request.Builder()
-            .url(openAiProperty.getUrl())
-            .header("Authorization", "Bearer " + openAiProperty.getKey())
-            .header("Content-Type", "application/json")
-            .header("Accept", "application/json")
-            .post(RequestBody.create(requestBody, MediaType.parse("application/json")))
-            .build();
-
-        try (Response response = createRequest(httpRequest)) {
-            ResponseBody body = response.body();
-            if (body == null) {
-                log.warn("[CreateMockExamOpenAiService] response body is null. response code: {}",
-                    response.code());
-                return CreateMockExamOpenAiResponse.builder()
-                    .success(false)
-                    .errorCode(OpenAiErrorCode.EMPTY_OPENAI_RESPONSE_BODY)
-                    .build();
-            }
-
-            String responseBody = body.string();
-
-            if (!response.isSuccessful()) {
-                log.warn(
-                    "[CreateMockExamOpenAiService] OpenAi API returned non-successful code: {}, body: {}",
-                    response.code(), responseBody);
-                return CreateMockExamOpenAiResponse.builder()
-                    .success(false)
-                    .errorCode(OpenAiErrorCode.FAILED_CREATE_OPENAI_REQUEST)
-                    .build();
-            }
-
-            try {
-                OpenAiResponse openAiResponse = objectMapper.readValue(responseBody,
-                    OpenAiResponse.class);
-                String content = openAiResponse.extractText();
-
-                if (content == null || content.isBlank()) {
-                    log.warn(
-                        "[CreateMockExamOpenAiService] Empty content in OpenAi response. Body: {}",
-                        responseBody);
-                    return CreateMockExamOpenAiResponse.builder()
-                        .success(false)
-                        .errorCode(OpenAiErrorCode.EMPTY_OPENAI_RESPONSE_BODY)
-                        .build();
-                }
-
-                JsonNode rootNode = objectMapper.readTree(content);
-                JsonNode quizzesNode = rootNode.path("quizzes");
-
-                if (!quizzesNode.isArray()) {
-                    log.warn(
-                        "[CreateMockExamOpenAiService] Failed to find 'quizzes' array in content. Original content: {}",
-                        content);
-                    return CreateMockExamOpenAiResponse.builder()
-                        .success(false)
-                        .errorCode(OpenAiErrorCode.FAILED_PARSE_OPENAI_RESPONSE)
-                        .build();
-                }
-
-                List<GeneratedMockExamResponse> generatedMockExamResponseList = objectMapper.convertValue(
-                    quizzesNode, new TypeReference<List<GeneratedMockExamResponse>>() {
-                    });
-
-                return CreateMockExamOpenAiResponse.builder()
-                    .generatedMockExamResponseList(generatedMockExamResponseList)
-                    .success(true)
-                    .build();
-
-            } catch (IOException e) {
-                log.error(
-                    "[CreateMockExamOpenAiService] Failed to parse OpenAi API response. Body: {}",
-                    responseBody, e);
-                return CreateMockExamOpenAiResponse.builder()
-                    .success(false)
-                    .errorCode(OpenAiErrorCode.FAILED_READ_OPENAI_RESPONSE)
-                    .build();
-            }
-
-        } catch (IOException e) {
-            log.error(
-                "[CreateMockExamOpenAiService] OpenAi API request failed due to network I/O error.",
-                e);
+        ChatCompletionResult result = openAiChatCompletionClient.complete(
+            getPrompt(request.getPromptPath()),
+            "<입력으로 들어온 정리> " + request.getPlainText(),
+            request.getResponseFormat(), MOCK_EXAM_TEMPERATURE);
+        if (!result.isSuccess()) {
             return CreateMockExamOpenAiResponse.builder()
                 .success(false)
-                .errorCode(OpenAiErrorCode.OPENAI_NETWORK_ERROR)
+                .errorCode(result.errorCode())
+                .build();
+        }
+
+        String content = result.content();
+        try {
+            JsonNode quizzesNode = objectMapper.readTree(content).path("quizzes");
+            if (!quizzesNode.isArray()) {
+                log.warn(
+                    "[CreateMockExamOpenAiService] Failed to find 'quizzes' array in content. Original content: {}",
+                    content);
+                return CreateMockExamOpenAiResponse.builder()
+                    .success(false)
+                    .errorCode(OpenAiErrorCode.FAILED_PARSE_OPENAI_RESPONSE)
+                    .build();
+            }
+
+            List<GeneratedMockExamResponse> generatedMockExamResponseList =
+                objectMapper.convertValue(quizzesNode,
+                    new TypeReference<List<GeneratedMockExamResponse>>() {
+                    });
+
+            return CreateMockExamOpenAiResponse.builder()
+                .generatedMockExamResponseList(generatedMockExamResponseList)
+                .success(true)
+                .build();
+        } catch (IOException e) {
+            log.error("[CreateMockExamOpenAiService] Failed to parse mock exam content. Content: {}",
+                content, e);
+            return CreateMockExamOpenAiResponse.builder()
+                .success(false)
+                .errorCode(OpenAiErrorCode.FAILED_READ_OPENAI_RESPONSE)
                 .build();
         }
     }
 
-    private String createOpenAiRequestBody(String plainText, String systemContent,
-        ResponseFormat responseFormat) {
-        OpenAiRequest openAiRequest = OpenAiRequest.from(
-            systemContent,
-            "<입력으로 들어온 정리> " + plainText,
-            openAiProperty.getModel(),
-            MOCK_EXAM_TEMPERATURE,
-            responseFormat
-        );
-
-        String jsonBody = new OkHttpJsonRequest(openAiRequest).convertRequestToString();
-        log.debug("Request JSON Body: {}", jsonBody);
-        return jsonBody;
-    }
-
-    public String getPrompt(String promptPath) {
+    private String getPrompt(String promptPath) {
         String prompt = textResourceReaderUtil.load(promptPath);
         if (prompt == null || prompt.isBlank()) {
             throw OpenAiErrorCode.PROMPT_FILE_NOT_FOUND.toException();

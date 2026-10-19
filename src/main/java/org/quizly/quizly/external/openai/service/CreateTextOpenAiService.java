@@ -1,39 +1,26 @@
 package org.quizly.quizly.external.openai.service;
 
-import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import lombok.extern.log4j.Log4j2;
-import okhttp3.MediaType;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 import org.quizly.quizly.core.application.BaseRequest;
 import org.quizly.quizly.core.application.BaseResponse;
 import org.quizly.quizly.core.application.BaseService;
 import org.quizly.quizly.core.util.TextResourceReaderUtil;
-import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest;
-import org.quizly.quizly.external.openai.dto.Response.OpenAiResponse;
+import org.quizly.quizly.external.openai.client.OpenAiChatCompletionClient;
+import org.quizly.quizly.external.openai.client.OpenAiChatCompletionClient.ChatCompletionResult;
 import org.quizly.quizly.external.openai.error.OpenAiErrorCode;
-import org.quizly.quizly.external.openai.property.OpenAiProperty;
 import org.springframework.stereotype.Service;
 
-@Log4j2
 @Service
 @RequiredArgsConstructor
 public class CreateTextOpenAiService implements
     BaseService<CreateTextOpenAiService.CreateTextOpenAiRequest, CreateTextOpenAiService.CreateTextOpenAiResponse> {
 
-    private final OpenAiProperty openAiProperty;
-    private final ObjectMapper objectMapper;
+    private final OpenAiChatCompletionClient openAiChatCompletionClient;
     private final TextResourceReaderUtil textResourceReaderUtil;
 
     @Override
@@ -45,82 +32,22 @@ public class CreateTextOpenAiService implements
                 .build();
         }
 
-        String systemPrompt = getPrompt(request.getPromptPath());
-        String requestBody;
+        String systemPromptWithData = getPrompt(request.getPromptPath())
+            .replace("{{analysisTargetText}}", request.getInputText());
 
-        try {
-            String systemPromptWithData = systemPrompt.replace("{{analysisTargetText}}",
-                request.getInputText());
-            OpenAiRequest openAiRequest =
-                OpenAiRequest.from(
-                    systemPromptWithData,
-                    "",
-                    openAiProperty.getModel(),
-                    0.7
-                );
-
-            requestBody = objectMapper.writeValueAsString(openAiRequest);
-        } catch (JsonProcessingException e) {
-            log.error("[CreateTextOpenAiService] Failed to serialize OpenAi request", e);
-            return CreateTextOpenAiService.CreateTextOpenAiResponse.builder()
+        ChatCompletionResult result =
+            openAiChatCompletionClient.complete(systemPromptWithData, "", null, 0.7);
+        if (!result.isSuccess()) {
+            return CreateTextOpenAiResponse.builder()
                 .success(false)
-                .errorCode(OpenAiErrorCode.FAILED_CREATE_OPENAI_REQUEST)
+                .errorCode(result.errorCode())
                 .build();
         }
 
-        String url = openAiProperty.getUrl();
-
-        Request httpRequest = new Request.Builder()
-            .url(url)
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + openAiProperty.getKey())
-            .post(RequestBody.create(requestBody, MediaType.parse("application/json")))
+        return CreateTextOpenAiResponse.builder()
+            .resultText(result.content())
+            .success(true)
             .build();
-
-        try (Response response = createRequest(httpRequest)) {
-            if (response.body() == null) {
-                return CreateTextOpenAiService.CreateTextOpenAiResponse.builder()
-                    .success(false)
-                    .errorCode(OpenAiErrorCode.EMPTY_OPENAI_RESPONSE_BODY)
-                    .build();
-            }
-
-            String responseBody = response.body().string();
-
-            if (!response.isSuccessful()) {
-                log.warn("[CreateTextOpenAiService] OpenAi error {} body={}", response.code(),
-                    responseBody);
-                return CreateTextOpenAiService.CreateTextOpenAiResponse.builder()
-                    .success(false)
-                    .errorCode(OpenAiErrorCode.FAILED_CREATE_OPENAI_REQUEST)
-                    .build();
-            }
-
-            OpenAiResponse openAiResponse =
-                objectMapper.readValue(responseBody, OpenAiResponse.class);
-
-            String content = openAiResponse.extractText();
-
-            if (content == null || content.isBlank()) {
-                return CreateTextOpenAiService.CreateTextOpenAiResponse.builder()
-                    .success(false)
-                    .errorCode(OpenAiErrorCode.EMPTY_OPENAI_RESPONSE_BODY)
-                    .build();
-            }
-
-            return CreateTextOpenAiService.CreateTextOpenAiResponse.builder()
-                .resultText(content)
-                .success(true)
-                .build();
-
-
-        } catch (IOException e) {
-            log.error("[CreateTextOpenAiService] OpenAi I/O error", e);
-            return CreateTextOpenAiService.CreateTextOpenAiResponse.builder()
-                .success(false)
-                .errorCode(OpenAiErrorCode.OPENAI_NETWORK_ERROR)
-                .build();
-        }
     }
 
     private String getPrompt(String path) {
