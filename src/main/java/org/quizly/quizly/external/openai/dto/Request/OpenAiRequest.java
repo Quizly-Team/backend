@@ -12,27 +12,10 @@ public record OpenAiRequest(
     @JsonProperty("response_format") ResponseFormat responseFormat
 ) {
 
-    public static OpenAiRequest from(
+    public static OpenAiRequest of(
+        String model,
         String systemPrompt,
         String userInput,
-        String model,
-        double temperature
-    ) {
-        return new OpenAiRequest(
-            model,
-            List.of(
-                Message.system(systemPrompt),
-                Message.user(userInput)
-            ),
-            temperature,
-            null
-        );
-    }
-
-    public static OpenAiRequest from(
-        String systemPrompt,
-        String userInput,
-        String model,
         double temperature,
         ResponseFormat responseFormat
     ) {
