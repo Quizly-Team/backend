@@ -30,15 +30,15 @@ public class OpenAiChatCompletionClient {
     private final ObjectMapper objectMapper;
 
     public ChatCompletionResult complete(String systemPrompt, String userInput,
-        ResponseFormat responseFormat, double temperature) {
+        ResponseFormat responseFormat) {
         String requestBody;
         try {
             requestBody = objectMapper.writeValueAsString(OpenAiRequest.of(
                 openAiProperty.getModel(),
                 systemPrompt,
                 userInput,
-                temperature,
-                responseFormat));
+                responseFormat,
+                openAiProperty.getReasoningEffort()));
         } catch (JsonProcessingException e) {
             log.error("[OpenAiChatCompletionClient] Failed to serialize OpenAi request", e);
             return ChatCompletionResult.failure(OpenAiErrorCode.FAILED_CREATE_OPENAI_REQUEST);

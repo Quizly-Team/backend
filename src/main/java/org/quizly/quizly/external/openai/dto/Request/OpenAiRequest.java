@@ -8,16 +8,16 @@ import java.util.List;
 public record OpenAiRequest(
     String model,
     List<Message> messages,
-    double temperature,
-    @JsonProperty("response_format") ResponseFormat responseFormat
+    @JsonProperty("response_format") ResponseFormat responseFormat,
+    @JsonProperty("reasoning_effort") String reasoningEffort
 ) {
 
     public static OpenAiRequest of(
         String model,
         String systemPrompt,
         String userInput,
-        double temperature,
-        ResponseFormat responseFormat
+        ResponseFormat responseFormat,
+        String reasoningEffort
     ) {
         return new OpenAiRequest(
             model,
@@ -25,8 +25,8 @@ public record OpenAiRequest(
                 Message.system(systemPrompt),
                 Message.user(userInput)
             ),
-            temperature,
-            responseFormat
+            responseFormat,
+            reasoningEffort
         );
     }
 

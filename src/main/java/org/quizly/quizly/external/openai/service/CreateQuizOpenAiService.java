@@ -35,8 +35,6 @@ import org.springframework.stereotype.Service;
 public class CreateQuizOpenAiService implements
     BaseService<CreateQuizOpenAiRequest, CreateQuizOpenAiResponse> {
 
-    private static final double QUIZ_TEMPERATURE = 0.7;
-
     private final OpenAiChatCompletionClient openAiChatCompletionClient;
     private final ObjectMapper objectMapper;
     private final TextResourceReaderUtil textResourceReaderUtil;
@@ -53,7 +51,7 @@ public class CreateQuizOpenAiService implements
         ChatCompletionResult result = openAiChatCompletionClient.complete(
             getPrompt(request.getPromptPath()),
             "<입력으로 들어온 정리> " + request.getPlainText(),
-            request.getResponseFormat(), QUIZ_TEMPERATURE);
+            request.getResponseFormat());
         if (!result.isSuccess()) {
             return CreateQuizOpenAiResponse.builder()
                 .success(false)

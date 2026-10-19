@@ -36,7 +36,7 @@ public class CreateTextOpenAiService implements
             .replace("{{analysisTargetText}}", request.getInputText());
 
         ChatCompletionResult result =
-            openAiChatCompletionClient.complete(systemPromptWithData, "", null, 0.7);
+            openAiChatCompletionClient.complete(systemPromptWithData, "", null);
         if (!result.isSuccess()) {
             return CreateTextOpenAiResponse.builder()
                 .success(false)
