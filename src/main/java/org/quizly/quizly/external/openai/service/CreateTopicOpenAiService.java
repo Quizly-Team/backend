@@ -30,8 +30,6 @@ import org.springframework.stereotype.Service;
 public class CreateTopicOpenAiService implements
     BaseService<CreateTopicOpenAiRequest, CreateTopicOpenAiResponse> {
 
-    private static final double TOPIC_TEMPERATURE = 0.2;
-
     private final OpenAiChatCompletionClient openAiChatCompletionClient;
     private final ObjectMapper objectMapper;
     private final TextResourceReaderUtil textResourceReaderUtil;
@@ -48,7 +46,7 @@ public class CreateTopicOpenAiService implements
         ChatCompletionResult result = openAiChatCompletionClient.complete(
             getPrompt(request.getPromptPath()),
             "<입력으로 들어온 정리> " + request.getPlainText(),
-            OpenAiResponseFormatUtil.createTopicResponseFormat(), TOPIC_TEMPERATURE);
+            OpenAiResponseFormatUtil.createTopicResponseFormat());
         if (!result.isSuccess()) {
             return CreateTopicOpenAiResponse.builder()
                 .success(false)

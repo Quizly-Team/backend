@@ -14,4 +14,5 @@ public class OpenAiProperty {
     private String url;
     private String model;
     private String key;
+    private String reasoningEffort;
 }
