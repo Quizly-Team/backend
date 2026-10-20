@@ -26,6 +26,7 @@ import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest.ResponseForma
 import org.quizly.quizly.external.openai.error.OpenAiErrorCode;
 import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiRequest;
 import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiResponse;
+import org.quizly.quizly.external.openai.util.OpenAiUserInputUtil;
 import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +51,8 @@ public class CreateQuizOpenAiService implements
 
         ChatCompletionResult result = openAiChatCompletionClient.complete(
             getPrompt(request.getPromptPath()),
-            "<입력으로 들어온 정리> " + request.getPlainText(),
+            OpenAiUserInputUtil.createUserInput(request.getPlainText(),
+                request.getAnswerList()),
             request.getResponseFormat());
         if (!result.isSuccess()) {
             return CreateQuizOpenAiResponse.builder()
@@ -129,6 +131,7 @@ public class CreateQuizOpenAiService implements
         private String plainText;
         private String promptPath;
         private ResponseFormat responseFormat;
+        private List<String> answerList;
 
         @Override
         public boolean isValid() {
