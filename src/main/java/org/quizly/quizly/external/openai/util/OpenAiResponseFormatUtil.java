@@ -3,9 +3,11 @@ package org.quizly.quizly.external.openai.util;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.experimental.UtilityClass;
 import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest.JsonSchema;
 import org.quizly.quizly.external.openai.dto.Request.OpenAiRequest.ResponseFormat;
 
+@UtilityClass
 public class OpenAiResponseFormatUtil {
 
     private static final int SELECTION_OPTION_COUNT = 4;
