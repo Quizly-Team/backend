@@ -20,6 +20,7 @@ import org.quizly.quizly.external.openai.service.CreateMockExamOpenAiService;
 import org.quizly.quizly.external.openai.service.CreateMockExamOpenAiService.CreateMockExamOpenAiRequest;
 import org.quizly.quizly.external.openai.service.CreateMockExamOpenAiService.CreateMockExamOpenAiResponse;
 import org.quizly.quizly.external.openai.util.OpenAiResponseFormatUtil;
+import org.quizly.quizly.external.openai.util.OpenAiUserInputUtil;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType;
 import org.quizly.quizly.mock.dto.request.CreateMemberMockExamRequest.MockExamType.TypeCategory;
 import org.quizly.quizly.mock.dto.response.GeneratedMockExamResponse;
@@ -64,6 +65,7 @@ public class CreateMockQuizService implements
                 .plainText(request.getPlainText())
                 .promptPath(promptPath)
                 .responseFormat(responseFormat)
+                .answerList(createAnswerList(request))
                 .build());
 
         if (openAiResponse != null && openAiResponse.isSuccess()) {
@@ -79,6 +81,13 @@ public class CreateMockQuizService implements
             .success(false)
             .errorCode(CreateMockQuizErrorCode.ASYNC_FAILED_OPENAI_MOCK_EXAM_GENERATION)
             .build());
+    }
+
+    private List<String> createAnswerList(CreateMockQuizRequest request) {
+        if (request.getType() != MockExamType.TRUE_FALSE) {
+            return null;
+        }
+        return OpenAiUserInputUtil.createRandomTrueFalseAnswerList(request.getQuizCount());
     }
 
     private ResponseFormat createResponseFormat(CreateMockQuizRequest request) {
