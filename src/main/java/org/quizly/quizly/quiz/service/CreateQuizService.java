@@ -22,6 +22,7 @@ import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService;
 import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiRequest;
 import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQuizOpenAiResponse;
 import org.quizly.quizly.external.openai.util.OpenAiResponseFormatUtil;
+import org.quizly.quizly.external.openai.util.OpenAiUserInputUtil;
 import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizRequest;
 import org.quizly.quizly.quiz.service.CreateQuizService.CreateQuizResponse;
@@ -62,6 +63,7 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
                 .plainText(request.getPlainText())
                 .promptPath(promptPath)
                 .responseFormat(responseFormat)
+                .answerList(createAnswerList(request))
                 .build());
 
         if (openAiResponse != null && openAiResponse.isSuccess()) {
@@ -77,6 +79,13 @@ public class CreateQuizService implements BaseAsyncService<CreateQuizRequest, Cr
             .success(false)
             .errorCode(CreateQuizErrorCode.ASYNC_FAILED_OPENAI_QUIZ_GENERATION)
             .build());
+    }
+
+    private List<String> createAnswerList(CreateQuizRequest request) {
+        if (request.getType() != QuizType.TRUE_FALSE) {
+            return null;
+        }
+        return OpenAiUserInputUtil.createRandomTrueFalseAnswerList(request.getQuizCount());
     }
 
     private ResponseFormat createResponseFormat(CreateQuizRequest request) {
