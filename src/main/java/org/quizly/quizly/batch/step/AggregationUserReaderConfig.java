@@ -34,6 +34,8 @@ public class AggregationUserReaderConfig {
         MySqlPagingQueryProvider queryProvider = new MySqlPagingQueryProvider();
         queryProvider.setSelectClause("SELECT u.*");
         queryProvider.setFromClause("FROM user u");
+        // 옵티마이저가 비용을 잘못 추정하면 (user_id, submitted_at)를 골라 인덱스 전체를 스캔한다.
+        // 배치는 재실행이 가능하므로 인덱스가 없으면 바로 실패해 알 수 있도록 USE INDEX를 사용한다.
         queryProvider.setWhereClause(
             "WHERE EXISTS (" +
                 "  SELECT 1 FROM solve_history sh USE INDEX (idx_solve_history_submitted_user)" +

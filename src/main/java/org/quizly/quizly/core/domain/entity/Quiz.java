@@ -21,6 +21,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.BatchSize;
 import org.quizly.quizly.core.domain.shared.BaseEntity;
 
 @Getter
@@ -58,6 +59,7 @@ public class Quiz extends BaseEntity {
     private String topic;
 
     @Builder.Default
+    @BatchSize(size = 100)
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "quiz_options", joinColumns = @JoinColumn(name = "quiz_id"))
     @Column(name = "option_text")
