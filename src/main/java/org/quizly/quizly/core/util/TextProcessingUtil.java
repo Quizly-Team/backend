@@ -3,29 +3,25 @@ package org.quizly.quizly.core.util;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.experimental.UtilityClass;
+import org.springframework.ai.document.Document;
 
 @UtilityClass
 public class TextProcessingUtil {
 
+    private static final int MIN_CHUNK_SIZE = 400;
+    private static final int MIN_TAIL_SIZE = 200;
+
     public static List<String> createChunkList(String text, int chunkSize, int chunkOverlap) {
-        List<String> chunkList = new ArrayList<>();
-
-        if (text == null || text.isEmpty()) {
-            return chunkList;
+        if (text == null || text.isBlank()) {
+            return new ArrayList<>();
         }
 
-        if (text.length() <= chunkSize) {
-            chunkList.add(text);
-            return chunkList;
-        }
+        CharacterTextSplitter splitter =
+            new CharacterTextSplitter(chunkSize, chunkOverlap, MIN_CHUNK_SIZE, MIN_TAIL_SIZE);
 
-        int start = 0;
-        while (start < text.length()) {
-            int end = Math.min(start + chunkSize, text.length());
-            chunkList.add(text.substring(start, end));
-            start += chunkSize - chunkOverlap;
-        }
-
-        return chunkList;
+        // 호출부에서 Collections.shuffle로 순서를 바꾸므로 가변 리스트로 반환한다.
+        return splitter.split(new Document(text)).stream()
+            .map(Document::getText)
+            .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
     }
 }
