@@ -56,7 +56,7 @@ public class CreateMemberQuizzesService implements
     private static final int DEFAULT_QUIZ_COUNT = 10;
     private static final int CREATE_QUIZ_COUNT = 12;
     private static final int DEFAULT_QUIZ_BATCH_SIZE = 2;
-    private static final int DEFAULT_CHUNK_SIZE = 500;
+    private static final int DEFAULT_CHUNK_SIZE = 550;
     private static final int DEFAULT_CHUNK_OVERLAP = 100;
 
     @Override
