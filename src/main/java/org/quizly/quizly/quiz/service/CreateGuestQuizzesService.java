@@ -40,7 +40,7 @@ public class CreateGuestQuizzesService implements
 
     private static final int DEFAULT_QUIZ_COUNT = 3;
     private static final int DEFAULT_QUIZ_BATCH_SIZE = 2;
-    private static final int DEFAULT_CHUNK_SIZE = 500;
+    private static final int DEFAULT_CHUNK_SIZE = 550;
     private static final int DEFAULT_CHUNK_OVERLAP = 100;
     private static final String GUEST_TOPIC = "guest";
 
