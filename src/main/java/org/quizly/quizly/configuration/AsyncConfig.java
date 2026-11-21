@@ -1,8 +1,10 @@
 package org.quizly.quizly.configuration;
 
 import java.util.concurrent.Executor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -11,24 +13,21 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 public class AsyncConfig {
 
     @Bean(name = "mockExamTaskExecutor")
-    public Executor taskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(30);
-        executor.setMaxPoolSize(50);
-        executor.setQueueCapacity(50);
-        executor.setThreadNamePrefix("MockExam-");
-        executor.initialize();
-        return executor;
+    public Executor taskExecutor(
+        @Value("${async.mock-exam.concurrency-limit:30}") int concurrencyLimit) {
+        return createVirtualThreadExecutor("MockExam-", concurrencyLimit);
     }
 
     @Bean(name = "quizTaskExecutor")
-    public Executor quizTaskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(50);
-        executor.setMaxPoolSize(70);
-        executor.setQueueCapacity(70);
-        executor.setThreadNamePrefix("Quiz-");
-        executor.initialize();
+    public Executor quizTaskExecutor(
+        @Value("${async.quiz.concurrency-limit:50}") int concurrencyLimit) {
+        return createVirtualThreadExecutor("Quiz-", concurrencyLimit);
+    }
+
+    private Executor createVirtualThreadExecutor(String threadNamePrefix, int concurrencyLimit) {
+        SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor(threadNamePrefix);
+        executor.setVirtualThreads(true);
+        executor.setConcurrencyLimit(concurrencyLimit);
         return executor;
     }
 
