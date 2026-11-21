@@ -1,9 +1,5 @@
 package org.quizly.quizly.external.openai.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,6 +23,10 @@ import org.quizly.quizly.external.openai.service.CreateMockExamOpenAiService.Cre
 import org.quizly.quizly.external.openai.util.OpenAiUserInputUtil;
 import org.quizly.quizly.mock.dto.response.GeneratedMockExamResponse;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Log4j2
 @Service
@@ -81,7 +81,7 @@ public class CreateMockExamOpenAiService implements
                 .generatedMockExamResponseList(generatedMockExamResponseList)
                 .success(true)
                 .build();
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             log.error("[CreateMockExamOpenAiService] Failed to parse mock exam content. Content: {}",
                 content, e);
             return CreateMockExamOpenAiResponse.builder()

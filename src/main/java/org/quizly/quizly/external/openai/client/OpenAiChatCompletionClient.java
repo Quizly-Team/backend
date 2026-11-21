@@ -2,8 +2,6 @@ package org.quizly.quizly.external.openai.client;
 
 import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -18,6 +16,8 @@ import org.quizly.quizly.external.openai.dto.Response.OpenAiResponse;
 import org.quizly.quizly.external.openai.error.OpenAiErrorCode;
 import org.quizly.quizly.external.openai.property.OpenAiProperty;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Log4j2
 @Component
@@ -39,7 +39,7 @@ public class OpenAiChatCompletionClient {
                 userInput,
                 responseFormat,
                 openAiProperty.getReasoningEffort()));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("[OpenAiChatCompletionClient] Failed to serialize OpenAi request", e);
             return ChatCompletionResult.failure(OpenAiErrorCode.FAILED_CREATE_OPENAI_REQUEST);
         }
@@ -71,7 +71,7 @@ public class OpenAiChatCompletionClient {
             String content;
             try {
                 content = objectMapper.readValue(responseBody, OpenAiResponse.class).extractText();
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 log.error("[OpenAiChatCompletionClient] Failed to read OpenAi response. Body: {}",
                     responseBody, e);
                 return ChatCompletionResult.failure(OpenAiErrorCode.FAILED_READ_OPENAI_RESPONSE);

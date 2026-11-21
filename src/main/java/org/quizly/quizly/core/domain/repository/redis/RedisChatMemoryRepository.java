@@ -1,11 +1,8 @@
 package org.quizly.quizly.core.domain.repository.redis;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
@@ -17,6 +14,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Log4j2
 @Repository
@@ -50,7 +50,7 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
         Assert.notNull(messages, "messages must not be null");
         String json = serializeMessages(messages);
         redisTemplate.opsForValue()
-            .set(KEY_PREFIX + conversationId, json, TTL_HOURS, TimeUnit.HOURS);
+            .set(KEY_PREFIX + conversationId, json, Duration.ofHours(TTL_HOURS));
     }
 
     @Override
@@ -69,7 +69,7 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
             .toList();
         try {
             return objectMapper.writeValueAsString(serialized);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("[RedisChatMemoryRepository] Failed to serialize messages", e);
             return "[]";
         }
@@ -97,7 +97,7 @@ public class RedisChatMemoryRepository implements ChatMemoryRepository {
                     };
                 })
                 .toList();
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("[RedisChatMemoryRepository] Failed to deserialize messages", e);
             return List.of();
         }

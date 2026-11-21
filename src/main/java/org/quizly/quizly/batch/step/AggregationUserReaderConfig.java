@@ -9,9 +9,9 @@ import org.quizly.quizly.core.domain.entity.User;
 import org.quizly.quizly.core.domain.entity.User.Provider;
 import org.quizly.quizly.core.domain.entity.User.Role;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.item.database.JdbcPagingItemReader;
-import org.springframework.batch.item.database.Order;
-import org.springframework.batch.item.database.support.MySqlPagingQueryProvider;
+import org.springframework.batch.infrastructure.item.database.JdbcPagingItemReader;
+import org.springframework.batch.infrastructure.item.database.Order;
+import org.springframework.batch.infrastructure.item.database.support.MySqlPagingQueryProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,10 +44,8 @@ public class AggregationUserReaderConfig {
         );
         queryProvider.setSortKeys(Map.of("id", Order.ASCENDING));
 
-        JdbcPagingItemReader<User> reader = new JdbcPagingItemReader<>();
+        JdbcPagingItemReader<User> reader = new JdbcPagingItemReader<>(dataSource, queryProvider);
         reader.setName("aggregationUserReader");
-        reader.setDataSource(dataSource);
-        reader.setQueryProvider(queryProvider);
         reader.setParameterValues(Map.of(
             "startDateTime", startDateTime,
             "endDateTime", endDateTime

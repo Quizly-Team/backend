@@ -6,8 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.quizly.quizly.batch.message.BatchFailureNotificationMessage;
 import org.quizly.quizly.core.notification.NotificationProvider;
 import org.springframework.batch.core.BatchStatus;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.batch.core.job.JobExecution;
+import org.springframework.batch.core.listener.JobExecutionListener;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -42,10 +42,9 @@ public class BatchFailureAlertListener implements JobExecutionListener {
 
     private String formatJobParameters(JobExecution jobExecution) {
         return jobExecution.getJobParameters()
-            .getParameters()
-            .entrySet()
+            .parameters()
             .stream()
-            .map(e -> e.getKey() + "=" + e.getValue().getValue())
+            .map(parameter -> parameter.name() + "=" + parameter.value())
             .collect(Collectors.joining(", "));
     }
 

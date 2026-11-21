@@ -1,7 +1,7 @@
 package org.quizly.quizly.core.domain.repository.redis;
 
+import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.quizly.quizly.core.notification.NotificationThreadRepository;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -18,7 +18,7 @@ public class RedisNotificationThreadRepository implements NotificationThreadRepo
 
     @Override
     public void save(Long referenceId, String threadTs) {
-        redisTemplate.opsForValue().set(key(referenceId), threadTs, TTL_DAYS, TimeUnit.DAYS);
+        redisTemplate.opsForValue().set(key(referenceId), threadTs, Duration.ofDays(TTL_DAYS));
     }
 
     @Override

@@ -1,17 +1,17 @@
 package org.quizly.quizly.core.domain.converter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import java.util.ArrayList;
 import java.util.List;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 @Converter
 public class StringListJsonConverter implements AttributeConverter<List<String>, String> {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final JsonMapper OBJECT_MAPPER = JsonMapper.builder().build();
     private static final TypeReference<List<String>> LIST_TYPE = new TypeReference<>() {};
 
     @Override
@@ -21,7 +21,7 @@ public class StringListJsonConverter implements AttributeConverter<List<String>,
         }
         try {
             return OBJECT_MAPPER.writeValueAsString(attribute);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("문자열 목록을 JSON으로 직렬화하는데 실패했습니다.", e);
         }
     }
@@ -33,7 +33,7 @@ public class StringListJsonConverter implements AttributeConverter<List<String>,
         }
         try {
             return OBJECT_MAPPER.readValue(dbData, LIST_TYPE);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("문자열 목록을 JSON에서 역직렬화하는데 실패했습니다.", e);
         }
     }

@@ -11,13 +11,13 @@ import org.quizly.quizly.core.domain.entity.User;
 import org.quizly.quizly.core.domain.repository.SolveHistoryStatisticsRepository;
 import org.quizly.quizly.core.domain.repository.SolveHistoryStatisticsRepository.QuizTypeSummary;
 import org.quizly.quizly.core.domain.repository.SolveTypeSummaryRepository;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.infrastructure.item.ItemProcessor;
+import org.springframework.batch.infrastructure.item.ItemReader;
+import org.springframework.batch.infrastructure.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,7 +39,8 @@ public class AggregateSolveTypeSummaryStepConfig {
         ItemProcessor<User, List<SolveTypeSummary>> aggregateSolveTypeSummaryProcessor,
         ItemWriter<List<SolveTypeSummary>> aggregateSolveTypeSummaryWriter) {
         return new StepBuilder("aggregateSolveTypeSummaryStep", jobRepository)
-            .<User, List<SolveTypeSummary>>chunk(20, transactionManager)
+            .<User, List<SolveTypeSummary>>chunk(20)
+            .transactionManager(transactionManager)
             .reader(aggregationUserReader)
             .processor(aggregateSolveTypeSummaryProcessor)
             .writer(aggregateSolveTypeSummaryWriter)

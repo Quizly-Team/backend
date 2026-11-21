@@ -4,7 +4,6 @@ import org.quizly.quizly.external.openai.property.OpenAiProperty;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -13,18 +12,14 @@ public class ChatbotConfig {
 
     @Bean
     public OpenAiChatModel openAiChatModel(OpenAiProperty openAiProperty) {
-        OpenAiApi openAiApi = OpenAiApi.builder()
-            .apiKey(openAiProperty.getKey())
-            .build();
-
         OpenAiChatOptions options = OpenAiChatOptions.builder()
+            .apiKey(openAiProperty.getKey())
             .model(openAiProperty.getModel())
             .reasoningEffort(openAiProperty.getReasoningEffort())
             .build();
 
         return OpenAiChatModel.builder()
-            .openAiApi(openAiApi)
-            .defaultOptions(options)
+            .options(options)
             .build();
     }
 

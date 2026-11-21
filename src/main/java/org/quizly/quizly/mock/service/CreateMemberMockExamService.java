@@ -1,7 +1,5 @@
 package org.quizly.quizly.mock.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +32,8 @@ import org.quizly.quizly.mock.service.CreateMockQuizService.CreateMockQuizRespon
 import org.quizly.quizly.oauth.UserPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Log4j2
 @Service
@@ -139,7 +139,7 @@ public class CreateMemberMockExamService implements
 
             mockExamRepository.saveAndFlush(mockExam);
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.warn(
                 "[CreateMemberMockExamService] Failed to serialize mock exam result. userId={}, generatedQuizCount={}",
                 user.getId(),

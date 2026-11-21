@@ -2,7 +2,6 @@ package org.quizly.quizly.external.ocr.service;
 
 import static org.quizly.quizly.core.util.okhttp.OkHttpRequest.createRequest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.UUID;
@@ -26,6 +25,7 @@ import org.quizly.quizly.external.ocr.error.OcrErrorCode;
 import org.quizly.quizly.external.ocr.property.OcrProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor

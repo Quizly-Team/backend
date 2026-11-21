@@ -1,7 +1,5 @@
 package org.quizly.quizly.external.openai.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +21,8 @@ import org.quizly.quizly.external.openai.service.CreateTopicOpenAiService.Create
 import org.quizly.quizly.external.openai.util.OpenAiResponseFormatUtil;
 import org.quizly.quizly.quiz.dto.response.GeneratedTopicResponse;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Log4j2
 @Service
@@ -71,7 +71,7 @@ public class CreateTopicOpenAiService implements
                 .topic(generatedTopicResponse.getTopic())
                 .success(true)
                 .build();
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             log.error("[CreateTopicOpenAiService] Failed to parse topic content. Content: {}",
                 content, e);
             return CreateTopicOpenAiResponse.builder()

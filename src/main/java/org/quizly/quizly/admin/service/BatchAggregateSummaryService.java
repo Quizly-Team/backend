@@ -16,10 +16,10 @@ import org.quizly.quizly.core.domain.entity.User;
 import org.quizly.quizly.core.exception.DomainException;
 import org.quizly.quizly.core.exception.error.BaseErrorCode;
 import org.quizly.quizly.oauth.UserPrincipal;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.job.Job;
+import org.springframework.batch.core.job.parameters.JobParameters;
+import org.springframework.batch.core.job.parameters.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 public class BatchAggregateSummaryService implements
     BaseService<BatchAggregateSummaryRequest, BatchAggregateSummaryResponse> {
 
-    private final JobLauncher jobLauncher;
+    private final JobOperator jobOperator;
     private final Job aggregateDailySummaryJob;
     private final ReadUserService readUserService;
 
@@ -74,7 +74,7 @@ public class BatchAggregateSummaryService implements
                 .addLong("timestamp", System.currentTimeMillis())
                 .toJobParameters();
 
-            jobLauncher.run(aggregateDailySummaryJob, jobParameters);
+            jobOperator.start(aggregateDailySummaryJob, jobParameters);
 
             return BatchAggregateSummaryResponse.builder().build();
 

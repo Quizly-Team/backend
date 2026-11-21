@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.4.5'
+	id 'org.springframework.boot' version '4.1.2'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -26,13 +26,13 @@ repositories {
 
 dependencyManagement {
 	imports {
-		mavenBom "org.springframework.ai:spring-ai-bom:1.0.0"
+		mavenBom "org.springframework.ai:spring-ai-bom:2.0.2"
 	}
 }
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
@@ -41,15 +41,15 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	//swagger
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0'
 
 	// external API + json
 	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
 	// OAuth2 + security + jwt
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
 	implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
 	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
@@ -61,15 +61,12 @@ dependencies {
 	implementation 'org.apache.tika:tika-core:2.9.0'
 
 	//batch
-	implementation 'org.springframework.boot:spring-boot-starter-batch'
-	testImplementation 'org.springframework.batch:spring-batch-test'
+	implementation 'org.springframework.boot:spring-boot-starter-batch-jdbc'
+	testImplementation 'org.springframework.boot:spring-boot-starter-batch-test'
 
 	// Apache
 	implementation group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.0.31'
 	implementation "org.apache.httpcomponents.client5:httpclient5"
-
-	// Open AI
-	implementation("com.openai:openai-java:4.15.0")
 
 	// Spring AI
 	implementation 'org.springframework.ai:spring-ai-openai'
@@ -83,18 +80,22 @@ dependencies {
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 
 	// Sentry
-	implementation 'io.sentry:sentry-spring-boot-starter-jakarta:8.16.0'
-	implementation 'io.sentry:sentry-logback:8.16.0'
+	implementation 'io.sentry:sentry-spring-boot-4-starter:8.64.0'
+	implementation 'io.sentry:sentry-logback:8.64.0'
 
 	// mail
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
 	// Logging (Loki/Grafana)
-	implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+	implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.compilerArgs << '-Xlint:deprecation'
 }

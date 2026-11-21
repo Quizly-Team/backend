@@ -1,9 +1,5 @@
 package org.quizly.quizly.external.openai.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -29,6 +25,10 @@ import org.quizly.quizly.external.openai.service.CreateQuizOpenAiService.CreateQ
 import org.quizly.quizly.external.openai.util.OpenAiUserInputUtil;
 import org.quizly.quizly.quiz.dto.response.GeneratedQuizResponse;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Log4j2
 @Service
@@ -83,7 +83,7 @@ public class CreateQuizOpenAiService implements
                 .generatedQuizResponseList(generatedQuizResponseList)
                 .success(true)
                 .build();
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             log.error("[CreateQuizOpenAiService] Failed to parse quiz content. Content: {}",
                 content, e);
             return CreateQuizOpenAiResponse.builder()

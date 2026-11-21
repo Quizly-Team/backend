@@ -20,7 +20,6 @@ import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -64,8 +63,6 @@ public class CreateChatMessageService {
             .system(systemPrompt)
             .messages(history)
             .user(request.getUserMessage())
-            .options(OpenAiChatOptions.builder()
-                .build())
             .stream()
             .content()
             .subscribe(

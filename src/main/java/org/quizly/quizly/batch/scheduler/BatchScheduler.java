@@ -3,10 +3,10 @@ package org.quizly.quizly.batch.scheduler;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.job.Job;
+import org.springframework.batch.core.job.parameters.JobParameters;
+import org.springframework.batch.core.job.parameters.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Log4j2
 public class BatchScheduler {
 
-    private final JobLauncher jobLauncher;
+    private final JobOperator jobOperator;
     private final Job aggregateDailySummaryJob;
 
     @Scheduled(cron = "0 5 0 * * *")
@@ -28,7 +28,7 @@ public class BatchScheduler {
                 .addLong("timestamp", System.currentTimeMillis())
                 .toJobParameters();
 
-            jobLauncher.run(aggregateDailySummaryJob, jobParameters);
+            jobOperator.start(aggregateDailySummaryJob, jobParameters);
         } catch (Exception e) {
             log.error("[BatchScheduler] Failed to run aggregateDailySummaryJob", e);
         }
